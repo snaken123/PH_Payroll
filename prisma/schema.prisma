@@ -1,0 +1,968 @@
+// Philippine Payroll SaaS — Phase 1 schema: tenant/company admin, employees,
+// compensation, and versioned statutory rate configuration.
+// Attendance, leave, loans, and payroll-run models are added in later phases.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== Platform / Identity ====================
+
+enum PlatformRole {
+  STANDARD
+  SUPER_ADMIN
+}
+
+enum CompanyRole {
+  COMPANY_OWNER
+  PAYROLL_ADMIN
+  HR_STAFF
+  APPROVER
+  EMPLOYEE_SELF
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String?
+  name         String?
+  image        String?
+  platformRole PlatformRole @default(STANDARD)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  memberships               CompanyMembership[]
+  employee                  Employee?
+  compensationRecordsCreated CompensationRecord[] @relation("CompensationCreatedBy")
+
+  @@index([email])
+}
+
+// One user can belong to multiple companies (e.g. an outsourced bookkeeper
+// running payroll for several client companies), each with its own role.
+model CompanyMembership {
+  id        String      @id @default(cuid())
+  userId    String
+  companyId String
+  role      CompanyRole
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+}
+
+// ==================== Tenant (Company) ====================
+
+enum CompanyStatus {
+  ONBOARDING
+  ACTIVE
+  SUSPENDED
+}
+
+model Company {
+  id                       String        @id @default(cuid())
+  companyCode              String        @unique
+  legalName                String
+  tradeName                String?
+  tin                      String        @unique
+  rdoCode                  String
+  sssEmployerNumber        String?
+  philhealthEmployerNumber String?
+  pagibigEmployerId        String?
+  registeredAddress        String
+  region                   String
+  status                   CompanyStatus @default(ONBOARDING)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  branches       CompanyBranch[]
+  memberships    CompanyMembership[]
+  employees      Employee[]
+  holidays       CompanyHoliday[]
+  timesheets     TimesheetEntry[]
+  payrollPeriods PayrollPeriod[]
+  payrollRuns    PayrollRun[]
+  loans          Loan[]
+  leaveTypes     LeaveType[]
+  generatedDocuments GeneratedDocument[]
+  contractors        Contractor[]
+  contractorPayments ContractorPayment[]
+  finalPayRuns       FinalPayRun[]
+
+  @@index([status])
+}
+
+// BIR "branch code" concept — some statutory forms are filed per branch.
+model CompanyBranch {
+  id           String  @id @default(cuid())
+  companyId    String
+  branchCode   String
+  name         String
+  address      String
+  region       String
+  isHeadOffice Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([companyId, branchCode])
+  @@index([companyId])
+}
+
+// ==================== Employee ====================
+
+enum EmployeeType {
+  MONTHLY_RANK_AND_FILE
+  DAILY_HOURLY
+  MANAGERIAL_SUPERVISORY
+}
+
+enum EmploymentStatus {
+  PROBATIONARY
+  REGULAR
+  RESIGNED
+  TERMINATED
+  AWOL
+  RETIRED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CHECK
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum CivilStatus {
+  SINGLE
+  MARRIED
+  WIDOWED
+  SEPARATED
+  ANNULLED
+}
+
+// Contractors/freelancers are intentionally NOT modeled here — they're
+// handled by a fully separate Contractor/ContractorPayment module (Phase 5)
+// since they're subject to expanded withholding tax (2307), not compensation
+// withholding, and must never flow through employee payroll runs.
+model Employee {
+  id                     String           @id @default(cuid())
+  companyId              String
+  branchId               String
+  userId                 String?          @unique
+  employeeNumber         String
+  firstName              String
+  lastName               String
+  middleName             String?
+  suffix                 String?
+  birthDate              DateTime
+  sex                    Sex
+  civilStatus            CivilStatus
+  tin                    String?
+  sssNumber              String?
+  philhealthNumber       String?
+  pagibigNumber          String?
+  employeeType           EmployeeType
+  employmentStatus       EmploymentStatus @default(PROBATIONARY)
+  dateHired              DateTime
+  dateRegularized        DateTime?
+  dateSeparated          DateTime?
+  // Free-text supplementary notes only — separationCategory (below) is what
+  // actually drives final-pay eligibility/formula/tax-treatment logic, kept
+  // as a separate field so this one's meaning is never silently repurposed.
+  separationReason       String?
+  separationCategory     SeparationCategory?
+  // Gate on posting a FinalPayRun — a lightweight stand-in for the common
+  // PH practice of withholding final pay pending company-property/
+  // accountability clearance. Not a full clearance-checklist subsystem.
+  clearanceCompleted     Boolean          @default(false)
+  departmentName         String?
+  positionTitle          String
+  // Labor Code OT/holiday-premium exemption turns on actual job function
+  // (Art. 82), not job title, so this is explicit and overridable rather
+  // than purely derived from employeeType.
+  isManagerialExempt     Boolean          @default(false)
+  managerialExemptReason String?
+  bankAccountNumber      String?
+  bankName               String?
+  paymentMethod          PaymentMethod    @default(BANK_TRANSFER)
+  createdAt              DateTime         @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch              CompanyBranch        @relation(fields: [branchId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  compensationRecords CompensationRecord[]
+  timesheetEntries    TimesheetEntry[]
+  payslips            Payslip[]
+  loans               Loan[]
+  leaveBalances       LeaveBalance[]
+  leaveRequests       LeaveRequest[]
+  finalPayRuns        FinalPayRun[]
+
+  @@unique([companyId, employeeNumber])
+  @@index([companyId])
+  @@index([branchId])
+}
+
+enum SeparationCategory {
+  RESIGNATION                    // no separation pay by law
+  TERMINATION_FOR_CAUSE          // Art. 297 just causes — no separation pay by law
+  AUTHORIZED_CAUSE_REDUNDANCY    // incl. labor-saving devices — 1.0 month/year, floor 1 month
+  AUTHORIZED_CAUSE_RETRENCHMENT  // incl. closure not due to serious losses — 0.5 month/year, floor 1 month
+  AUTHORIZED_CAUSE_DISEASE       // Art. 299 — 0.5 month/year, floor 1 month
+  RETIREMENT                     // RA 7641 — 22.5 days/year
+  DEATH                          // tax-exempt; amount is company/insurance policy, not a formula
+  END_OF_CONTRACT                // project/seasonal/fixed-term — no separation pay by law
+}
+
+// ==================== Compensation (effective-dated) ====================
+
+enum PayBasis {
+  MONTHLY_RATE
+  DAILY_RATE
+  HOURLY_RATE
+}
+
+enum DeMinimisCategory {
+  RICE_SUBSIDY
+  UNIFORM_CLOTHING
+  MEDICAL_CASH_ALLOWANCE
+  MEDICAL_ASSISTANCE
+  LAUNDRY
+  ACHIEVEMENT_AWARD
+  CHRISTMAS_ANNIVERSARY_GIFT
+  MEAL_ALLOWANCE_OT_NIGHTSHIFT
+  MONETIZED_UNUSED_LEAVE
+  CBA_PRODUCTIVITY_INCENTIVE
+}
+
+// Compensation is never overwritten in place — a raise/promotion closes the
+// previous record's effectiveTo and inserts a new one, so past payroll runs
+// always reflect the rate actually in effect at the time.
+model CompensationRecord {
+  id                        String    @id @default(cuid())
+  employeeId                String
+  effectiveFrom             DateTime
+  effectiveTo               DateTime?
+  payBasis                  PayBasis
+  basicRate                 Decimal   @db.Decimal(14, 4)
+  // Divisor used to convert monthly <-> daily/hourly rates (e.g. 261/313/314
+  // day-year conventions). Not a legal constant — company/employee configurable.
+  standardWorkDaysPerMonth  Decimal?  @db.Decimal(6, 2)
+  createdAt                 DateTime  @default(now())
+  createdByUserId           String?
+
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy  User?           @relation("CompensationCreatedBy", fields: [createdByUserId], references: [id])
+  allowances AllowanceLine[]
+
+  @@index([employeeId, effectiveFrom])
+}
+
+model AllowanceLine {
+  id                   String             @id @default(cuid())
+  compensationRecordId String
+  label                String
+  amount               Decimal            @db.Decimal(14, 4)
+  isTaxable            Boolean            @default(true)
+  isDeMinimis          Boolean            @default(false)
+  deMinimisCategory    DeMinimisCategory?
+
+  compensationRecord CompensationRecord @relation(fields: [compensationRecordId], references: [id], onDelete: Cascade)
+
+  @@index([compensationRecordId])
+}
+
+// ==================== Statutory Rate Configuration ====================
+// Platform-level (not company-scoped), SUPER_ADMIN-editable, versioned and
+// effective-dated. Never hard-deleted or edited in place — superseding a
+// rate means inserting a new row and closing the old one's effectiveTo.
+// sourceReference cites the issuing SSS circular / PhilHealth circular /
+// BIR RR / Wage Order so "why is this the rate" is always answerable.
+
+enum PayPeriodType {
+  DAILY
+  WEEKLY
+  SEMI_MONTHLY
+  MONTHLY
+  // Not used for per-cutoff withholding (this product pays semi-monthly
+  // only) — used solely by the year-end annualization engine (BIR 2316),
+  // which computes tax due against the annual table, not a per-cutoff one.
+  ANNUAL
+}
+
+enum DeMinimisFrequency {
+  MONTHLY
+  ANNUAL
+}
+
+enum WageSector {
+  NON_AGRICULTURE
+  AGRICULTURE
+  RETAIL_SERVICE_SMALL
+}
+
+model SssContributionBracket {
+  id              String    @id @default(cuid())
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  mscFloor        Decimal   @db.Decimal(12, 2)
+  mscCeiling      Decimal   @db.Decimal(12, 2)
+  msc             Decimal   @db.Decimal(12, 2)
+  eeShare         Decimal   @db.Decimal(12, 2)
+  erShare         Decimal   @db.Decimal(12, 2)
+  mpfEeShare      Decimal?  @db.Decimal(12, 2)
+  mpfErShare      Decimal?  @db.Decimal(12, 2)
+  ecAmount        Decimal   @db.Decimal(12, 2)
+  version         Int       @default(1)
+  publishedAt     DateTime  @default(now())
+  sourceReference String
+
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model PhilhealthConfig {
+  id              String    @id @default(cuid())
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  premiumRate     Decimal   @db.Decimal(6, 4)
+  eeShareRate     Decimal   @db.Decimal(6, 4)
+  erShareRate     Decimal   @db.Decimal(6, 4)
+  floorSalary     Decimal   @db.Decimal(12, 2)
+  ceilingSalary   Decimal   @db.Decimal(12, 2)
+  sourceReference String
+
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model PagibigContributionBracket {
+  id                   String    @id @default(cuid())
+  effectiveFrom        DateTime
+  effectiveTo          DateTime?
+  salaryThreshold      Decimal   @db.Decimal(12, 2)
+  eeRateBelowThreshold Decimal   @db.Decimal(6, 4)
+  erRateBelowThreshold Decimal   @db.Decimal(6, 4)
+  eeRateAboveThreshold Decimal   @db.Decimal(6, 4)
+  erRateAboveThreshold Decimal   @db.Decimal(6, 4)
+  maxFundSalary        Decimal   @db.Decimal(12, 2)
+  eeCap                Decimal   @db.Decimal(12, 2)
+  erCap                Decimal   @db.Decimal(12, 2)
+  sourceReference      String
+
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model BirWithholdingBracket {
+  id              String        @id @default(cuid())
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  payPeriodType   PayPeriodType
+  bracketFloor    Decimal       @db.Decimal(14, 2)
+  bracketCeiling  Decimal?      @db.Decimal(14, 2)
+  baseTax         Decimal       @db.Decimal(14, 2)
+  excessRate      Decimal       @db.Decimal(6, 4)
+  sourceReference String
+
+  @@index([effectiveFrom, effectiveTo, payPeriodType])
+}
+
+model DeMinimisCeiling {
+  id              String             @id @default(cuid())
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  category        DeMinimisCategory
+  ceilingAmount   Decimal            @db.Decimal(12, 2)
+  frequency       DeMinimisFrequency
+  sourceReference String
+
+  @@index([effectiveFrom, effectiveTo, category])
+}
+
+// Advisory-only in the payroll engine for MVP (warns when a rate is below
+// the applicable minimum, does not auto-adjust pay) — region/sector
+// classification is genuinely ambiguous for many businesses.
+model MinimumWageRate {
+  id                 String     @id @default(cuid())
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  region             String
+  sector             WageSector @default(NON_AGRICULTURE)
+  dailyRate          Decimal    @db.Decimal(12, 2)
+  wageOrderReference String
+
+  @@index([effectiveFrom, effectiveTo, region, sector])
+}
+
+model ThirteenthMonthConfig {
+  id               String    @id @default(cuid())
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  exemptionCeiling Decimal   @db.Decimal(14, 2)
+  sourceReference  String
+
+  @@index([effectiveFrom, effectiveTo])
+}
+
+// ==================== Attendance ====================
+
+enum HolidayType {
+  REGULAR_HOLIDAY
+  SPECIAL_NON_WORKING
+}
+
+// Company-specific (and optionally region-specific) holiday calendar used to
+// tag TimesheetEntry rows for holiday-premium computation.
+model CompanyHoliday {
+  id          String      @id @default(cuid())
+  companyId   String
+  date        DateTime
+  name        String
+  holidayType HolidayType
+  // null = applies company-wide regardless of branch region
+  region      String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date, region])
+  @@index([companyId, date])
+}
+
+enum TimesheetStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+  HOLIDAY
+  REST_DAY
+}
+
+enum TimesheetSource {
+  MANUAL
+  BIOMETRIC_IMPORT
+  SELF_REPORTED
+}
+
+// Stores hours-level FACTS (regular/OT/night-diff hours, holiday/rest-day
+// flags), never computed peso amounts — the payroll engine recomputes pay
+// from these facts at run time using the rate table valid for that period,
+// so historical attendance never needs to be touched if rates change later.
+model TimesheetEntry {
+  id                String          @id @default(cuid())
+  companyId         String
+  employeeId        String
+  workDate          DateTime
+  timeIn            DateTime?
+  timeOut           DateTime?
+  breakMinutes      Int             @default(0)
+  scheduledHours    Decimal         @default(8) @db.Decimal(5, 2)
+  status            TimesheetStatus @default(PRESENT)
+  lateMinutes       Int             @default(0)
+  undertimeMinutes  Int             @default(0)
+  regularHours      Decimal         @default(0) @db.Decimal(5, 2)
+  overtimeHours     Decimal         @default(0) @db.Decimal(5, 2)
+  nightDiffHours    Decimal         @default(0) @db.Decimal(5, 2)
+  holidayType       HolidayType?
+  isRestDay         Boolean         @default(false)
+  source            TimesheetSource @default(MANUAL)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, workDate])
+  @@index([companyId, workDate])
+}
+
+// ==================== Payroll Runs ====================
+
+enum PeriodType {
+  FIRST_HALF
+  SECOND_HALF
+}
+
+// The calendar cutoff (e.g. "Jul 1-15, paid Jul 20"). Separate from
+// PayrollRun so a period can be recomputed (a new draft run) without losing
+// the history of prior attempts.
+model PayrollPeriod {
+  id          String     @id @default(cuid())
+  companyId   String
+  cutoffStart DateTime
+  cutoffEnd   DateTime
+  payDate     DateTime
+  periodType  PeriodType
+  createdAt   DateTime   @default(now())
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runs    PayrollRun[]
+
+  @@unique([companyId, cutoffStart, cutoffEnd])
+  @@index([companyId])
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  POSTED
+  VOID
+}
+
+// Once POSTED, a run and its payslips/line items are immutable (enforced in
+// application code — no update/delete path once posted). Corrections happen
+// via a new adjustment run referencing the original, never by editing a
+// posted run in place.
+model PayrollRun {
+  id                    String           @id @default(cuid())
+  companyId             String
+  payrollPeriodId       String
+  status                PayrollRunStatus @default(DRAFT)
+  runNumber             Int
+  computedAt            DateTime?
+  computedByUserId      String?
+  approvedAt            DateTime?
+  approvedByUserId      String?
+  postedAt              DateTime?
+  postedByUserId        String?
+  voidedAt              DateTime?
+  voidedByUserId        String?
+  voidReason            String?
+  // Snapshot of which statutory rate table rows (by id) were actually
+  // applied, so a posted payslip's numbers stay reproducible even if the
+  // rate tables are edited later.
+  statutoryRateSnapshot Json?
+  createdAt             DateTime         @default(now())
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollPeriod  PayrollPeriod   @relation(fields: [payrollPeriodId], references: [id])
+  payslips       Payslip[]
+  loanDeductions LoanDeduction[]
+
+  @@unique([companyId, runNumber])
+  @@index([companyId])
+  @@index([payrollPeriodId])
+}
+
+model Payslip {
+  id                       String   @id @default(cuid())
+  payrollRunId             String
+  employeeId               String
+  companyId                String
+  grossPay                 Decimal  @db.Decimal(14, 2)
+  totalStatutoryDeductions Decimal  @db.Decimal(14, 2)
+  totalOtherDeductions     Decimal  @db.Decimal(14, 2)
+  netPay                   Decimal  @db.Decimal(14, 2)
+
+  payrollRun PayrollRun        @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee   Employee          @relation(fields: [employeeId], references: [id])
+  lineItems  PayrollLineItem[]
+
+  @@unique([payrollRunId, employeeId])
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+enum LineItemCategory {
+  BASIC_PAY
+  OVERTIME
+  NIGHT_DIFF
+  HOLIDAY_PREMIUM
+  REST_DAY_PREMIUM
+  ALLOWANCE
+  SSS_EE
+  SSS_ER
+  PHILHEALTH_EE
+  PHILHEALTH_ER
+  PAGIBIG_EE
+  PAGIBIG_ER
+  WITHHOLDING_TAX
+  LOAN_DEDUCTION
+  CASH_ADVANCE
+  LATE_UNDERTIME_DEDUCTION
+  THIRTEENTH_MONTH_ACCRUAL
+  OTHER
+}
+
+enum LineItemDirection {
+  EARNING
+  DEDUCTION
+  EMPLOYER_CONTRIBUTION
+}
+
+// Every peso on a payslip traces back to its source via sourceRef (e.g. the
+// TimesheetEntry ids or LoanDeduction id that produced it) — this is what
+// "audit-ready" cashes out to: a line can be clicked back to what produced it.
+model PayrollLineItem {
+  id          String            @id @default(cuid())
+  payslipId   String
+  category    LineItemCategory
+  direction   LineItemDirection
+  description String
+  amount      Decimal           @db.Decimal(14, 2)
+  quantity    Decimal?          @db.Decimal(8, 2)
+  rate        Decimal?          @db.Decimal(14, 4)
+  sourceRef   Json?
+
+  payslip Payslip @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+
+  @@index([payslipId])
+}
+
+// ==================== Loans & Deductions ====================
+
+enum LoanCategory {
+  SSS_LOAN
+  PAGIBIG_LOAN
+  COMPANY_LOAN
+  CASH_ADVANCE
+  OTHER
+}
+
+enum LoanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Loan {
+  id                String       @id @default(cuid())
+  companyId         String
+  employeeId        String
+  category          LoanCategory
+  name              String
+  principal         Decimal      @db.Decimal(14, 2)
+  termMonths        Int?
+  installmentAmount Decimal      @db.Decimal(14, 2)
+  startDate         DateTime
+  referenceNumber   String?
+  status            LoanStatus   @default(ACTIVE)
+  // Denormalized running balance — always reconcilable/replayable by summing
+  // LoanDeduction rows, which are the actual audit trail. This field is a
+  // cache for fast reads, not the source of truth.
+  remainingBalance  Decimal      @db.Decimal(14, 2)
+  createdAt         DateTime     @default(now())
+
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  deductions LoanDeduction[]
+
+  @@index([companyId])
+  @@index([employeeId, status])
+}
+
+// One row per cutoff (or final-pay payoff) a loan was actually deducted —
+// this IS the audit trail; Loan.remainingBalance is a cache derivable by
+// summing/replaying these. Exactly one of payrollRunId/finalPayRunId is set
+// — a deduction is either a recurring installment or a one-time final-pay
+// payoff, never both.
+model LoanDeduction {
+  id             String   @id @default(cuid())
+  loanId         String
+  payrollRunId   String?
+  finalPayRunId  String?
+  cutoffDate     DateTime
+  amountDeducted Decimal  @db.Decimal(14, 2)
+  balanceAfter   Decimal  @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+
+  loan        Loan         @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  payrollRun  PayrollRun?  @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  finalPayRun FinalPayRun? @relation(fields: [finalPayRunId], references: [id], onDelete: Cascade)
+
+  @@index([loanId])
+  @@index([payrollRunId])
+  @@index([finalPayRunId])
+}
+
+// ==================== Leave ====================
+
+enum LeaveAccrualPolicy {
+  ANNUAL_GRANT
+  MONTHLY_ACCRUAL
+  NONE
+}
+
+model LeaveType {
+  id                  String             @id @default(cuid())
+  companyId           String
+  name                String
+  code                String
+  isPaid              Boolean            @default(true)
+  // True for the seeded mandatory 5-day Service Incentive Leave — that row
+  // is company-wide default, non-deletable, only limitedly editable.
+  isStatutory         Boolean            @default(false)
+  accrualPolicy       LeaveAccrualPolicy @default(ANNUAL_GRANT)
+  defaultDaysPerYear  Decimal            @db.Decimal(5, 2)
+  isCarryOverAllowed  Boolean            @default(false)
+  maxCarryOverDays    Decimal?           @db.Decimal(5, 2)
+  // Unused SIL is legally convertible to cash at year-end/separation — this
+  // flag feeds the (future) final-pay engine.
+  isConvertibleToCash Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+
+  company  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  balances LeaveBalance[]
+  requests LeaveRequest[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model LeaveBalance {
+  id              String   @id @default(cuid())
+  employeeId      String
+  leaveTypeId     String
+  year            Int
+  entitledDays    Decimal  @db.Decimal(5, 2)
+  usedDays        Decimal  @db.Decimal(5, 2) @default(0)
+  carriedOverDays Decimal  @db.Decimal(5, 2) @default(0)
+  // Manual corrections (e.g. a data-entry fix) — kept separate from
+  // entitledDays so the original grant is never silently overwritten.
+  adjustedDays    Decimal  @db.Decimal(5, 2) @default(0)
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// Approving a request upserts TimesheetEntry rows (status=LEAVE) across the
+// date range and decrements the matching LeaveBalance — this is what makes
+// approved leave suppress an "absent" deduction in payroll computation.
+model LeaveRequest {
+  id               String             @id @default(cuid())
+  employeeId       String
+  leaveTypeId      String
+  startDate        DateTime
+  endDate          DateTime
+  daysCount        Decimal            @db.Decimal(5, 2)
+  status           LeaveRequestStatus @default(PENDING)
+  reason           String?
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime           @default(now())
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+// ==================== Statutory Report Generation ====================
+
+enum DocumentType {
+  PAYSLIP
+  PAYROLL_REGISTER
+  SSS_R3
+  PHILHEALTH_RF1
+  PAGIBIG_MCRF
+  FORM_1601C
+  FORM_2316
+  FORM_2307
+  THIRTEENTH_MONTH_REPORT
+  FINAL_PAY_STATEMENT
+  CERTIFICATE_OF_EMPLOYMENT
+}
+
+enum DocumentSourceType {
+  PAYROLL_RUN
+  PERIOD_RANGE
+}
+
+// Every form/report is regenerated on demand from POSTED data (never
+// draft), but every generation is logged here for audit history — who
+// generated what, when, and from which source. `version`/`supersedesId`
+// track regenerations without losing the record of earlier ones.
+model GeneratedDocument {
+  id                String              @id @default(cuid())
+  companyId         String
+  documentType      DocumentType
+  sourceType        DocumentSourceType
+  sourceRunId       String?
+  sourcePeriodStart DateTime?
+  sourcePeriodEnd   DateTime?
+  employeeId        String?
+  generatedAt       DateTime            @default(now())
+  generatedByUserId String
+  version           Int                 @default(1)
+  supersedesId      String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, documentType])
+}
+
+// ==================== Contractors (fully separate from Employee) ====================
+// Contractors/freelancers never flow through PayrollRun — they're subject to
+// BIR expanded withholding tax (2307), not compensation withholding, and
+// have no statutory contributions, 13th month, OT, or leave. Keeping this
+// structurally separate from Employee payroll avoids the exact
+// employee-misclassification exposure DOLE/BIR audits look for.
+
+enum ContractorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Contractor {
+  id              String           @id @default(cuid())
+  companyId       String
+  name            String
+  tin             String
+  address         String
+  // Free-text description of the BIR Alphanumeric Tax Code category (e.g.
+  // "WC010 - Professional fees, individual"). Not validated against a
+  // lookup table — EWT rates vary by registration/income-threshold rules
+  // this system doesn't model, so the rate is admin-entered per contractor
+  // (see defaultEwtRate), not derived from the code.
+  atcCode         String
+  defaultEwtRate  Decimal          @db.Decimal(6, 4)
+  isVatRegistered Boolean          @default(false)
+  status          ContractorStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+
+  company  Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payments ContractorPayment[]
+
+  @@unique([companyId, tin])
+  @@index([companyId])
+}
+
+enum ContractorPaymentStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+model ContractorPayment {
+  id                String                  @id @default(cuid())
+  companyId         String
+  contractorId      String
+  // Sequential per company — same CAS-readiness rationale as
+  // PayrollRun.runNumber.
+  paymentNumber     Int
+  paymentDate       DateTime
+  grossAmount       Decimal                 @db.Decimal(14, 2)
+  ewtRate           Decimal                 @db.Decimal(6, 4)
+  ewtAmount         Decimal                 @db.Decimal(14, 2)
+  netAmount         Decimal                 @db.Decimal(14, 2)
+  invoiceReference  String?
+  status            ContractorPaymentStatus @default(DRAFT)
+  postedAt          DateTime?
+  postedByUserId    String?
+  voidedAt          DateTime?
+  voidedByUserId    String?
+  voidReason        String?
+  createdAt         DateTime                @default(now())
+  createdByUserId   String
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contractor Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, paymentNumber])
+  @@index([companyId])
+  @@index([contractorId])
+}
+
+// ==================== Final Pay (Phase 6) ====================
+// One-time per-employee event (not a company-wide batch like PayrollRun) —
+// same immutability/audit discipline as PayrollRun/ContractorPayment.
+
+enum FinalPayRunStatus {
+  DRAFT
+  APPROVED
+  POSTED
+  VOID
+}
+
+model FinalPayRun {
+  id                    String            @id @default(cuid())
+  companyId             String
+  employeeId            String
+  // Sequential per company — same CAS-readiness rationale as
+  // PayrollRun.runNumber / ContractorPayment.paymentNumber.
+  finalPayNumber        Int
+  status                FinalPayRunStatus @default(DRAFT)
+  // Snapshots of Employee.dateSeparated/separationCategory at computation
+  // time — if HR corrects the employee record later, this run keeps what
+  // was actually used to compute it.
+  separationDate         DateTime
+  separationCategory     SeparationCategory
+  computedAt             DateTime?
+  computedByUserId       String?
+  approvedAt             DateTime?
+  approvedByUserId       String?
+  postedAt               DateTime?
+  postedByUserId         String?
+  voidedAt                DateTime?
+  voidedByUserId          String?
+  voidReason              String?
+  statutoryRateSnapshot   Json?
+  grossFinalPay           Decimal          @db.Decimal(14, 2)
+  totalDeductions         Decimal          @db.Decimal(14, 2)
+  // NOT floored at 0 — a departing employee's loan balance can legitimately
+  // exceed what's owed to them, unlike a regular in-employment cutoff.
+  netFinalPay             Decimal          @db.Decimal(14, 2)
+  createdAt               DateTime         @default(now())
+
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee       Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  lineItems      FinalPayLineItem[]
+  loanDeductions LoanDeduction[]
+
+  @@unique([companyId, finalPayNumber])
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+enum FinalPayLineItemCategory {
+  UNPAID_WAGES
+  PRORATED_THIRTEENTH_MONTH
+  LEAVE_CASHOUT
+  SEPARATION_PAY
+  RETIREMENT_PAY
+  LOAN_PAYOFF
+  WITHHOLDING_TAX_ADJUSTMENT
+  OTHER
+}
+
+// Same traceability shape as PayrollLineItem, plus isTaxExempt — closing the
+// gap flagged in the Phase 4 2316 simplification, since exempt-vs-taxable
+// is load-bearing here (authorized-cause separation pay is exempt, the
+// same-shaped resignation payment generally isn't).
+model FinalPayLineItem {
+  id            String                    @id @default(cuid())
+  finalPayRunId String
+  category      FinalPayLineItemCategory
+  direction     LineItemDirection
+  description   String
+  amount        Decimal                   @db.Decimal(14, 2)
+  isTaxExempt   Boolean                   @default(false)
+  sourceRef     Json?
+
+  finalPayRun FinalPayRun @relation(fields: [finalPayRunId], references: [id], onDelete: Cascade)
+
+  @@index([finalPayRunId])
+}

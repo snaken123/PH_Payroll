@@ -1,0 +1,24 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { getAuthSession } from "@/lib/auth";
+import { SignOutButton } from "@/components/sign-out-button";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getAuthSession();
+  if (!session) redirect("/login");
+  if (session.user.platformRole !== "SUPER_ADMIN") redirect("/dashboard");
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <Link href="/admin" className="font-semibold">
+            PH Payroll — Platform Admin
+          </Link>
+          <SignOutButton />
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+    </div>
+  );
+}
