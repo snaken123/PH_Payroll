@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddCompensationDialog } from "@/components/employees/add-compensation-dialog";
+import { EditEmployeeProfileDialog } from "@/components/employees/edit-employee-profile-dialog";
 import { CreateLoanDialog } from "@/components/loans/create-loan-dialog";
 import { CancelLoanButton } from "@/components/loans/cancel-loan-button";
 import { LoanApprovalActions } from "@/components/loans/loan-approval-actions";
@@ -86,9 +87,29 @@ export default async function EmployeeDetailPage({
             {employee.employeeNumber} · {employee.positionTitle} · {employee.branch.name}
           </p>
         </div>
-        <Badge variant={employee.employmentStatus === "REGULAR" ? "default" : "secondary"}>
-          {employee.employmentStatus}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={employee.employmentStatus === "REGULAR" ? "default" : "secondary"}>
+            {employee.employmentStatus}
+          </Badge>
+          <EditEmployeeProfileDialog
+            employeeId={employee.id}
+            defaultValues={{
+              employeeNumber: employee.employeeNumber,
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              middleName: employee.middleName ?? "",
+              birthDate: employee.birthDate.toISOString().slice(0, 10),
+              sex: employee.sex,
+              civilStatus: employee.civilStatus,
+              positionTitle: employee.positionTitle,
+              departmentName: employee.departmentName ?? "",
+              tin: employee.tin ?? "",
+              sssNumber: employee.sssNumber ?? "",
+              philhealthNumber: employee.philhealthNumber ?? "",
+              pagibigNumber: employee.pagibigNumber ?? "",
+            }}
+          />
+        </div>
       </div>
 
       {minimumWageWarning && (

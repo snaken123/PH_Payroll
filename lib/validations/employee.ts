@@ -92,6 +92,17 @@ export type MarkSeparatedFormValues = z.input<typeof markSeparatedSchema>;
 export type MarkSeparatedInput = z.output<typeof markSeparatedSchema>;
 
 export const updateEmployeeSchema = z.object({
+  employeeNumber: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  middleName: z.string().optional(),
+  birthDate: z.string().min(1).optional(),
+  sex: z.enum(sexValues).optional(),
+  civilStatus: z.enum(civilStatusValues).optional(),
+  tin: z.string().optional(),
+  sssNumber: z.string().optional(),
+  philhealthNumber: z.string().optional(),
+  pagibigNumber: z.string().optional(),
   positionTitle: z.string().min(1).optional(),
   departmentName: z.string().optional(),
   employmentStatus: z.enum(employmentStatusValues).optional(),
@@ -102,3 +113,25 @@ export const updateEmployeeSchema = z.object({
   separationCategory: z.enum(separationCategoryValues).optional(),
   clearanceCompleted: z.boolean().optional(),
 });
+export type UpdateEmployeeInput = z.output<typeof updateEmployeeSchema>;
+
+// Subset the edit-profile dialog actually submits — same partial-update
+// schema underneath (PATCH /api/employees/[id] is shared by several
+// distinct flows), just the fields relevant to fixing profile data.
+export const editEmployeeProfileSchema = z.object({
+  employeeNumber: z.string().min(1, "Required"),
+  firstName: z.string().min(1, "Required"),
+  lastName: z.string().min(1, "Required"),
+  middleName: z.string().optional(),
+  birthDate: z.string().min(1, "Required"),
+  sex: z.enum(sexValues),
+  civilStatus: z.enum(civilStatusValues),
+  positionTitle: z.string().min(1, "Required"),
+  departmentName: z.string().optional(),
+  tin: z.string().optional(),
+  sssNumber: z.string().optional(),
+  philhealthNumber: z.string().optional(),
+  pagibigNumber: z.string().optional(),
+});
+export type EditEmployeeProfileFormValues = z.input<typeof editEmployeeProfileSchema>;
+export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema>;
