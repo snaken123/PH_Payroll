@@ -634,28 +634,46 @@ enum LoanCategory {
 }
 
 enum LoanStatus {
+  // Only ever assigned at creation for CASH_ADVANCE loans — every other
+  // category is recorded as an already-agreed fact and starts ACTIVE.
+  PENDING_APPROVAL
   ACTIVE
+  REJECTED
   COMPLETED
   CANCELLED
 }
 
+// Controls how often computeLoanDeductions deducts a loan's installment.
+// MONTHLY reuses the payroll engine's existing "second cutoff of the month"
+// signal (isStatutoryDeductionCutoff) rather than introducing a second
+// cadence concept — see lib/payroll/deductions/computeLoanDeductions.ts.
+enum LoanDeductionFrequency {
+  EVERY_CUTOFF
+  MONTHLY
+}
+
 model Loan {
-  id                String       @id @default(cuid())
-  companyId         String
-  employeeId        String
-  category          LoanCategory
-  name              String
-  principal         Decimal      @db.Decimal(14, 2)
-  termMonths        Int?
-  installmentAmount Decimal      @db.Decimal(14, 2)
-  startDate         DateTime
-  referenceNumber   String?
-  status            LoanStatus   @default(ACTIVE)
+  id                 String                 @id @default(cuid())
+  companyId          String
+  employeeId         String
+  category           LoanCategory
+  name               String
+  principal          Decimal                @db.Decimal(14, 2)
+  termMonths         Int?
+  installmentAmount  Decimal                @db.Decimal(14, 2)
+  deductionFrequency LoanDeductionFrequency @default(EVERY_CUTOFF)
+  startDate          DateTime
+  referenceNumber    String?
+  status             LoanStatus             @default(ACTIVE)
+  // Only meaningful for CASH_ADVANCE loans that went through PENDING_APPROVAL.
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  rejectionReason    String?
   // Denormalized running balance — always reconcilable/replayable by summing
   // LoanDeduction rows, which are the actual audit trail. This field is a
   // cache for fast reads, not the source of truth.
-  remainingBalance  Decimal      @db.Decimal(14, 2)
-  createdAt         DateTime     @default(now())
+  remainingBalance   Decimal                @db.Decimal(14, 2)
+  createdAt          DateTime               @default(now())
 
   company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)

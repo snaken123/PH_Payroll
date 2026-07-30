@@ -128,7 +128,13 @@ describe("computePayroll — loan deductions", () => {
       monthlyEquivalentCompensation: 17600,
       rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
       activeLoans: [
-        { id: "loan-1", description: "Cash advance", installmentAmount: 1000, remainingBalance: 3000 },
+        {
+          id: "loan-1",
+          description: "Cash advance",
+          installmentAmount: 1000,
+          remainingBalance: 3000,
+          deductionFrequency: "EVERY_CUTOFF",
+        },
       ],
     });
 
@@ -148,7 +154,13 @@ describe("computePayroll — loan deductions", () => {
       monthlyEquivalentCompensation: 17600,
       rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
       activeLoans: [
-        { id: "loan-1", description: "Company loan", installmentAmount: 5000, remainingBalance: 20000 },
+        {
+          id: "loan-1",
+          description: "Company loan",
+          installmentAmount: 5000,
+          remainingBalance: 20000,
+          deductionFrequency: "EVERY_CUTOFF",
+        },
       ],
     });
 

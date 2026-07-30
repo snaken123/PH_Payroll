@@ -168,6 +168,7 @@ export async function computeAndPersistPayrollRun({
         description: `${l.name} (${l.category.replaceAll("_", " ")})`,
         installmentAmount: l.installmentAmount.toString(),
         remainingBalance: l.remainingBalance.toString(),
+        deductionFrequency: l.deductionFrequency,
       }));
 
       const result = computePayroll({

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -44,7 +46,12 @@ export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
     formState: { errors },
   } = useForm<CompensationRecordFormValues, unknown, CompensationRecordInput>({
     resolver: zodResolver(compensationRecordSchema),
-    defaultValues: { payBasis: "MONTHLY_RATE" },
+    defaultValues: { payBasis: "MONTHLY_RATE", allowances: [] },
+  });
+
+  const { fields: allowanceFields, append: appendAllowance, remove: removeAllowance } = useFieldArray({
+    control,
+    name: "allowances",
   });
 
   async function onSubmit(values: CompensationRecordInput) {
@@ -122,6 +129,75 @@ export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
               <p className="text-sm text-destructive">{errors.standardWorkDaysPerMonth.message}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Allowances</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendAllowance({ label: "", amount: 0, isTaxable: true })}
+              >
+                <PlusIcon /> Add allowance
+              </Button>
+            </div>
+            {allowanceFields.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                e.g. Transportation, Rice, Mobile Phone — optional, added to gross pay each cutoff.
+              </p>
+            )}
+            {allowanceFields.map((field, index) => (
+              <div key={field.id} className="flex items-end gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor={`allowances.${index}.label`}>Label</Label>
+                  <Input
+                    id={`allowances.${index}.label`}
+                    placeholder="e.g. Transportation Allowance"
+                    {...register(`allowances.${index}.label` as const)}
+                  />
+                  {errors.allowances?.[index]?.label && (
+                    <p className="text-sm text-destructive">{errors.allowances[index]?.label?.message}</p>
+                  )}
+                </div>
+                <div className="w-28 space-y-1">
+                  <Label htmlFor={`allowances.${index}.amount`}>Amount (₱)</Label>
+                  <Input
+                    id={`allowances.${index}.amount`}
+                    type="number"
+                    step="0.01"
+                    {...register(`allowances.${index}.amount` as const)}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 pb-2">
+                  <Controller
+                    control={control}
+                    name={`allowances.${index}.isTaxable` as const}
+                    render={({ field: taxableField }) => (
+                      <Switch
+                        checked={taxableField.value}
+                        onCheckedChange={taxableField.onChange}
+                        id={`allowances.${index}.isTaxable`}
+                      />
+                    )}
+                  />
+                  <Label htmlFor={`allowances.${index}.isTaxable`} className="text-xs">
+                    Taxable
+                  </Label>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeAllowance(index)}
+                  aria-label="Remove allowance"
+                >
+                  <XIcon />
+                </Button>
+              </div>
+            ))}
+          </div>
+
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Save"}

@@ -87,6 +87,13 @@ export async function POST(request: Request) {
               basicRate: data.basicRate,
               standardWorkDaysPerMonth: data.standardWorkDaysPerMonth ?? null,
               createdByUserId: ctx.userId,
+              allowances: {
+                create: data.allowances.map((a) => ({
+                  label: a.label,
+                  amount: a.amount,
+                  isTaxable: a.isTaxable,
+                })),
+              },
             },
           },
         },
