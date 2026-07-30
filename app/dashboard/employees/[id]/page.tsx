@@ -25,7 +25,7 @@ export default async function EmployeeDetailPage({
   const employee = await prisma.employee.findUnique({
     where: { id },
     include: {
-      branch: true,
+      branch: { select: { name: true, region: true } },
       compensationRecords: { orderBy: { effectiveFrom: "desc" } },
       loans: { orderBy: { startDate: "desc" } },
       finalPayRuns: { orderBy: { finalPayNumber: "desc" } },

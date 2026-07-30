@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,23 +23,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  markSeparatedSchema,
+  separationCategoryValues,
+  type MarkSeparatedFormValues,
+  type MarkSeparatedInput,
+} from "@/lib/validations/employee";
 import { toast } from "sonner";
-
-const SEPARATION_CATEGORIES = [
-  "RESIGNATION",
-  "TERMINATION_FOR_CAUSE",
-  "AUTHORIZED_CAUSE_REDUNDANCY",
-  "AUTHORIZED_CAUSE_RETRENCHMENT",
-  "AUTHORIZED_CAUSE_DISEASE",
-  "RETIREMENT",
-  "DEATH",
-  "END_OF_CONTRACT",
-] as const;
 
 // EmploymentStatus has no generic "SEPARATED" value — map to the closest
 // legal-status bucket so existing employment-status-driven logic elsewhere
 // (e.g. active-employee filters) still treats this person as separated.
-const EMPLOYMENT_STATUS_BY_CATEGORY: Record<(typeof SEPARATION_CATEGORIES)[number], string> = {
+const EMPLOYMENT_STATUS_BY_CATEGORY: Record<(typeof separationCategoryValues)[number], string> = {
   RESIGNATION: "RESIGNED",
   TERMINATION_FOR_CAUSE: "TERMINATED",
   AUTHORIZED_CAUSE_REDUNDANCY: "TERMINATED",
@@ -49,22 +45,23 @@ const EMPLOYMENT_STATUS_BY_CATEGORY: Record<(typeof SEPARATION_CATEGORIES)[numbe
   END_OF_CONTRACT: "TERMINATED",
 };
 
-interface FormValues {
-  dateSeparated: string;
-  separationCategory: (typeof SEPARATION_CATEGORIES)[number];
-  separationReason: string;
-}
-
 export function MarkSeparatedDialog({ employeeId }: { employeeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, control, reset } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<MarkSeparatedFormValues, unknown, MarkSeparatedInput>({
+    resolver: zodResolver(markSeparatedSchema),
     defaultValues: { separationCategory: "RESIGNATION" },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: MarkSeparatedInput) {
     setSubmitting(true);
     const res = await fetch(`/api/employees/${employeeId}`, {
       method: "PATCH",
@@ -104,19 +101,20 @@ export function MarkSeparatedDialog({ employeeId }: { employeeId: string }) {
           <div className="space-y-1">
             <Label htmlFor="dateSeparated">Separation date</Label>
             <Input id="dateSeparated" type="date" required {...register("dateSeparated")} />
+            {errors.dateSeparated && <p className="text-sm text-destructive">{errors.dateSeparated.message}</p>}
           </div>
           <div className="space-y-1">
-            <Label>Separation category</Label>
+            <Label htmlFor="separationCategory">Separation category</Label>
             <Controller
               control={control}
               name="separationCategory"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id="separationCategory">
                     <SelectValue>{(value: string) => value.replaceAll("_", " ")}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {SEPARATION_CATEGORIES.map((v) => (
+                    {separationCategoryValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v.replaceAll("_", " ")}
                       </SelectItem>

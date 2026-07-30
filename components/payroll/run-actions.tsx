@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -20,6 +21,7 @@ export function RunActions({ runId, status }: { runId: string; status: string })
   const [busy, setBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voidOpen, setVoidOpen] = useState(false);
+  const [postOpen, setPostOpen] = useState(false);
 
   async function callAction(action: "approve" | "post" | "void", body?: unknown) {
     setBusy(true);
@@ -76,9 +78,29 @@ export function RunActions({ runId, status }: { runId: string; status: string })
 
   if (status === "APPROVED") {
     return (
-      <Button onClick={() => callAction("post")} disabled={busy}>
-        Post (final — locks this run)
-      </Button>
+      <Dialog open={postOpen} onOpenChange={setPostOpen}>
+        <DialogTrigger render={<Button disabled={busy} />}>Post (final — locks this run)</DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Post this payroll run?</DialogTitle>
+            <DialogDescription>
+              This locks the run and its payslips permanently — no further edits or voids will be possible.
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                callAction("post");
+                setPostOpen(false);
+              }}
+            >
+              {busy ? "Posting..." : "Post run"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 

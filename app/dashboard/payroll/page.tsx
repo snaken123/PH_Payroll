@@ -4,7 +4,9 @@ import { getTenantContext } from "@/lib/db/scoped";
 import { CreateRunDialog } from "@/components/payroll/create-run-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Pager } from "@/components/ui/pager";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parsePageParam, paginationMeta } from "@/lib/pagination";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   DRAFT: "secondary",
@@ -13,13 +15,24 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = 
   VOID: "destructive",
 };
 
-export default async function PayrollPage() {
+export default async function PayrollPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const ctx = await getTenantContext();
+  const page = parsePageParam((await searchParams).page);
+  const { skip, take, totalPages } = paginationMeta(
+    page,
+    await prisma.payrollRun.count({ where: { companyId: ctx.companyId } })
+  );
 
   const runs = await prisma.payrollRun.findMany({
     where: { companyId: ctx.companyId },
     include: { payrollPeriod: true, _count: { select: { payslips: true } } },
     orderBy: { runNumber: "desc" },
+    skip,
+    take,
   });
 
   return (
@@ -72,6 +85,7 @@ export default async function PayrollPage() {
               </TableBody>
             </Table>
           )}
+          <Pager page={page} totalPages={totalPages} basePath="/dashboard/payroll" />
         </CardContent>
       </Card>
     </div>

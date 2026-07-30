@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { mutationErrorResponse } from "@/lib/api-error";
 
 const APPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
 
@@ -30,10 +31,13 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     );
   }
 
-  const updated = await prisma.leaveRequest.update({
-    where: { id },
-    data: { status: "REJECTED" },
-  });
-
-  return NextResponse.json({ leaveRequest: updated });
+  try {
+    const updated = await prisma.leaveRequest.update({
+      where: { id },
+      data: { status: "REJECTED" },
+    });
+    return NextResponse.json({ leaveRequest: updated });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
 }

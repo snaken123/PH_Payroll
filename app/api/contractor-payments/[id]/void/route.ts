@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { mutationErrorResponse } from "@/lib/api-error";
 
 const VOID_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 const voidSchema = z.object({ reason: z.string().min(1, "A reason is required") });
@@ -34,15 +35,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: `Cannot void a payment in ${payment.status} status` }, { status: 409 });
   }
 
-  const updated = await prisma.contractorPayment.update({
-    where: { id },
-    data: {
-      status: "VOID",
-      voidedAt: new Date(),
-      voidedByUserId: ctx.userId,
-      voidReason: parsed.data.reason,
-    },
-  });
-
-  return NextResponse.json({ payment: updated });
+  try {
+    const updated = await prisma.contractorPayment.update({
+      where: { id },
+      data: {
+        status: "VOID",
+        voidedAt: new Date(),
+        voidedByUserId: ctx.userId,
+        voidReason: parsed.data.reason,
+      },
+    });
+    return NextResponse.json({ payment: updated });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
 }

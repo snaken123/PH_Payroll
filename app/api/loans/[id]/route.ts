@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole, LoanStatus } from "@/lib/generated/prisma/enums";
+import { updateLoanSchema } from "@/lib/validations/loan";
 
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
@@ -15,9 +16,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   const { id } = await context.params;
   const body = await request.json();
-
-  if (body.action !== "cancel") {
-    return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
+  const parsed = updateLoanSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const loan = await prisma.loan.findUnique({ where: { id } });

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,20 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { timesheetStatusValues, holidayTypeValues } from "@/lib/validations/attendance";
+import {
+  timesheetStatusValues,
+  holidayTypeValues,
+  timesheetFormSchema,
+  type TimesheetFormValues,
+  type TimesheetFormInput,
+} from "@/lib/validations/attendance";
 import { toast } from "sonner";
 
-export interface TimesheetFormValues {
-  status: (typeof timesheetStatusValues)[number];
-  scheduledHours: number;
-  lateMinutes: number;
-  undertimeMinutes: number;
-  regularHours: number;
-  overtimeHours: number;
-  nightDiffHours: number;
-  holidayType: (typeof holidayTypeValues)[number] | "";
-  isRestDay: boolean;
-}
+export type { TimesheetFormValues };
 
 export function EditTimesheetDialog({
   open,
@@ -51,11 +48,17 @@ export function EditTimesheetDialog({
   onSaved: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
-  const { register, handleSubmit, control } = useForm<TimesheetFormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<TimesheetFormValues, unknown, TimesheetFormInput>({
+    resolver: zodResolver(timesheetFormSchema),
     values: initialValues,
   });
 
-  async function onSubmit(values: TimesheetFormValues) {
+  async function onSubmit(values: TimesheetFormInput) {
     setSubmitting(true);
     const res = await fetch("/api/timesheets", {
       method: "POST",
@@ -88,13 +91,13 @@ export function EditTimesheetDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>Status</Label>
+            <Label htmlFor="status">Status</Label>
             <Controller
               control={control}
               name="status"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id="status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -109,13 +112,13 @@ export function EditTimesheetDialog({
             />
           </div>
           <div className="space-y-1">
-            <Label>Holiday type</Label>
+            <Label htmlFor="holidayType">Holiday type</Label>
             <Controller
               control={control}
               name="holidayType"
               render={({ field }) => (
                 <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="holidayType">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -133,26 +136,34 @@ export function EditTimesheetDialog({
           <div className="space-y-1">
             <Label htmlFor="regularHours">Regular hours</Label>
             <Input id="regularHours" type="number" step="0.25" {...register("regularHours")} />
+            {errors.regularHours && <p className="text-sm text-destructive">{errors.regularHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="overtimeHours">Overtime hours</Label>
             <Input id="overtimeHours" type="number" step="0.25" {...register("overtimeHours")} />
+            {errors.overtimeHours && <p className="text-sm text-destructive">{errors.overtimeHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="nightDiffHours">Night diff hours</Label>
             <Input id="nightDiffHours" type="number" step="0.25" {...register("nightDiffHours")} />
+            {errors.nightDiffHours && <p className="text-sm text-destructive">{errors.nightDiffHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="scheduledHours">Scheduled hours</Label>
             <Input id="scheduledHours" type="number" step="0.25" {...register("scheduledHours")} />
+            {errors.scheduledHours && <p className="text-sm text-destructive">{errors.scheduledHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="lateMinutes">Late minutes</Label>
             <Input id="lateMinutes" type="number" {...register("lateMinutes")} />
+            {errors.lateMinutes && <p className="text-sm text-destructive">{errors.lateMinutes.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="undertimeMinutes">Undertime minutes</Label>
             <Input id="undertimeMinutes" type="number" {...register("undertimeMinutes")} />
+            {errors.undertimeMinutes && (
+              <p className="text-sm text-destructive">{errors.undertimeMinutes.message}</p>
+            )}
           </div>
           <div className="flex items-center gap-2 self-end pb-2">
             <Controller

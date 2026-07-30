@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
-import { payBasisValues } from "@/lib/validations/employee";
-import { optionalCoercedNumber } from "@/lib/validations/shared";
+import { compensationRecordSchema } from "@/lib/validations/employee";
 
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
-
-const newCompensationSchema = z.object({
-  effectiveFrom: z.string().min(1, "Required"),
-  payBasis: z.enum(payBasisValues),
-  basicRate: z.coerce.number().positive("Must be greater than 0"),
-  standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
-});
 
 // Creates a new effective-dated compensation record and closes the
 // previously-open one. Compensation is never overwritten in place so that
@@ -38,7 +29,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const body = await request.json();
-  const parsed = newCompensationSchema.safeParse(body);
+  const parsed = compensationRecordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }

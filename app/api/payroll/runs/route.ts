@@ -22,6 +22,7 @@ export async function GET() {
       _count: { select: { payslips: true } },
     },
     orderBy: { runNumber: "desc" },
+    take: 200, // safety cap — this endpoint has no consumer yet; the dashboard page paginates its own query
   });
 
   return NextResponse.json({ runs });

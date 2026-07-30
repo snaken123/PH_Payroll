@@ -52,9 +52,9 @@ export function ReportsManager({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
-            <Label>Posted payroll run</Label>
+            <Label htmlFor="runId">Posted payroll run</Label>
             <Select value={runId} onValueChange={(v) => setRunId(v ?? "")}>
-              <SelectTrigger className="w-96">
+              <SelectTrigger id="runId" className="w-96">
                 <SelectValue placeholder="Select a posted run" />
               </SelectTrigger>
               <SelectContent>
@@ -106,12 +106,12 @@ export function ReportsManager({
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
-              <Label>Year</Label>
-              <Input className="w-28" value={year} onChange={(e) => setYear(e.target.value)} />
+              <Label htmlFor="year1601c">Year</Label>
+              <Input id="year1601c" className="w-28" value={year} onChange={(e) => setYear(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Month</Label>
-              <Input className="w-20" value={month} onChange={(e) => setMonth(e.target.value)} />
+              <Label htmlFor="month1601c">Month</Label>
+              <Input id="month1601c" className="w-20" value={month} onChange={(e) => setMonth(e.target.value)} />
             </div>
             <Button
               variant="outline"
@@ -130,8 +130,13 @@ export function ReportsManager({
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
-              <Label>Year</Label>
-              <Input className="w-28" value={annualYear} onChange={(e) => setAnnualYear(e.target.value)} />
+              <Label htmlFor="annualYearThirteenthMonth">Year</Label>
+              <Input
+                id="annualYearThirteenthMonth"
+                className="w-28"
+                value={annualYear}
+                onChange={(e) => setAnnualYear(e.target.value)}
+              />
             </div>
             <Button
               variant="outline"
@@ -143,9 +148,9 @@ export function ReportsManager({
 
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
-              <Label>Employee</Label>
+              <Label htmlFor="employeeId2316">Employee</Label>
               <Select value={employeeId} onValueChange={(v) => setEmployeeId(v ?? "")}>
-                <SelectTrigger className="w-64">
+                <SelectTrigger id="employeeId2316" className="w-64">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,8 +163,13 @@ export function ReportsManager({
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Year</Label>
-              <Input className="w-28" value={annualYear} onChange={(e) => setAnnualYear(e.target.value)} />
+              <Label htmlFor="annualYear2316">Year</Label>
+              <Input
+                id="annualYear2316"
+                className="w-28"
+                value={annualYear}
+                onChange={(e) => setAnnualYear(e.target.value)}
+              />
             </div>
             <Button
               variant="outline"
