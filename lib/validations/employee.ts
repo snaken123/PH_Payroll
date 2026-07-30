@@ -13,6 +13,14 @@ export const civilStatusValues = ["SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "
 
 export const payBasisValues = ["MONTHLY_RATE", "DAILY_RATE", "HOURLY_RATE"] as const;
 
+export const allowanceSchema = z.object({
+  label: z.string().min(1, "Required"),
+  amount: z.coerce.number().nonnegative("Must be 0 or greater"),
+  isTaxable: z.boolean().default(true),
+});
+export type AllowanceFormValues = z.input<typeof allowanceSchema>;
+export type AllowanceInput = z.output<typeof allowanceSchema>;
+
 export const createEmployeeSchema = z.object({
   branchId: z.string().min(1, "Select a branch"),
   employeeNumber: z.string().min(1, "Required"),
@@ -34,6 +42,7 @@ export const createEmployeeSchema = z.object({
   payBasis: z.enum(payBasisValues),
   basicRate: z.coerce.number().positive("Must be greater than 0"),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
+  allowances: z.array(allowanceSchema).default([]),
 });
 
 // z.input is the raw (pre-coercion) shape react-hook-form's state holds;
@@ -69,6 +78,7 @@ export const compensationRecordSchema = z.object({
   payBasis: z.enum(payBasisValues),
   basicRate: z.coerce.number().positive("Must be greater than 0"),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
+  allowances: z.array(allowanceSchema).default([]),
 });
 export type CompensationRecordFormValues = z.input<typeof compensationRecordSchema>;
 export type CompensationRecordInput = z.output<typeof compensationRecordSchema>;

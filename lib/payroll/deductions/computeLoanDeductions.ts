@@ -1,10 +1,13 @@
 import { Decimal } from "decimal.js";
 
+export type LoanDeductionFrequency = "EVERY_CUTOFF" | "MONTHLY";
+
 export interface ActiveLoanInput {
   id: string;
   description: string;
   installmentAmount: Decimal.Value;
   remainingBalance: Decimal.Value;
+  deductionFrequency: LoanDeductionFrequency;
 }
 
 export interface LoanDeductionResult {
@@ -23,16 +26,23 @@ export interface LoanDeductionResult {
  * later loans in the list are simply skipped this cutoff rather than
  * partially deducted, so partial deductions only ever happen at a loan's
  * own payoff boundary.
+ *
+ * `isMonthlyDeductionCutoff` reuses the same "second cutoff of the month"
+ * signal the payroll engine already computes for SSS/PhilHealth/Pag-IBIG
+ * (isStatutoryDeductionCutoff) — a MONTHLY-frequency loan only deducts on
+ * that cutoff; EVERY_CUTOFF loans are unaffected by this flag.
  */
 export function computeLoanDeductions(
   loans: ActiveLoanInput[],
-  availableForDeductions: Decimal.Value
+  availableForDeductions: Decimal.Value,
+  isMonthlyDeductionCutoff: boolean
 ): LoanDeductionResult[] {
   let remaining = new Decimal(availableForDeductions);
   const results: LoanDeductionResult[] = [];
 
   for (const loan of loans) {
     if (remaining.lte(0)) break;
+    if (loan.deductionFrequency === "MONTHLY" && !isMonthlyDeductionCutoff) continue;
 
     const balance = new Decimal(loan.remainingBalance);
     if (balance.lte(0)) continue;

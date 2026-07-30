@@ -9,6 +9,8 @@ export const loanCategoryValues = [
   "OTHER",
 ] as const;
 
+export const loanDeductionFrequencyValues = ["EVERY_CUTOFF", "MONTHLY"] as const;
+
 export const createLoanSchema = z.object({
   employeeId: z.string().min(1),
   category: z.enum(loanCategoryValues),
@@ -16,6 +18,7 @@ export const createLoanSchema = z.object({
   principal: z.coerce.number().positive("Must be greater than 0"),
   termMonths: optionalCoercedNumber(z.coerce.number().int().positive()),
   installmentAmount: z.coerce.number().positive("Must be greater than 0"),
+  deductionFrequency: z.enum(loanDeductionFrequencyValues).default("EVERY_CUTOFF"),
   startDate: z.string().min(1, "Required"),
   referenceNumber: z.string().optional(),
 });
@@ -24,4 +27,8 @@ export type CreateLoanInput = z.output<typeof createLoanSchema>;
 
 export const updateLoanSchema = z.object({
   action: z.literal("cancel"),
+});
+
+export const rejectLoanSchema = z.object({
+  reason: z.string().min(1, "A reason is required"),
 });

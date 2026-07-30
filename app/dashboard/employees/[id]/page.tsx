@@ -9,10 +9,19 @@ import { Button } from "@/components/ui/button";
 import { AddCompensationDialog } from "@/components/employees/add-compensation-dialog";
 import { CreateLoanDialog } from "@/components/loans/create-loan-dialog";
 import { CancelLoanButton } from "@/components/loans/cancel-loan-button";
+import { LoanApprovalActions } from "@/components/loans/loan-approval-actions";
 import { MarkSeparatedDialog } from "@/components/employees/mark-separated-dialog";
 import { ClearanceToggle, ComputeFinalPayButton } from "@/components/employees/separation-panel";
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
 import type { PayBasis } from "@/lib/payroll/types";
+
+const LOAN_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
+  PENDING_APPROVAL: "secondary",
+  ACTIVE: "default",
+  COMPLETED: "secondary",
+  CANCELLED: "destructive",
+  REJECTED: "destructive",
+};
 
 export default async function EmployeeDetailPage({
   params,
@@ -26,7 +35,7 @@ export default async function EmployeeDetailPage({
     where: { id },
     include: {
       branch: { select: { name: true, region: true } },
-      compensationRecords: { orderBy: { effectiveFrom: "desc" } },
+      compensationRecords: { orderBy: { effectiveFrom: "desc" }, include: { allowances: true } },
       loans: { orderBy: { startDate: "desc" } },
       finalPayRuns: { orderBy: { finalPayNumber: "desc" } },
     },
@@ -164,6 +173,7 @@ export default async function EmployeeDetailPage({
                 <TableHead>Effective to</TableHead>
                 <TableHead>Pay basis</TableHead>
                 <TableHead>Basic rate</TableHead>
+                <TableHead>Allowances</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -173,6 +183,13 @@ export default async function EmployeeDetailPage({
                   <TableCell>{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current"}</TableCell>
                   <TableCell>{c.payBasis.replaceAll("_", " ")}</TableCell>
                   <TableCell>₱{Number(c.basicRate).toLocaleString()}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {c.allowances.length === 0
+                      ? "—"
+                      : c.allowances
+                          .map((a) => `${a.label} (₱${Number(a.amount).toLocaleString()}${a.isTaxable ? "" : ", non-taxable"})`)
+                          .join(", ")}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -196,6 +213,7 @@ export default async function EmployeeDetailPage({
                   <TableHead>Category</TableHead>
                   <TableHead>Principal</TableHead>
                   <TableHead>Installment</TableHead>
+                  <TableHead>Frequency</TableHead>
                   <TableHead>Remaining</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
@@ -208,11 +226,20 @@ export default async function EmployeeDetailPage({
                     <TableCell>{l.category.replaceAll("_", " ")}</TableCell>
                     <TableCell>₱{Number(l.principal).toLocaleString()}</TableCell>
                     <TableCell>₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
+                    <TableCell>{l.deductionFrequency === "MONTHLY" ? "Monthly" : "Every cutoff"}</TableCell>
                     <TableCell>₱{Number(l.remainingBalance).toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge variant={l.status === "ACTIVE" ? "default" : "secondary"}>{l.status}</Badge>
+                      <Badge variant={LOAN_STATUS_VARIANT[l.status] ?? "secondary"}>
+                        {l.status.replaceAll("_", " ")}
+                      </Badge>
+                      {l.status === "REJECTED" && l.rejectionReason && (
+                        <p className="mt-1 text-xs text-muted-foreground">{l.rejectionReason}</p>
+                      )}
                     </TableCell>
-                    <TableCell>{l.status === "ACTIVE" && <CancelLoanButton loanId={l.id} />}</TableCell>
+                    <TableCell>
+                      {l.status === "ACTIVE" && <CancelLoanButton loanId={l.id} />}
+                      {l.status === "PENDING_APPROVAL" && <LoanApprovalActions loanId={l.id} />}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

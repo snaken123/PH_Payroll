@@ -292,7 +292,11 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   // 5. Loans/cash advances — never exceed gross minus statutory deductions,
   // so net pay can't go negative from a loan installment.
   const availableForLoans = grossPay.minus(totalStatutoryDeductions);
-  const loanDeductions = computeLoanDeductions(input.activeLoans ?? [], availableForLoans);
+  const loanDeductions = computeLoanDeductions(
+    input.activeLoans ?? [],
+    availableForLoans,
+    input.isStatutoryDeductionCutoff
+  );
   for (const ld of loanDeductions) {
     lineItems.push({
       category: "LOAN_DEDUCTION",

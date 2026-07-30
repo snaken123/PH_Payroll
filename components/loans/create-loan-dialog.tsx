@@ -9,6 +9,7 @@ import {
   type CreateLoanFormValues,
   type CreateLoanInput,
   loanCategoryValues,
+  loanDeductionFrequencyValues,
 } from "@/lib/validations/loan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +41,14 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CreateLoanFormValues, unknown, CreateLoanInput>({
     resolver: zodResolver(createLoanSchema),
-    defaultValues: { employeeId, category: "CASH_ADVANCE" },
+    defaultValues: { employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF" },
   });
+
+  const category = watch("category");
 
   async function onSubmit(values: CreateLoanInput) {
     setSubmitting(true);
@@ -64,8 +68,8 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
       return;
     }
 
-    toast.success("Loan added");
-    reset({ employeeId, category: "CASH_ADVANCE" });
+    toast.success(values.category === "CASH_ADVANCE" ? "Cash advance request submitted for approval" : "Loan added");
+    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF" });
     setOpen(false);
     router.refresh();
   }
@@ -99,6 +103,11 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
                 </Select>
               )}
             />
+            {category === "CASH_ADVANCE" && (
+              <p className="text-sm text-muted-foreground">
+                Cash advances start as a pending request and require manager approval before any deduction happens.
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
@@ -116,6 +125,27 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
             {errors.installmentAmount && (
               <p className="text-sm text-destructive">{errors.installmentAmount.message}</p>
             )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="deductionFrequency">Deduction frequency</Label>
+            <Controller
+              control={control}
+              name="deductionFrequency"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="deductionFrequency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loanDeductionFrequencyValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v === "EVERY_CUTOFF" ? "Every cutoff (twice a month)" : "Monthly (second cutoff only)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="termMonths">Term (months, optional)</Label>
