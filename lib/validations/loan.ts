@@ -21,3 +21,7 @@ export const createLoanSchema = z.object({
 });
 export type CreateLoanFormValues = z.input<typeof createLoanSchema>;
 export type CreateLoanInput = z.output<typeof createLoanSchema>;
+
+export const updateLoanSchema = z.object({
+  action: z.literal("cancel"),
+});

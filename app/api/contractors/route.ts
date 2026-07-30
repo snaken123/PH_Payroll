@@ -18,6 +18,7 @@ export async function GET() {
   const contractors = await prisma.contractor.findMany({
     where: withCompanyScope(ctx.companyId),
     orderBy: { name: "asc" },
+    take: 200, // safety cap — this endpoint has no consumer yet; the dashboard page paginates its own query
   });
 
   return NextResponse.json({ contractors });

@@ -3,11 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export function CancelLoanButton({ loanId }: { loanId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
 
   async function cancel() {
     setBusy(true);
@@ -25,12 +35,26 @@ export function CancelLoanButton({ loanId }: { loanId: string }) {
     }
 
     toast.success("Loan cancelled");
+    setOpen(false);
     router.refresh();
   }
 
   return (
-    <Button variant="ghost" size="sm" onClick={cancel} disabled={busy}>
-      Cancel
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="ghost" size="sm" />}>Cancel</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancel this loan?</DialogTitle>
+          <DialogDescription>
+            This stops future deductions for this loan. This cannot be undone from here.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="destructive" onClick={cancel} disabled={busy}>
+            {busy ? "Cancelling..." : "Cancel loan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

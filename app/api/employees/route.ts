@@ -25,6 +25,7 @@ export async function GET() {
       },
     },
     orderBy: { createdAt: "desc" },
+    take: 200, // safety cap — this endpoint has no consumer yet; the dashboard page paginates its own query
   });
 
   return NextResponse.json({ employees });

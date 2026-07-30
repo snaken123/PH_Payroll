@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { mutationErrorResponse } from "@/lib/api-error";
 
 // Segregation of duties: the person who computed a run isn't required to be
 // an APPROVER, but approving requires that role (or ownership) — same rule
@@ -30,10 +31,13 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: `Cannot approve a run in ${run.status} status` }, { status: 409 });
   }
 
-  const updated = await prisma.finalPayRun.update({
-    where: { id },
-    data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
-  });
-
-  return NextResponse.json({ run: updated });
+  try {
+    const updated = await prisma.finalPayRun.update({
+      where: { id },
+      data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
+    });
+    return NextResponse.json({ run: updated });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
 }

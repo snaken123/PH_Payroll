@@ -4,19 +4,46 @@ import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { CreateEmployeeDialog } from "@/components/employees/create-employee-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Pager } from "@/components/ui/pager";
+import { SearchForm } from "@/components/ui/search-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parsePageParam, paginationMeta } from "@/lib/pagination";
 
-export default async function EmployeesPage() {
+export default async function EmployeesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const ctx = await getTenantContext();
+  const { page: pageParam, q } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const search = q?.trim() || undefined;
+
+  const where = withCompanyScope(
+    ctx.companyId,
+    search
+      ? {
+          OR: [
+            { firstName: { contains: search, mode: "insensitive" as const } },
+            { lastName: { contains: search, mode: "insensitive" as const } },
+            { employeeNumber: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}
+  );
+
+  const { skip, take, totalPages } = paginationMeta(page, await prisma.employee.count({ where }));
 
   const [employees, branches] = await Promise.all([
     prisma.employee.findMany({
-      where: withCompanyScope(ctx.companyId),
+      where,
       include: {
         branch: { select: { name: true } },
         compensationRecords: { where: { effectiveTo: null }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
+      skip,
+      take,
     }),
     prisma.companyBranch.findMany({
       where: withCompanyScope(ctx.companyId),
@@ -33,12 +60,15 @@ export default async function EmployeesPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Roster</CardTitle>
+          <SearchForm action="/dashboard/employees" placeholder="Search name or employee #…" defaultValue={search} />
         </CardHeader>
         <CardContent>
           {employees.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No employees yet.</p>
+            <p className="text-sm text-muted-foreground">
+              {search ? `No employees match "${search}".` : "No employees yet."}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -79,6 +109,7 @@ export default async function EmployeesPage() {
               </TableBody>
             </Table>
           )}
+          <Pager page={page} totalPages={totalPages} basePath="/dashboard/employees" query={{ q: search }} />
         </CardContent>
       </Card>
     </div>

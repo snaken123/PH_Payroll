@@ -26,6 +26,7 @@ export function ClearanceToggle({ employeeId, clearanceCompleted }: { employeeId
       return;
     }
 
+    toast.success(checked ? "Clearance marked complete" : "Clearance marked incomplete");
     router.refresh();
   }
 

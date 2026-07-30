@@ -131,6 +131,10 @@ export async function computeAndPersistPayrollRun({
       },
     });
 
+    // Pure computation pass — no DB calls — so the DB writes below can be batched
+    // instead of awaited one employee at a time inside the open transaction.
+    const computed: { employeeId: string; result: ReturnType<typeof computePayroll> }[] = [];
+
     for (const emp of employees) {
       const comp = emp.compensationRecords[0];
       if (!comp) continue; // no active compensation record as of this cutoff — skip
@@ -179,51 +183,67 @@ export async function computeAndPersistPayrollRun({
         activeLoans,
       });
 
-      const grossPay = result.grossPay;
-      const netPay = result.netPay;
+      computed.push({ employeeId: emp.id, result });
+    }
 
-      await tx.payslip.create({
-        data: {
+    if (computed.length > 0) {
+      const createdPayslips = await tx.payslip.createManyAndReturn({
+        data: computed.map(({ employeeId, result }) => ({
           payrollRunId: run.id,
-          employeeId: emp.id,
+          employeeId,
           companyId,
-          grossPay: grossPay.toFixed(2),
+          grossPay: result.grossPay.toFixed(2),
           totalStatutoryDeductions: result.totalStatutoryDeductions.toFixed(2),
           totalOtherDeductions: result.totalOtherDeductions.toFixed(2),
-          netPay: netPay.toFixed(2),
-          lineItems: {
-            create: result.lineItems.map((li) => ({
-              category: li.category,
-              direction: li.direction,
-              description: li.description,
-              amount: li.amount.toFixed(2),
-              quantity: li.quantity ? li.quantity.toFixed(2) : null,
-              sourceRef: li.loanId ? { loanId: li.loanId } : undefined,
-            })),
-          },
-        },
+          netPay: result.netPay.toFixed(2),
+        })),
+        select: { id: true, employeeId: true },
       });
+      const payslipIdByEmployeeId = new Map(createdPayslips.map((p) => [p.employeeId, p.id]));
+
+      const lineItemsData = computed.flatMap(({ employeeId, result }) => {
+        const payslipId = payslipIdByEmployeeId.get(employeeId);
+        if (!payslipId) throw new PayrollRunError(`Payslip was not created for employee ${employeeId}`);
+        return result.lineItems.map((li) => ({
+          payslipId,
+          category: li.category,
+          direction: li.direction,
+          description: li.description,
+          amount: li.amount.toFixed(2),
+          quantity: li.quantity ? li.quantity.toFixed(2) : null,
+          sourceRef: li.loanId ? { loanId: li.loanId } : undefined,
+        }));
+      });
+      if (lineItemsData.length > 0) {
+        await tx.payrollLineItem.createMany({ data: lineItemsData });
+      }
 
       // Persist the loan audit trail and update each loan's cached balance —
       // LoanDeduction rows are the source of truth; Loan.remainingBalance is
       // always reconcilable by replaying them.
-      for (const ld of result.loanDeductions) {
-        await tx.loanDeduction.create({
-          data: {
+      const allLoanDeductions = computed.flatMap(({ result }) => result.loanDeductions);
+      if (allLoanDeductions.length > 0) {
+        await tx.loanDeduction.createMany({
+          data: allLoanDeductions.map((ld) => ({
             loanId: ld.loanId,
             payrollRunId: run.id,
             cutoffDate: cutoffEnd,
             amountDeducted: ld.amountDeducted.toFixed(2),
             balanceAfter: ld.balanceAfter.toFixed(2),
-          },
+          })),
         });
-        await tx.loan.update({
-          where: { id: ld.loanId },
-          data: {
-            remainingBalance: ld.balanceAfter.toFixed(2),
-            status: ld.balanceAfter.lte(0) ? LoanStatus.COMPLETED : LoanStatus.ACTIVE,
-          },
-        });
+
+        await Promise.all(
+          allLoanDeductions.map((ld) =>
+            tx.loan.update({
+              where: { id: ld.loanId },
+              data: {
+                remainingBalance: ld.balanceAfter.toFixed(2),
+                status: ld.balanceAfter.lte(0) ? LoanStatus.COMPLETED : LoanStatus.ACTIVE,
+              },
+            })
+          )
+        );
       }
     }
 

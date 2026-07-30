@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,26 +23,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { payBasisValues } from "@/lib/validations/employee";
+import {
+  compensationRecordSchema,
+  payBasisValues,
+  type CompensationRecordFormValues,
+  type CompensationRecordInput,
+} from "@/lib/validations/employee";
 import { toast } from "sonner";
-
-interface FormValues {
-  effectiveFrom: string;
-  payBasis: (typeof payBasisValues)[number];
-  basicRate: string;
-  standardWorkDaysPerMonth: string;
-}
 
 export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, control, reset } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<CompensationRecordFormValues, unknown, CompensationRecordInput>({
+    resolver: zodResolver(compensationRecordSchema),
     defaultValues: { payBasis: "MONTHLY_RATE" },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: CompensationRecordInput) {
     setSubmitting(true);
     const res = await fetch(`/api/employees/${employeeId}/compensation`, {
       method: "POST",
@@ -76,15 +82,16 @@ export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
           <div className="space-y-1">
             <Label htmlFor="effectiveFrom">Effective from</Label>
             <Input id="effectiveFrom" type="date" required {...register("effectiveFrom")} />
+            {errors.effectiveFrom && <p className="text-sm text-destructive">{errors.effectiveFrom.message}</p>}
           </div>
           <div className="space-y-1">
-            <Label>Pay basis</Label>
+            <Label htmlFor="payBasis">Pay basis</Label>
             <Controller
               control={control}
               name="payBasis"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id="payBasis">
                     <SelectValue>{(value: string) => value.replaceAll("_", " ")}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -101,6 +108,7 @@ export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
           <div className="space-y-1">
             <Label htmlFor="basicRate">Basic rate (₱)</Label>
             <Input id="basicRate" type="number" step="0.01" required {...register("basicRate")} />
+            {errors.basicRate && <p className="text-sm text-destructive">{errors.basicRate.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="standardWorkDaysPerMonth">Standard work days/month divisor (optional)</Label>
@@ -110,6 +118,9 @@ export function AddCompensationDialog({ employeeId }: { employeeId: string }) {
               step="0.01"
               {...register("standardWorkDaysPerMonth")}
             />
+            {errors.standardWorkDaysPerMonth && (
+              <p className="text-sm text-destructive">{errors.standardWorkDaysPerMonth.message}</p>
+            )}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

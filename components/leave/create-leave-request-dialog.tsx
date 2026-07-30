@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,18 +21,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { createLeaveRequestSchema, type CreateLeaveRequestInput } from "@/lib/validations/leave";
 import { toast } from "sonner";
 
 interface LeaveTypeOption {
   id: string;
   name: string;
-}
-
-interface FormValues {
-  leaveTypeId: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
 }
 
 export function CreateLeaveRequestDialog({
@@ -46,16 +41,23 @@ export function CreateLeaveRequestDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, control, reset } = useForm<FormValues>({
-    defaultValues: { leaveTypeId: leaveTypes[0]?.id },
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<CreateLeaveRequestInput>({
+    resolver: zodResolver(createLeaveRequestSchema),
+    defaultValues: { employeeId, leaveTypeId: leaveTypes[0]?.id },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: CreateLeaveRequestInput) {
     setSubmitting(true);
     const res = await fetch("/api/leave/requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId, ...values }),
+      body: JSON.stringify(values),
     });
     setSubmitting(false);
 
@@ -79,14 +81,15 @@ export function CreateLeaveRequestDialog({
           <DialogTitle>File leave request</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <input type="hidden" {...register("employeeId")} />
           <div className="space-y-1">
-            <Label>Leave type</Label>
+            <Label htmlFor="leaveTypeId">Leave type</Label>
             <Controller
               control={control}
               name="leaveTypeId"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id="leaveTypeId">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -103,10 +106,12 @@ export function CreateLeaveRequestDialog({
           <div className="space-y-1">
             <Label htmlFor="startDate">Start date</Label>
             <Input id="startDate" type="date" required {...register("startDate")} />
+            {errors.startDate && <p className="text-sm text-destructive">{errors.startDate.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="endDate">End date</Label>
             <Input id="endDate" type="date" required {...register("endDate")} />
+            {errors.endDate && <p className="text-sm text-destructive">{errors.endDate.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="reason">Reason (optional)</Label>

@@ -78,13 +78,13 @@ export function CreateHolidayDialog() {
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-1">
-            <Label>Type</Label>
+            <Label htmlFor="holidayType">Type</Label>
             <Controller
               control={control}
               name="holidayType"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id="holidayType">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { mutationErrorResponse } from "@/lib/api-error";
 
 const APPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
 
@@ -34,49 +35,69 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.leaveRequest.update({
-      where: { id },
-      data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
-    });
+  // Build the workday list first (pure computation), then batch the reads/writes
+  // below instead of upserting one row per calendar day inside the transaction.
+  const workDates: Date[] = [];
+  for (
+    let d = new Date(leaveRequest.startDate);
+    d <= leaveRequest.endDate;
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    if (d.getUTCDay() === 0) continue; // Sunday — not a workday, nothing to mark
+    workDates.push(new Date(d));
+  }
+  const regularHoursIfLeave = leaveRequest.leaveType.isPaid ? 8 : 0;
 
-    await tx.leaveBalance.updateMany({
-      where: {
-        employeeId: leaveRequest.employeeId,
-        leaveTypeId: leaveRequest.leaveTypeId,
-        year: leaveRequest.startDate.getFullYear(),
-      },
-      data: { usedDays: { increment: leaveRequest.daysCount.toNumber() } },
-    });
-
-    for (
-      let d = new Date(leaveRequest.startDate);
-      d <= leaveRequest.endDate;
-      d.setUTCDate(d.getUTCDate() + 1)
-    ) {
-      if (d.getUTCDay() === 0) continue; // Sunday — not a workday, nothing to mark
-
-      const workDate = new Date(d);
-      await tx.timesheetEntry.upsert({
-        where: { employeeId_workDate: { employeeId: leaveRequest.employeeId, workDate } },
-        update: {
-          status: "LEAVE",
-          regularHours: leaveRequest.leaveType.isPaid ? 8 : 0,
-          holidayType: null,
-          isRestDay: false,
-        },
-        create: {
-          companyId: ctx.companyId,
-          employeeId: leaveRequest.employeeId,
-          workDate,
-          status: "LEAVE",
-          scheduledHours: 8,
-          regularHours: leaveRequest.leaveType.isPaid ? 8 : 0,
-          source: "MANUAL",
-        },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.leaveRequest.update({
+        where: { id },
+        data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
       });
-    }
-  });
 
-  return NextResponse.json({ success: true });
+      await tx.leaveBalance.updateMany({
+        where: {
+          employeeId: leaveRequest.employeeId,
+          leaveTypeId: leaveRequest.leaveTypeId,
+          year: leaveRequest.startDate.getFullYear(),
+        },
+        data: { usedDays: { increment: leaveRequest.daysCount.toNumber() } },
+      });
+
+      if (workDates.length > 0) {
+        const existingEntries = await tx.timesheetEntry.findMany({
+          where: { employeeId: leaveRequest.employeeId, workDate: { in: workDates } },
+          select: { workDate: true },
+        });
+        const existingDates = new Set(existingEntries.map((e) => e.workDate.getTime()));
+        const datesToCreate = workDates.filter((d) => !existingDates.has(d.getTime()));
+        const datesToUpdate = workDates.filter((d) => existingDates.has(d.getTime()));
+
+        if (datesToCreate.length > 0) {
+          await tx.timesheetEntry.createMany({
+            data: datesToCreate.map((workDate) => ({
+              companyId: ctx.companyId,
+              employeeId: leaveRequest.employeeId,
+              workDate,
+              status: "LEAVE",
+              scheduledHours: 8,
+              regularHours: regularHoursIfLeave,
+              source: "MANUAL",
+            })),
+          });
+        }
+
+        if (datesToUpdate.length > 0) {
+          await tx.timesheetEntry.updateMany({
+            where: { employeeId: leaveRequest.employeeId, workDate: { in: datesToUpdate } },
+            data: { status: "LEAVE", regularHours: regularHoursIfLeave, holidayType: null, isRestDay: false },
+          });
+        }
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
 }

@@ -69,14 +69,17 @@ export async function getPayslipReportData(
   companyId: string,
   payslipId: string
 ): Promise<PayslipDocumentData> {
-  const payslip = await prisma.payslip.findUnique({
-    where: { id: payslipId },
-    include: {
-      employee: { select: { employeeNumber: true, firstName: true, lastName: true, positionTitle: true } },
-      payrollRun: { include: { payrollPeriod: true } },
-      lineItems: true,
-    },
-  });
+  const [payslip, company] = await Promise.all([
+    prisma.payslip.findUnique({
+      where: { id: payslipId },
+      include: {
+        employee: { select: { employeeNumber: true, firstName: true, lastName: true, positionTitle: true } },
+        payrollRun: { include: { payrollPeriod: true } },
+        lineItems: true,
+      },
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
 
   if (!payslip || payslip.companyId !== companyId) {
     throw new ReportNotAvailableError("Payslip not found");
@@ -84,8 +87,6 @@ export async function getPayslipReportData(
   if (payslip.payrollRun.status !== "POSTED") {
     throw new ReportNotAvailableError("Payslip is only available once its payroll run is posted");
   }
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   return {
     company: {
@@ -120,16 +121,19 @@ export async function getPayrollRegisterData(
   companyId: string,
   runId: string
 ): Promise<PayrollRegisterDocumentData> {
-  const run = await prisma.payrollRun.findUnique({
-    where: { id: runId },
-    include: {
-      payrollPeriod: true,
-      payslips: {
-        include: { employee: { select: { employeeNumber: true, firstName: true, lastName: true } } },
-        orderBy: { employee: { lastName: "asc" } },
+  const [run, company] = await Promise.all([
+    prisma.payrollRun.findUnique({
+      where: { id: runId },
+      include: {
+        payrollPeriod: true,
+        payslips: {
+          include: { employee: { select: { employeeNumber: true, firstName: true, lastName: true } } },
+          orderBy: { employee: { lastName: "asc" } },
+        },
       },
-    },
-  });
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
 
   if (!run || run.companyId !== companyId) {
     throw new ReportNotAvailableError("Payroll run not found");
@@ -137,8 +141,6 @@ export async function getPayrollRegisterData(
   if (run.status !== "POSTED") {
     throw new ReportNotAvailableError("Payroll register is only available once the run is posted");
   }
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   const rows: PayrollRegisterRow[] = run.payslips.map((p) => ({
     employeeNumber: p.employee.employeeNumber,
@@ -169,20 +171,21 @@ export async function getForm1601CData(
   const monthStart = new Date(Date.UTC(year, month - 1, 1));
   const monthEnd = new Date(Date.UTC(year, month, 0));
 
-  const periods = await prisma.payrollPeriod.findMany({
-    where: { companyId, cutoffStart: { gte: monthStart, lte: monthEnd } },
-    include: {
-      runs: {
-        where: { status: "POSTED" },
-        include: { payslips: { include: { lineItems: true } } },
-        orderBy: { runNumber: "desc" },
-        take: 1,
+  const [periods, company] = await Promise.all([
+    prisma.payrollPeriod.findMany({
+      where: { companyId, cutoffStart: { gte: monthStart, lte: monthEnd } },
+      include: {
+        runs: {
+          where: { status: "POSTED" },
+          include: { payslips: { include: { lineItems: true } } },
+          orderBy: { runNumber: "desc" },
+          take: 1,
+        },
       },
-    },
-    orderBy: { cutoffStart: "asc" },
-  });
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+      orderBy: { cutoffStart: "asc" },
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
 
   const cutoffs: Form1601CCutoffRow[] = [];
   let totalTaxWithheld = 0;
@@ -225,29 +228,29 @@ export async function getThirteenthMonthReportData(
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-  const config = await prisma.thirteenthMonthConfig.findFirst({
-    where: { effectiveFrom: { lte: yearEnd }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }] },
-    orderBy: { effectiveFrom: "desc" },
-  });
-  const exemptionCeiling = config?.exemptionCeiling.toString() ?? "90000";
-
-  const employees = await prisma.employee.findMany({
-    where: { companyId },
-    include: {
-      payslips: {
-        where: {
-          payrollRun: {
-            status: "POSTED",
-            payrollPeriod: { cutoffStart: { gte: yearStart, lte: yearEnd } },
+  const [config, employees, company] = await Promise.all([
+    prisma.thirteenthMonthConfig.findFirst({
+      where: { effectiveFrom: { lte: yearEnd }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }] },
+      orderBy: { effectiveFrom: "desc" },
+    }),
+    prisma.employee.findMany({
+      where: { companyId },
+      include: {
+        payslips: {
+          where: {
+            payrollRun: {
+              status: "POSTED",
+              payrollPeriod: { cutoffStart: { gte: yearStart, lte: yearEnd } },
+            },
           },
+          include: { lineItems: { where: { category: "BASIC_PAY" } } },
         },
-        include: { lineItems: { where: { category: "BASIC_PAY" } } },
       },
-    },
-    orderBy: { lastName: "asc" },
-  });
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+      orderBy: { lastName: "asc" },
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
+  const exemptionCeiling = config?.exemptionCeiling.toString() ?? "90000";
 
   const rows: ThirteenthMonthRow[] = employees
     .map((emp) => {
@@ -285,31 +288,32 @@ export async function getForm2316Data(
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-  const employee = await prisma.employee.findFirst({
-    where: { id: employeeId, companyId },
-    include: {
-      payslips: {
-        where: {
-          payrollRun: {
-            status: "POSTED",
-            payrollPeriod: { cutoffStart: { gte: yearStart, lte: yearEnd } },
+  const [employee, company, annualBrackets] = await Promise.all([
+    prisma.employee.findFirst({
+      where: { id: employeeId, companyId },
+      include: {
+        payslips: {
+          where: {
+            payrollRun: {
+              status: "POSTED",
+              payrollPeriod: { cutoffStart: { gte: yearStart, lte: yearEnd } },
+            },
           },
+          include: { lineItems: true },
         },
-        include: { lineItems: true },
       },
-    },
-  });
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+    prisma.birWithholdingBracket.findMany({
+      where: {
+        payPeriodType: "ANNUAL",
+        effectiveFrom: { lte: yearEnd },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
+      },
+    }),
+  ]);
   if (!employee) throw new ReportNotAvailableError("Employee not found");
 
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-
-  const annualBrackets = await prisma.birWithholdingBracket.findMany({
-    where: {
-      payPeriodType: "ANNUAL",
-      effectiveFrom: { lte: yearEnd },
-      OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
-    },
-  });
   if (annualBrackets.length === 0) {
     throw new ReportNotAvailableError("No ANNUAL BIR withholding brackets configured for this year");
   }
@@ -373,18 +377,19 @@ export async function getForm2307Data(
   companyId: string,
   paymentId: string
 ): Promise<Form2307DocumentData> {
-  const payment = await prisma.contractorPayment.findUnique({
-    where: { id: paymentId },
-    include: { contractor: true },
-  });
+  const [payment, company] = await Promise.all([
+    prisma.contractorPayment.findUnique({
+      where: { id: paymentId },
+      include: { contractor: true },
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
   if (!payment || payment.companyId !== companyId) {
     throw new ReportNotAvailableError("Contractor payment not found");
   }
   if (payment.status !== "POSTED") {
     throw new ReportNotAvailableError("Form 2307 is only available once the payment is posted");
   }
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   return {
     company: {
@@ -414,13 +419,16 @@ export async function getFinalPayStatementData(
   companyId: string,
   finalPayRunId: string
 ): Promise<FinalPayStatementDocumentData> {
-  const run = await prisma.finalPayRun.findUnique({
-    where: { id: finalPayRunId },
-    include: {
-      employee: { select: { employeeNumber: true, firstName: true, lastName: true, positionTitle: true } },
-      lineItems: true,
-    },
-  });
+  const [run, company] = await Promise.all([
+    prisma.finalPayRun.findUnique({
+      where: { id: finalPayRunId },
+      include: {
+        employee: { select: { employeeNumber: true, firstName: true, lastName: true, positionTitle: true } },
+        lineItems: true,
+      },
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
 
   if (!run || run.companyId !== companyId) {
     throw new ReportNotAvailableError("Final pay run not found");
@@ -428,8 +436,6 @@ export async function getFinalPayStatementData(
   if (run.status !== "POSTED") {
     throw new ReportNotAvailableError("Final pay statement is only available once the run is posted");
   }
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   return {
     company: {
@@ -462,10 +468,11 @@ export async function getCertificateOfEmploymentData(
   companyId: string,
   employeeId: string
 ): Promise<CertificateOfEmploymentDocumentData> {
-  const employee = await prisma.employee.findFirst({ where: { id: employeeId, companyId } });
+  const [employee, company] = await Promise.all([
+    prisma.employee.findFirst({ where: { id: employeeId, companyId } }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
   if (!employee) throw new ReportNotAvailableError("Employee not found");
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   return {
     company: { legalName: company.legalName, registeredAddress: company.registeredAddress },
@@ -486,27 +493,30 @@ export async function getAgencyRemittanceData(
 ): Promise<AgencyRemittanceDocumentData> {
   const config = AGENCY_CONFIG[agency];
 
-  const run = await prisma.payrollRun.findUnique({
-    where: { id: runId },
-    include: {
-      payrollPeriod: true,
-      payslips: {
-        include: {
-          employee: {
-            select: {
-              firstName: true,
-              lastName: true,
-              sssNumber: true,
-              philhealthNumber: true,
-              pagibigNumber: true,
+  const [run, company] = await Promise.all([
+    prisma.payrollRun.findUnique({
+      where: { id: runId },
+      include: {
+        payrollPeriod: true,
+        payslips: {
+          include: {
+            employee: {
+              select: {
+                firstName: true,
+                lastName: true,
+                sssNumber: true,
+                philhealthNumber: true,
+                pagibigNumber: true,
+              },
             },
+            lineItems: true,
           },
-          lineItems: true,
+          orderBy: { employee: { lastName: "asc" } },
         },
-        orderBy: { employee: { lastName: "asc" } },
       },
-    },
-  });
+    }),
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+  ]);
 
   if (!run || run.companyId !== companyId) {
     throw new ReportNotAvailableError("Payroll run not found");
@@ -514,8 +524,6 @@ export async function getAgencyRemittanceData(
   if (run.status !== "POSTED") {
     throw new ReportNotAvailableError("This report is only available once the run is posted");
   }
-
-  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   const idField =
     agency === "SSS" ? "sssNumber" : agency === "PHILHEALTH" ? "philhealthNumber" : "pagibigNumber";

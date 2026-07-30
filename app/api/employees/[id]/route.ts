@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { updateEmployeeSchema } from "@/lib/validations/employee";
 
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
 
@@ -54,25 +55,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 
   const body = await request.json();
-  const allowedFields = [
-    "positionTitle",
-    "departmentName",
-    "employmentStatus",
-    "isManagerialExempt",
-    "managerialExemptReason",
-    "dateSeparated",
-    "separationReason",
-    "separationCategory",
-    "clearanceCompleted",
-  ] as const;
-
-  const data: Record<string, unknown> = {};
-  for (const field of allowedFields) {
-    if (field in body) data[field] = body[field];
+  const parsed = updateEmployeeSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  if (typeof data.dateSeparated === "string") data.dateSeparated = new Date(data.dateSeparated);
 
-  const employee = await prisma.employee.update({ where: { id }, data });
+  const { dateSeparated, ...rest } = parsed.data;
+  const data: Record<string, unknown> = { ...rest };
+  if (dateSeparated !== undefined) data.dateSeparated = new Date(dateSeparated);
 
-  return NextResponse.json({ employee });
+  try {
+    const employee = await prisma.employee.update({ where: { id }, data });
+    return NextResponse.json({ employee });
+  } catch {
+    return NextResponse.json({ error: "Failed to update employee" }, { status: 400 });
+  }
 }

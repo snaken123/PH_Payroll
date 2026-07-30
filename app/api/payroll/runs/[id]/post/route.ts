@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { mutationErrorResponse } from "@/lib/api-error";
 
 const POST_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
@@ -31,10 +32,13 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: `Cannot post a run in ${run.status} status` }, { status: 409 });
   }
 
-  const updated = await prisma.payrollRun.update({
-    where: { id },
-    data: { status: "POSTED", postedAt: new Date(), postedByUserId: ctx.userId },
-  });
-
-  return NextResponse.json({ run: updated });
+  try {
+    const updated = await prisma.payrollRun.update({
+      where: { id },
+      data: { status: "POSTED", postedAt: new Date(), postedByUserId: ctx.userId },
+    });
+    return NextResponse.json({ run: updated });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
 }
