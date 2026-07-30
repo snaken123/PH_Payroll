@@ -77,10 +77,13 @@ export async function PATCH(request: Request) {
         });
 
         const currentComp = existing.compensationRecords[0];
+        // 0 is the grid's "no rate yet" placeholder for an employee with no
+        // CompensationRecord at all — never create one from a bare 0, that
+        // would fabricate a real (wrong) rate the moment someone saves the
+        // grid without touching this employee's row.
         const rateChanged =
-          !currentComp ||
-          currentComp.payBasis !== row.payBasis ||
-          currentComp.basicRate.toNumber() !== row.basicRate;
+          row.basicRate > 0 &&
+          (!currentComp || currentComp.payBasis !== row.payBasis || currentComp.basicRate.toNumber() !== row.basicRate);
 
         if (rateChanged) {
           if (currentComp) {
