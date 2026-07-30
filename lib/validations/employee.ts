@@ -158,7 +158,11 @@ export const bulkEmployeeRowSchema = z.object({
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
   payBasis: z.enum(payBasisValues),
-  basicRate: z.coerce.number().positive("Must be greater than 0"),
+  // 0 means "no rate yet" for an employee who has no CompensationRecord at
+  // all (the grid has to show something) — treated as "leave alone", not
+  // validated as a real rate. See the bulk route: a compensation record is
+  // only created/updated when this is actually greater than 0.
+  basicRate: z.coerce.number().min(0, "Must be 0 or greater"),
 });
 export type BulkEmployeeRow = z.output<typeof bulkEmployeeRowSchema>;
 
