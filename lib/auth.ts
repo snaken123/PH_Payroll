@@ -68,12 +68,26 @@ export const authOptions: NextAuthOptions = {
         token.platformRole = dbUser.platformRole;
 
         const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
-        const activeMembership =
-          dbUser.memberships.find((m) => m.companyId === requestedCompanyId) ??
-          dbUser.memberships[0];
+        const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId);
 
-        token.companyId = activeMembership?.companyId ?? null;
-        token.companyRole = activeMembership?.role ?? null;
+        if (activeMembership) {
+          token.companyId = activeMembership.companyId;
+          token.companyRole = activeMembership.role;
+        } else if (dbUser.platformRole === PlatformRole.SUPER_ADMIN && requestedCompanyId) {
+          // Super admins can point their session at any company, not just
+          // ones they hold an explicit membership in — requireTenantRole
+          // already bypasses per-company role checks for them, and
+          // assertCompanyId still enforces that this companyId matches the
+          // resource being touched, so this only widens which company they
+          // can select, not what per-request tenant isolation allows.
+          const company = await prisma.company.findUnique({ where: { id: requestedCompanyId }, select: { id: true } });
+          token.companyId = company?.id ?? dbUser.memberships[0]?.companyId ?? null;
+          token.companyRole = null;
+        } else {
+          const fallback = dbUser.memberships[0];
+          token.companyId = fallback?.companyId ?? null;
+          token.companyRole = fallback?.role ?? null;
+        }
       }
 
       return token;
