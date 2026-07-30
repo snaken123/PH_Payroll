@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { SignOutButton } from "@/components/sign-out-button";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CompanySwitcher } from "@/components/company-switcher";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();
@@ -26,7 +27,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </Link>
             <DashboardNav />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <CompanySwitcher />
             <ThemeToggle />
             <SignOutButton />
           </div>
