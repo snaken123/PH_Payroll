@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { EditTimesheetDialog, type TimesheetFormValues } from "./edit-timesheet-dialog";
+import { extractTimeOfDay } from "@/lib/validations/attendance";
 
 interface EmployeeOption {
   id: string;
@@ -28,6 +29,8 @@ interface TimesheetRow {
   id: string;
   workDate: string;
   status: string;
+  timeIn: string | null;
+  timeOut: string | null;
   scheduledHours: string;
   lateMinutes: number;
   undertimeMinutes: number;
@@ -204,6 +207,8 @@ export function AttendanceManager({ employees }: { employees: EmployeeOption[] }
           initialValues={
             {
               status: editingRow.status,
+              timeIn: extractTimeOfDay(editingRow.timeIn),
+              timeOut: extractTimeOfDay(editingRow.timeOut),
               scheduledHours: Number(editingRow.scheduledHours),
               lateMinutes: editingRow.lateMinutes,
               undertimeMinutes: editingRow.undertimeMinutes,

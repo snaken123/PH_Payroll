@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { AttendanceManager } from "@/components/attendance/attendance-manager";
+import { AttendanceGrid } from "@/components/attendance/attendance-grid";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
 export default async function AttendancePage() {
@@ -17,7 +19,18 @@ export default async function AttendancePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Attendance</h1>
-      <AttendanceManager employees={employees} />
+      <Tabs defaultValue="grid">
+        <TabsList>
+          <TabsTrigger value="grid">Spreadsheet view</TabsTrigger>
+          <TabsTrigger value="employee">By employee</TabsTrigger>
+        </TabsList>
+        <TabsContent value="grid">
+          <AttendanceGrid />
+        </TabsContent>
+        <TabsContent value="employee">
+          <AttendanceManager employees={employees} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
