@@ -134,6 +134,16 @@ export function EditTimesheetDialog({
             />
           </div>
           <div className="space-y-1">
+            <Label htmlFor="timeIn">Time in</Label>
+            <Input id="timeIn" type="time" {...register("timeIn")} />
+            {errors.timeIn && <p className="text-sm text-destructive">{errors.timeIn.message}</p>}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="timeOut">Time out</Label>
+            <Input id="timeOut" type="time" {...register("timeOut")} />
+            {errors.timeOut && <p className="text-sm text-destructive">{errors.timeOut.message}</p>}
+          </div>
+          <div className="space-y-1">
             <Label htmlFor="regularHours">Regular hours</Label>
             <Input id="regularHours" type="number" step="0.25" {...register("regularHours")} />
             {errors.regularHours && <p className="text-sm text-destructive">{errors.regularHours.message}</p>}

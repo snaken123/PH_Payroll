@@ -135,3 +135,33 @@ export const editEmployeeProfileSchema = z.object({
 });
 export type EditEmployeeProfileFormValues = z.input<typeof editEmployeeProfileSchema>;
 export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema>;
+
+// One row of the spreadsheet-style bulk-edit table. Profile fields plus the
+// employee's CURRENT pay rate — not the full effective-dated compensation
+// history, which still goes through "New rate" per employee since it's a
+// point-in-time snapshot, not a value to be blanket-edited.
+export const bulkEmployeeRowSchema = z.object({
+  employeeId: z.string().min(1),
+  employeeNumber: z.string().min(1, "Required"),
+  firstName: z.string().min(1, "Required"),
+  lastName: z.string().min(1, "Required"),
+  middleName: z.string().optional(),
+  birthDate: z.string().min(1, "Required"),
+  sex: z.enum(sexValues),
+  civilStatus: z.enum(civilStatusValues),
+  positionTitle: z.string().min(1, "Required"),
+  departmentName: z.string().optional(),
+  employmentStatus: z.enum(employmentStatusValues),
+  employeeType: z.enum(employeeTypeValues),
+  tin: z.string().optional(),
+  sssNumber: z.string().optional(),
+  philhealthNumber: z.string().optional(),
+  pagibigNumber: z.string().optional(),
+  payBasis: z.enum(payBasisValues),
+  basicRate: z.coerce.number().positive("Must be greater than 0"),
+});
+export type BulkEmployeeRow = z.output<typeof bulkEmployeeRowSchema>;
+
+export const bulkUpdateEmployeesSchema = z.object({
+  rows: z.array(bulkEmployeeRowSchema).min(1),
+});

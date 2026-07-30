@@ -4,6 +4,8 @@ import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { CreateEmployeeDialog } from "@/components/employees/create-employee-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Pager } from "@/components/ui/pager";
 import { SearchForm } from "@/components/ui/search-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,7 +58,12 @@ export default async function EmployeesPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Employees</h1>
-        <CreateEmployeeDialog branches={branches} />
+        <div className="flex gap-2">
+          <Link href="/dashboard/employees/bulk-edit" className={cn(buttonVariants({ variant: "outline" }))}>
+            Bulk edit
+          </Link>
+          <CreateEmployeeDialog branches={branches} />
+        </div>
       </div>
 
       <Card>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireTenantRole, withCompanyScope } from "@/lib/db/scoped";
-import { upsertTimesheetSchema } from "@/lib/validations/attendance";
+import { upsertTimesheetSchema, combineDateAndTime } from "@/lib/validations/attendance";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
 
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
@@ -57,11 +57,15 @@ export async function POST(request: Request) {
   if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
 
   const workDate = new Date(data.workDate);
+  const timeIn = combineDateAndTime(data.workDate, data.timeIn);
+  const timeOut = combineDateAndTime(data.workDate, data.timeOut);
 
   const timesheet = await prisma.timesheetEntry.upsert({
     where: { employeeId_workDate: { employeeId: data.employeeId, workDate } },
     update: {
       status: data.status,
+      timeIn,
+      timeOut,
       scheduledHours: data.scheduledHours,
       lateMinutes: data.lateMinutes,
       undertimeMinutes: data.undertimeMinutes,
@@ -77,6 +81,8 @@ export async function POST(request: Request) {
       employeeId: data.employeeId,
       workDate,
       status: data.status,
+      timeIn,
+      timeOut,
       scheduledHours: data.scheduledHours,
       lateMinutes: data.lateMinutes,
       undertimeMinutes: data.undertimeMinutes,
