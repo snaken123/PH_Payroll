@@ -121,8 +121,9 @@ model CompanyBankAccount {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  payslips  Payslip[] @relation("PayslipDisbursementBank")
+  company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payslips          Payslip[]                 @relation("PayslipDisbursementBank")
+  bankDisbursements PayslipBankDisbursement[]
 
   @@index([companyId])
 }
@@ -225,9 +226,15 @@ model Employee {
   managerialExemptReason String?
   bankAccountNumber      String?
   bankName               String?
-  paymentMethod          PaymentMethod    @default(BANK_TRANSFER)
-  isIncludedInAlphalist  Boolean          @default(true)
-  createdAt              DateTime         @default(now())
+  primaryCompanyBankId   String?
+  secondaryBankName      String?
+  secondaryBankAccountNumber String?
+  secondaryCompanyBankId String?
+  bankSplitRule          String             @default("NONE") // NONE, FIXED_AMOUNT, PERCENTAGE, ALLOWANCES_ONLY
+  bankSplitValue         Decimal?           @db.Decimal(14, 2)
+  paymentMethod          PaymentMethod      @default(BANK_TRANSFER)
+  isIncludedInAlphalist  Boolean            @default(true)
+  createdAt              DateTime           @default(now())
   updatedAt               DateTime        @updatedAt
 
   company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -596,14 +603,32 @@ model Payslip {
   netPay                   Decimal  @db.Decimal(14, 2)
   disbursementBankId       String?
 
-  payrollRun       PayrollRun          @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  employee         Employee            @relation(fields: [employeeId], references: [id])
-  disbursementBank CompanyBankAccount? @relation("PayslipDisbursementBank", fields: [disbursementBankId], references: [id])
+  payrollRun       PayrollRun                 @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee         Employee                   @relation(fields: [employeeId], references: [id])
+  disbursementBank CompanyBankAccount?        @relation("PayslipDisbursementBank", fields: [disbursementBankId], references: [id])
   lineItems        PayrollLineItem[]
+  disbursements    PayslipBankDisbursement[]
 
   @@unique([payrollRunId, employeeId])
   @@index([companyId])
   @@index([employeeId])
+}
+
+model PayslipBankDisbursement {
+  id                    String   @id @default(cuid())
+  payslipId             String
+  companyBankAccountId  String?
+  employeeBankName      String
+  employeeAccountNumber String
+  amount                Decimal  @db.Decimal(14, 2)
+  label                 String   @default("PRIMARY") // "PRIMARY", "SECONDARY", "ALLOWANCE"
+  createdAt             DateTime @default(now())
+
+  payslip            Payslip             @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  companyBankAccount CompanyBankAccount? @relation(fields: [companyBankAccountId], references: [id])
+
+  @@index([payslipId])
+  @@index([companyBankAccountId])
 }
 
 enum LineItemCategory {

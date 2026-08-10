@@ -822,6 +822,9 @@ export async function getBankDisbursementData(
           include: {
             employee: true,
             disbursementBank: true,
+            disbursements: {
+              include: { companyBankAccount: true },
+            },
           },
           orderBy: { employee: { lastName: "asc" } },
         },
@@ -844,30 +847,65 @@ export async function getBankDisbursementData(
     const net = p.netPay.toNumber();
     totalPayroll += net;
 
-    const disbursingBank = p.disbursementBank ?? defaultBank;
-    const disbursingBankId = disbursingBank?.id ?? "UNASSIGNED";
-    const disbursingBankName = disbursingBank ? `${disbursingBank.bankName} (${disbursingBank.accountNumber})` : "Unassigned Bank Account";
-    const disbursingAccNo = disbursingBank?.accountNumber ?? "—";
+    // Multi-bank disbursement support: check if payslip has explicit bank disbursements
+    if (p.disbursements && p.disbursements.length > 0) {
+      for (const d of p.disbursements) {
+        const itemAmount = d.amount.toNumber();
+        const disbursingBank = d.companyBankAccount ?? defaultBank;
+        const disbursingBankId = disbursingBank?.id ?? "UNASSIGNED";
+        const disbursingBankName = disbursingBank
+          ? `${disbursingBank.bankName} (${disbursingBank.accountNumber})`
+          : "Unassigned Bank Account";
+        const disbursingAccNo = disbursingBank?.accountNumber ?? "—";
 
-    const currentSummary = bankSummaryMap.get(disbursingBankId) ?? {
-      bankName: disbursingBank?.bankName ?? "Default Company Account",
-      accountNumber: disbursingAccNo,
-      count: 0,
-      total: 0,
-    };
-    currentSummary.count += 1;
-    currentSummary.total += net;
-    bankSummaryMap.set(disbursingBankId, currentSummary);
+        const currentSummary = bankSummaryMap.get(disbursingBankId) ?? {
+          bankName: disbursingBank?.bankName ?? "Default Company Account",
+          accountNumber: disbursingAccNo,
+          count: 0,
+          total: 0,
+        };
+        currentSummary.count += 1;
+        currentSummary.total += itemAmount;
+        bankSummaryMap.set(disbursingBankId, currentSummary);
 
-    rows.push({
-      employeeId: p.employee.id,
-      employeeNumber: p.employee.employeeNumber,
-      employeeName: `${p.employee.lastName}, ${p.employee.firstName}`,
-      bankName: p.employee.bankName || "Cash / ATM",
-      accountNumber: p.employee.bankAccountNumber || "—",
-      disbursingBankName,
-      netPay: net.toFixed(2),
-    });
+        rows.push({
+          employeeId: p.employee.id,
+          employeeNumber: p.employee.employeeNumber,
+          employeeName: `${p.employee.lastName}, ${p.employee.firstName}${d.label === "SECONDARY" ? " (Secondary)" : ""}`,
+          bankName: d.employeeBankName || "Cash / ATM",
+          accountNumber: d.employeeAccountNumber || "—",
+          disbursingBankName,
+          netPay: itemAmount.toFixed(2),
+        });
+      }
+    } else {
+      const disbursingBank = p.disbursementBank ?? defaultBank;
+      const disbursingBankId = disbursingBank?.id ?? "UNASSIGNED";
+      const disbursingBankName = disbursingBank
+        ? `${disbursingBank.bankName} (${disbursingBank.accountNumber})`
+        : "Unassigned Bank Account";
+      const disbursingAccNo = disbursingBank?.accountNumber ?? "—";
+
+      const currentSummary = bankSummaryMap.get(disbursingBankId) ?? {
+        bankName: disbursingBank?.bankName ?? "Default Company Account",
+        accountNumber: disbursingAccNo,
+        count: 0,
+        total: 0,
+      };
+      currentSummary.count += 1;
+      currentSummary.total += net;
+      bankSummaryMap.set(disbursingBankId, currentSummary);
+
+      rows.push({
+        employeeId: p.employee.id,
+        employeeNumber: p.employee.employeeNumber,
+        employeeName: `${p.employee.lastName}, ${p.employee.firstName}`,
+        bankName: p.employee.bankName || "Cash / ATM",
+        accountNumber: p.employee.bankAccountNumber || "—",
+        disbursingBankName,
+        netPay: net.toFixed(2),
+      });
+    }
   }
 
   const bankSummaries: BankSummaryRow[] = Array.from(bankSummaryMap.entries()).map(([id, val]) => ({

@@ -213,6 +213,79 @@ export async function computeAndPersistPayrollRun({
         select: { id: true, employeeId: true },
       });
       const payslipIdByEmployeeId = new Map(createdPayslips.map((p) => [p.employeeId, p.id]));
+      const employeeByIdMap = new Map(employees.map((e) => [e.id, e]));
+
+      // Fetch company bank accounts for multi-bank disbursement matching
+      const companyBanks = await tx.companyBankAccount.findMany({
+        where: { companyId },
+        orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      });
+      const defaultCompanyBank = companyBanks.find((b) => b.isDefault) ?? companyBanks[0];
+      const secondaryCompanyBank = companyBanks[1] ?? defaultCompanyBank;
+
+      const bankDisbursementsData: Array<{
+        payslipId: string;
+        companyBankAccountId: string | null;
+        employeeBankName: string;
+        employeeAccountNumber: string;
+        amount: string;
+        label: string;
+      }> = [];
+
+      for (const { employeeId, result } of computed) {
+        const payslipId = payslipIdByEmployeeId.get(employeeId);
+        const emp = employeeByIdMap.get(employeeId);
+        if (!payslipId || !emp) continue;
+
+        const netPay = result.netPay.toNumber();
+        if (netPay <= 0) continue;
+
+        const primaryCompBankId = emp.primaryCompanyBankId || defaultCompanyBank?.id || null;
+        const secondaryCompBankId = emp.secondaryCompanyBankId || secondaryCompanyBank?.id || null;
+
+        let secondaryAmount = 0;
+        if (emp.secondaryBankName && emp.secondaryBankAccountNumber && emp.bankSplitRule !== "NONE") {
+          if (emp.bankSplitRule === "FIXED_AMOUNT" && emp.bankSplitValue) {
+            secondaryAmount = Math.min(netPay, Number(emp.bankSplitValue));
+          } else if (emp.bankSplitRule === "PERCENTAGE" && emp.bankSplitValue) {
+            const pct = Math.min(100, Math.max(0, Number(emp.bankSplitValue)));
+            secondaryAmount = Math.round((netPay * (pct / 100)) * 100) / 100;
+          } else if (emp.bankSplitRule === "ALLOWANCES_ONLY") {
+            const allowanceTotal = result.lineItems
+              .filter((li) => li.category === "ALLOWANCE")
+              .reduce((sum, li) => sum + li.amount.toNumber(), 0);
+            secondaryAmount = Math.min(netPay, allowanceTotal);
+          }
+        }
+
+        const primaryAmount = netPay - secondaryAmount;
+
+        if (primaryAmount > 0) {
+          bankDisbursementsData.push({
+            payslipId,
+            companyBankAccountId: primaryCompBankId,
+            employeeBankName: emp.bankName || "Cash / ATM",
+            employeeAccountNumber: emp.bankAccountNumber || "—",
+            amount: primaryAmount.toFixed(2),
+            label: "PRIMARY",
+          });
+        }
+
+        if (secondaryAmount > 0) {
+          bankDisbursementsData.push({
+            payslipId,
+            companyBankAccountId: secondaryCompBankId,
+            employeeBankName: emp.secondaryBankName!,
+            employeeAccountNumber: emp.secondaryBankAccountNumber!,
+            amount: secondaryAmount.toFixed(2),
+            label: "SECONDARY",
+          });
+        }
+      }
+
+      if (bankDisbursementsData.length > 0) {
+        await tx.payslipBankDisbursement.createMany({ data: bankDisbursementsData });
+      }
 
       const lineItemsData = computed.flatMap(({ employeeId, result }) => {
         const payslipId = payslipIdByEmployeeId.get(employeeId);
