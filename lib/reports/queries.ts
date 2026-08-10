@@ -589,3 +589,185 @@ export async function getAgencyRemittanceData(
     rows,
   };
 }
+
+export interface BirAlphalistRow {
+  seqNo: number;
+  employeeNumber: string;
+  fullName: string;
+  tin: string;
+  status: string;
+  totalGrossCompensation: string;
+  nonTaxableStatutory: string;
+  nonTaxableExemptions: string;
+  totalNonTaxable: string;
+  netTaxableCompensation: string;
+  cumulativeTaxWithheld: string;
+  annualTaxDue: string;
+  yearEndAdjustment: string;
+}
+
+export interface BirAlphalistDocumentData {
+  company: {
+    legalName: string;
+    tin: string;
+    rdoCode: string;
+    registeredAddress: string;
+  };
+  year: number;
+  rows: BirAlphalistRow[];
+  totals: {
+    totalGrossCompensation: string;
+    totalNonTaxable: string;
+    totalNetTaxableCompensation: string;
+    totalCumulativeTaxWithheld: string;
+    totalAnnualTaxDue: string;
+    totalYearEndAdjustment: string;
+  };
+}
+
+export async function getBirAlphalistData(
+  companyId: string,
+  year: number
+): Promise<BirAlphalistDocumentData> {
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+
+  const [company, annualBrackets, thirteenthMonthConfig, employees] = await Promise.all([
+    prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+    prisma.birWithholdingBracket.findMany({
+      where: {
+        payPeriodType: "ANNUAL",
+        effectiveFrom: { lte: yearEnd },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
+      },
+    }),
+    prisma.thirteenthMonthConfig.findFirst({
+      where: {
+        effectiveFrom: { lte: yearEnd },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
+      },
+      orderBy: { effectiveFrom: "desc" },
+    }),
+    prisma.employee.findMany({
+      where: { companyId },
+      include: {
+        payslips: {
+          where: {
+            payrollRun: {
+              status: "POSTED",
+              payrollPeriod: { cutoffStart: { gte: yearStart, lte: yearEnd } },
+            },
+          },
+          include: { lineItems: true },
+        },
+      },
+      orderBy: { lastName: "asc" },
+    }),
+  ]);
+
+  if (annualBrackets.length === 0) {
+    throw new ReportNotAvailableError("No ANNUAL BIR withholding brackets configured for this year");
+  }
+
+  const exemptionCeiling = thirteenthMonthConfig?.exemptionCeiling.toNumber() ?? 90000;
+  const birBracketInputs = annualBrackets.map((b) => ({
+    payPeriodType: "ANNUAL" as const,
+    bracketFloor: b.bracketFloor.toString(),
+    bracketCeiling: b.bracketCeiling?.toString() ?? null,
+    baseTax: b.baseTax.toString(),
+    excessRate: b.excessRate.toString(),
+  }));
+
+  const rows: BirAlphalistRow[] = [];
+  let sumGross = 0;
+  let sumNonTaxable = 0;
+  let sumTaxable = 0;
+  let sumWithheld = 0;
+  let sumTaxDue = 0;
+  let sumAdjustment = 0;
+
+  let seqNo = 1;
+  for (const emp of employees) {
+    if (emp.payslips.length === 0) continue;
+
+    let totalGross = 0;
+    let totalStatutory = 0;
+    let cumulativeTaxWithheld = 0;
+    let totalNonTaxableAllowances = 0;
+    let totalThirteenthMonthAndBenefits = 0;
+
+    for (const p of emp.payslips) {
+      totalGross += p.grossPay.toNumber();
+      for (const li of p.lineItems) {
+        if (li.category === "SSS_EE" || li.category === "PHILHEALTH_EE" || li.category === "PAGIBIG_EE") {
+          totalStatutory += li.amount.toNumber();
+        }
+        if (li.category === "WITHHOLDING_TAX") {
+          cumulativeTaxWithheld += li.amount.toNumber();
+        }
+        if (li.category === "ALLOWANCE") {
+          const ref = li.sourceRef as { nonTaxableAmount?: string; isTaxable?: boolean } | null;
+          if (ref?.nonTaxableAmount !== undefined) {
+            totalNonTaxableAllowances += Number(ref.nonTaxableAmount);
+          } else if (ref?.isTaxable === false) {
+            totalNonTaxableAllowances += li.amount.toNumber();
+          }
+        }
+        if (li.category === "THIRTEENTH_MONTH_ACCRUAL") {
+          totalThirteenthMonthAndBenefits += li.amount.toNumber();
+        }
+      }
+    }
+
+    const exemptThirteenthMonthAndBenefits = Math.min(totalThirteenthMonthAndBenefits, exemptionCeiling);
+    const nonTaxableExemptions = totalNonTaxableAllowances + exemptThirteenthMonthAndBenefits;
+    const totalNonTaxable = totalStatutory + nonTaxableExemptions;
+    const netTaxable = Math.max(0, totalGross - totalNonTaxable);
+
+    const annualization = computeAnnualization(netTaxable, cumulativeTaxWithheld, birBracketInputs);
+    const annualTaxDue = annualization.annualTaxDue.toNumber();
+    const yearEndAdjustment = annualization.yearEndAdjustment.toNumber();
+
+    sumGross += totalGross;
+    sumNonTaxable += totalNonTaxable;
+    sumTaxable += netTaxable;
+    sumWithheld += cumulativeTaxWithheld;
+    sumTaxDue += annualTaxDue;
+    sumAdjustment += yearEndAdjustment;
+
+    rows.push({
+      seqNo: seqNo++,
+      employeeNumber: emp.employeeNumber,
+      fullName: `${emp.lastName}, ${emp.firstName}`,
+      tin: emp.tin || "N/A",
+      status: emp.employmentStatus,
+      totalGrossCompensation: totalGross.toFixed(2),
+      nonTaxableStatutory: totalStatutory.toFixed(2),
+      nonTaxableExemptions: nonTaxableExemptions.toFixed(2),
+      totalNonTaxable: totalNonTaxable.toFixed(2),
+      netTaxableCompensation: netTaxable.toFixed(2),
+      cumulativeTaxWithheld: cumulativeTaxWithheld.toFixed(2),
+      annualTaxDue: annualTaxDue.toFixed(2),
+      yearEndAdjustment: yearEndAdjustment.toFixed(2),
+    });
+  }
+
+  return {
+    company: {
+      legalName: company.legalName,
+      tin: company.tin,
+      rdoCode: company.rdoCode,
+      registeredAddress: company.registeredAddress,
+    },
+    year,
+    rows,
+    totals: {
+      totalGrossCompensation: sumGross.toFixed(2),
+      totalNonTaxable: sumNonTaxable.toFixed(2),
+      totalNetTaxableCompensation: sumTaxable.toFixed(2),
+      totalCumulativeTaxWithheld: sumWithheld.toFixed(2),
+      totalAnnualTaxDue: sumTaxDue.toFixed(2),
+      totalYearEndAdjustment: sumAdjustment.toFixed(2),
+    },
+  };
+}

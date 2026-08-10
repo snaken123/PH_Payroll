@@ -144,6 +144,12 @@ export function ReportsManager({
             >
               13th Month Pay Report
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => openReport(`/api/reports/alphalist/${annualYear}`)}
+            >
+              BIR Alphalist (1604-C)
+            </Button>
           </div>
 
           <div className="flex flex-wrap items-end gap-4">
