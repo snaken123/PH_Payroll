@@ -14,6 +14,7 @@ import {
   BriefcaseIcon,
   UserCheckIcon,
   SettingsIcon,
+  BookOpenIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon },
   { href: "/dashboard/my-pay", label: "My Pay", icon: UserCheckIcon },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard/help", label: "Help & Compliance", icon: BookOpenIcon },
 ] as const;
 
 export function DashboardNav() {
