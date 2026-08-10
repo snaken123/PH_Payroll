@@ -185,7 +185,7 @@ export async function computeAndPersistPayrollRun({
       const monthlyEquivalentCompensation = estimateMonthlyEquivalentCompensation(
         comp.payBasis as PayBasis,
         comp.basicRate.toString(),
-        comp.standardWorkDaysPerMonth?.toString()
+        comp.standardWorkDaysPerMonth?.toString() || "22"
       );
 
       const activeLoans: ActiveLoanInput[] = emp.loans.map((l) => ({
@@ -199,7 +199,7 @@ export async function computeAndPersistPayrollRun({
       const result = computePayroll({
         payBasis: comp.payBasis as PayBasis,
         basicRate: comp.basicRate.toString(),
-        standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString(),
+        standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString() || "22",
         isManagerialExempt: emp.isManagerialExempt,
         timesheets,
         allowances,

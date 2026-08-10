@@ -85,7 +85,7 @@ export async function POST(request: Request) {
               effectiveFrom: new Date(data.dateHired),
               payBasis: data.payBasis,
               basicRate: data.basicRate,
-              standardWorkDaysPerMonth: data.standardWorkDaysPerMonth ?? null,
+              standardWorkDaysPerMonth: data.standardWorkDaysPerMonth ?? (data.payBasis === "MONTHLY_RATE" ? 22 : null),
               createdByUserId: ctx.userId,
               allowances: {
                 create: data.allowances.map((a) => ({
