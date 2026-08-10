@@ -59,9 +59,7 @@ export async function computeAndPersistPayrollRun({
     },
     include: {
       compensationRecords: {
-        where: asOfWhere(cutoffEnd),
         orderBy: { effectiveFrom: "desc" },
-        take: 1,
         include: { allowances: true },
       },
       timesheetEntries: { where: { workDate: { gte: cutoffStart, lte: cutoffEnd } } },
@@ -141,8 +139,10 @@ export async function computeAndPersistPayrollRun({
     const computed: { employeeId: string; result: ReturnType<typeof computePayroll> }[] = [];
 
     for (const emp of employees) {
-      const comp = emp.compensationRecords[0];
-      if (!comp) continue; // no active compensation record as of this cutoff — skip
+      const comp = emp.compensationRecords.find(
+        (c) => c.effectiveFrom <= cutoffEnd && (c.effectiveTo === null || c.effectiveTo > cutoffEnd)
+      ) ?? emp.compensationRecords[0];
+      if (!comp) continue; // no compensation record found — skip
 
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => ({
         workDate: t.workDate.toISOString(),

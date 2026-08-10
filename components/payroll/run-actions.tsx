@@ -23,7 +23,7 @@ export function RunActions({ runId, status }: { runId: string; status: string })
   const [voidOpen, setVoidOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
 
-  async function callAction(action: "submit" | "approve" | "post" | "void", body?: unknown) {
+  async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute", body?: unknown) {
     setBusy(true);
     const res = await fetch(`/api/payroll/runs/${runId}/${action}`, {
       method: "POST",
@@ -38,6 +38,16 @@ export function RunActions({ runId, status }: { runId: string; status: string })
       return;
     }
 
+    if (action === "recompute") {
+      const responseBody = await res.json();
+      toast.success("Payslips recomputed successfully!");
+      if (responseBody.runId) {
+        router.push(`/dashboard/payroll/${responseBody.runId}`);
+        router.refresh();
+      }
+      return;
+    }
+
     toast.success(`Run ${action === "submit" ? "submitted for approval" : action === "approve" ? "approved" : action === "post" ? "posted" : "voided"}`);
     router.refresh();
   }
@@ -45,6 +55,9 @@ export function RunActions({ runId, status }: { runId: string; status: string })
   if (status === "DRAFT" || status === "PENDING_APPROVAL") {
     return (
       <div className="flex gap-2">
+        <Button variant="outline" onClick={() => callAction("recompute")} disabled={busy}>
+          Recompute Payslips
+        </Button>
         {status === "DRAFT" && (
           <Button variant="outline" onClick={() => callAction("submit")} disabled={busy}>
             Submit for Approval
