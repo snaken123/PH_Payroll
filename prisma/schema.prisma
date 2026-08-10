@@ -104,8 +104,27 @@ model Company {
   contractors        Contractor[]
   contractorPayments ContractorPayment[]
   finalPayRuns       FinalPayRun[]
+  bankAccounts       CompanyBankAccount[]
 
   @@index([status])
+}
+
+model CompanyBankAccount {
+  id            String   @id @default(cuid())
+  companyId     String
+  bankName      String
+  accountNumber String
+  accountName   String
+  branchName    String?
+  swiftCode     String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payslips  Payslip[] @relation("PayslipDisbursementBank")
+
+  @@index([companyId])
 }
 
 // BIR "branch code" concept — some statutory forms are filed per branch.
@@ -575,10 +594,12 @@ model Payslip {
   totalStatutoryDeductions Decimal  @db.Decimal(14, 2)
   totalOtherDeductions     Decimal  @db.Decimal(14, 2)
   netPay                   Decimal  @db.Decimal(14, 2)
+  disbursementBankId       String?
 
-  payrollRun PayrollRun        @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  employee   Employee          @relation(fields: [employeeId], references: [id])
-  lineItems  PayrollLineItem[]
+  payrollRun       PayrollRun          @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee         Employee            @relation(fields: [employeeId], references: [id])
+  disbursementBank CompanyBankAccount? @relation("PayslipDisbursementBank", fields: [disbursementBankId], references: [id])
+  lineItems        PayrollLineItem[]
 
   @@unique([payrollRunId, employeeId])
   @@index([companyId])
@@ -811,6 +832,7 @@ enum DocumentType {
   FINAL_PAY_STATEMENT
   CERTIFICATE_OF_EMPLOYMENT
   BIR_ALPHALIST
+  BANK_DISBURSEMENT
 }
 
 enum DocumentSourceType {

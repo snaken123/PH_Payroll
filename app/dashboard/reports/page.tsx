@@ -15,6 +15,7 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   FORM_2316: "BIR 2316",
   THIRTEENTH_MONTH_REPORT: "13th Month Report",
   BIR_ALPHALIST: "BIR Alphalist (1604-C)",
+  BANK_DISBURSEMENT: "Bank Disbursement Report",
 };
 
 export default async function ReportsPage() {

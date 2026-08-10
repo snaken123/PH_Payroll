@@ -14,15 +14,26 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   CalendarDaysIcon,
   Building2Icon,
   PaletteIcon,
   UsersIcon,
   PlusCircleIcon,
-  CheckCircle2Icon,
+  LandmarkIcon,
   SunIcon,
   MoonIcon,
   MonitorIcon,
+  Trash2Icon,
+  StarIcon,
 } from "lucide-react";
 
 interface CompanyData {
@@ -45,6 +56,16 @@ interface CompanyData {
   payDateOffsetDays: number;
 }
 
+interface BankAccountData {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  branchName: string | null;
+  swiftCode: string | null;
+  isDefault: boolean;
+}
+
 interface EmployeeData {
   id: string;
   employeeNumber: string;
@@ -57,15 +78,29 @@ interface EmployeeData {
 
 export function SettingsClient({
   company,
+  bankAccounts: initialBankAccounts,
   employees: initialEmployees,
 }: {
   company: CompanyData;
+  bankAccounts: BankAccountData[];
   employees: EmployeeData[];
 }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [submitting, setSubmitting] = useState(false);
   const [employees, setEmployees] = useState(initialEmployees);
+  const [bankAccounts, setBankAccounts] = useState(initialBankAccounts);
+
+  // Bank Add Dialog State
+  const [bankDialogOpen, setBankDialogOpen] = useState(false);
+  const [newBank, setNewBank] = useState({
+    bankName: "",
+    accountNumber: "",
+    accountName: company.legalName,
+    branchName: "",
+    swiftCode: "",
+    isDefault: false,
+  });
 
   // Company Pay Period & Details Form State
   const [formData, setFormData] = useState({
@@ -120,6 +155,78 @@ export function SettingsClient({
       toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleAddBankAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/companies/banks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newBank),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error ?? "Failed to add bank account");
+      }
+
+      const body = await res.json();
+      setBankAccounts((prev) => [
+        ...(newBank.isDefault ? prev.map((b) => ({ ...b, isDefault: false })) : prev),
+        body.bankAccount,
+      ]);
+      toast.success("Payroll bank account added");
+      setBankDialogOpen(false);
+      setNewBank({
+        bankName: "",
+        accountNumber: "",
+        accountName: company.legalName,
+        branchName: "",
+        swiftCode: "",
+        isDefault: false,
+      });
+      router.refresh();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSetDefaultBank(id: string) {
+    try {
+      const res = await fetch(`/api/companies/banks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDefault: true }),
+      });
+
+      if (!res.ok) throw new Error("Failed to set default bank");
+
+      setBankAccounts((prev) =>
+        prev.map((b) => ({ ...b, isDefault: b.id === id }))
+      );
+      toast.success("Default payroll bank account updated");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
+    }
+  }
+
+  async function handleDeleteBank(id: string) {
+    try {
+      const res = await fetch(`/api/companies/banks/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete bank account");
+
+      setBankAccounts((prev) => prev.filter((b) => b.id !== id));
+      toast.success("Bank account removed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     }
   }
 
@@ -178,6 +285,9 @@ export function SettingsClient({
       <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/60 rounded-xl">
         <TabsTrigger value="pay-period" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <CalendarDaysIcon className="size-3.5" /> Pay Period Rules
+        </TabsTrigger>
+        <TabsTrigger value="banks" className="flex items-center gap-1.5 text-xs py-2 px-3">
+          <LandmarkIcon className="size-3.5" /> Payroll Banks
         </TabsTrigger>
         <TabsTrigger value="company-details" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <Building2Icon className="size-3.5" /> Company Details
@@ -324,7 +434,174 @@ export function SettingsClient({
         </Card>
       </TabsContent>
 
-      {/* 2. Company Details Tab */}
+      {/* 2. Payroll Banks Tab */}
+      <TabsContent value="banks" className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Company Payroll Bank Accounts</CardTitle>
+              <CardDescription>
+                Define bank accounts used by {company.legalName} for payroll disbursement. These accounts generate the Bank Advice Report and CSV download per pay period.
+              </CardDescription>
+            </div>
+
+            <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
+              <DialogTrigger render={<Button />}>
+                <PlusCircleIcon className="size-4 mr-1.5" /> Add Bank Account
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Payroll Bank Account</DialogTitle>
+                  <DialogDescription>
+                    Enter the company bank account details for payroll advice generation.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddBankAccount} className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      placeholder="e.g. BDO, BPI, Metrobank, UnionBank"
+                      value={newBank.bankName}
+                      onChange={(e) => setNewBank({ ...newBank, bankName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="accountNumber">Company Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      placeholder="e.g. 001234567890"
+                      value={newBank.accountNumber}
+                      onChange={(e) => setNewBank({ ...newBank, accountNumber: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="accountName">Company Account Name</Label>
+                    <Input
+                      id="accountName"
+                      value={newBank.accountName}
+                      onChange={(e) => setNewBank({ ...newBank, accountName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="branchName">Branch Name (Optional)</Label>
+                      <Input
+                        id="branchName"
+                        placeholder="e.g. Makati Main Branch"
+                        value={newBank.branchName}
+                        onChange={(e) => setNewBank({ ...newBank, branchName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="swiftCode">Bank / SWIFT Code (Optional)</Label>
+                      <Input
+                        id="swiftCode"
+                        placeholder="e.g. BNORPHMM"
+                        value={newBank.swiftCode}
+                        onChange={(e) => setNewBank({ ...newBank, swiftCode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <Switch
+                      id="isDefaultBank"
+                      checked={newBank.isDefault}
+                      onCheckedChange={(v) => setNewBank({ ...newBank, isDefault: v })}
+                    />
+                    <Label htmlFor="isDefaultBank" className="text-xs">
+                      Set as primary default disbursing bank account for this company
+                    </Label>
+                  </div>
+
+                  <DialogFooter className="pt-2">
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? "Adding..." : "Save Bank Account"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
+          <CardContent>
+            {bankAccounts.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
+                <LandmarkIcon className="size-8 mx-auto text-muted-foreground/50" />
+                <p>No bank accounts configured for this company yet.</p>
+                <p className="text-xs">Click "Add Bank Account" above to register your disbursing bank.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bank Name</TableHead>
+                    <TableHead>Account Number</TableHead>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead>Branch / SWIFT</TableHead>
+                    <TableHead>Default</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bankAccounts.map((b) => (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-semibold flex items-center gap-2">
+                        <LandmarkIcon className="size-4 text-primary" />
+                        {b.bankName}
+                      </TableCell>
+                      <TableCell className="font-mono">{b.accountNumber}</TableCell>
+                      <TableCell>{b.accountName}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {b.branchName || "—"} {b.swiftCode ? `(${b.swiftCode})` : ""}
+                      </TableCell>
+                      <TableCell>
+                        {b.isDefault ? (
+                          <Badge variant="default" className="gap-1 bg-amber-500 text-amber-950 font-semibold">
+                            <StarIcon className="size-3 fill-current" /> Primary Default
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Secondary</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {!b.isDefault && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => handleSetDefaultBank(b.id)}
+                            >
+                              Make Default
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteBank(b.id)}
+                          >
+                            <Trash2Icon className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* 3. Company Details Tab */}
       <TabsContent value="company-details" className="space-y-6">
         <Card>
           <CardHeader>
@@ -425,7 +702,7 @@ export function SettingsClient({
         </Card>
       </TabsContent>
 
-      {/* 3. BIR Alphalist Employee Selection Tab */}
+      {/* 4. BIR Alphalist Employee Selection Tab */}
       <TabsContent value="alphalist" className="space-y-6">
         <Card>
           <CardHeader>
@@ -479,7 +756,7 @@ export function SettingsClient({
         </Card>
       </TabsContent>
 
-      {/* 4. Theme & Appearance Tab */}
+      {/* 5. Theme & Appearance Tab */}
       <TabsContent value="theme" className="space-y-6">
         <Card>
           <CardHeader>
@@ -525,7 +802,7 @@ export function SettingsClient({
         </Card>
       </TabsContent>
 
-      {/* 5. Add New Company Tab */}
+      {/* 6. Add New Company Tab */}
       <TabsContent value="add-company" className="space-y-6">
         <Card>
           <CardHeader>

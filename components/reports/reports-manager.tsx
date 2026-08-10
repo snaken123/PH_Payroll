@@ -95,6 +95,20 @@ export function ReportsManager({
             >
               Pag-IBIG MCRF
             </Button>
+            <Button
+              variant="outline"
+              disabled={!runId}
+              onClick={() => openReport(`/api/reports/bank-disbursement/${runId}`)}
+            >
+              Bank Disbursement (PDF)
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!runId}
+              onClick={() => openReport(`/api/reports/bank-disbursement/${runId}/csv`)}
+            >
+              Bank Advice File (CSV)
+            </Button>
           </div>
         </CardContent>
       </Card>

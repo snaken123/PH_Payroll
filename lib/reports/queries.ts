@@ -771,3 +771,128 @@ export async function getBirAlphalistData(
     },
   };
 }
+
+export interface BankDisbursementRow {
+  employeeId: string;
+  employeeNumber: string;
+  employeeName: string;
+  bankName: string;
+  accountNumber: string;
+  disbursingBankName: string;
+  netPay: string;
+}
+
+export interface BankSummaryRow {
+  bankAccountId: string;
+  bankName: string;
+  accountNumber: string;
+  employeeCount: number;
+  totalAmount: string;
+}
+
+export interface BankDisbursementDocumentData {
+  company: {
+    legalName: string;
+    tin: string;
+    registeredAddress: string;
+  };
+  runNumber: number;
+  period: {
+    cutoffStart: Date;
+    cutoffEnd: Date;
+    payDate: Date;
+  };
+  totalEmployees: number;
+  totalPayrollAmount: string;
+  bankSummaries: BankSummaryRow[];
+  rows: BankDisbursementRow[];
+}
+
+export async function getBankDisbursementData(
+  companyId: string,
+  runId: string
+): Promise<BankDisbursementDocumentData> {
+  const [run, companyBanks] = await Promise.all([
+    prisma.payrollRun.findFirst({
+      where: { id: runId, companyId },
+      include: {
+        company: true,
+        payrollPeriod: true,
+        payslips: {
+          include: {
+            employee: true,
+            disbursementBank: true,
+          },
+          orderBy: { employee: { lastName: "asc" } },
+        },
+      },
+    }),
+    prisma.companyBankAccount.findMany({
+      where: { companyId },
+    }),
+  ]);
+
+  if (!run) throw new ReportNotAvailableError("Payroll run not found");
+
+  const defaultBank = companyBanks.find((b) => b.isDefault) ?? companyBanks[0];
+  const bankSummaryMap = new Map<string, { bankName: string; accountNumber: string; count: number; total: number }>();
+
+  let totalPayroll = 0;
+  const rows: BankDisbursementRow[] = [];
+
+  for (const p of run.payslips) {
+    const net = p.netPay.toNumber();
+    totalPayroll += net;
+
+    const disbursingBank = p.disbursementBank ?? defaultBank;
+    const disbursingBankId = disbursingBank?.id ?? "UNASSIGNED";
+    const disbursingBankName = disbursingBank ? `${disbursingBank.bankName} (${disbursingBank.accountNumber})` : "Unassigned Bank Account";
+    const disbursingAccNo = disbursingBank?.accountNumber ?? "—";
+
+    const currentSummary = bankSummaryMap.get(disbursingBankId) ?? {
+      bankName: disbursingBank?.bankName ?? "Default Company Account",
+      accountNumber: disbursingAccNo,
+      count: 0,
+      total: 0,
+    };
+    currentSummary.count += 1;
+    currentSummary.total += net;
+    bankSummaryMap.set(disbursingBankId, currentSummary);
+
+    rows.push({
+      employeeId: p.employee.id,
+      employeeNumber: p.employee.employeeNumber,
+      employeeName: `${p.employee.lastName}, ${p.employee.firstName}`,
+      bankName: p.employee.bankName || "Cash / ATM",
+      accountNumber: p.employee.bankAccountNumber || "—",
+      disbursingBankName,
+      netPay: net.toFixed(2),
+    });
+  }
+
+  const bankSummaries: BankSummaryRow[] = Array.from(bankSummaryMap.entries()).map(([id, val]) => ({
+    bankAccountId: id,
+    bankName: val.bankName,
+    accountNumber: val.accountNumber,
+    employeeCount: val.count,
+    totalAmount: val.total.toFixed(2),
+  }));
+
+  return {
+    company: {
+      legalName: run.company.legalName,
+      tin: run.company.tin,
+      registeredAddress: run.company.registeredAddress,
+    },
+    runNumber: run.runNumber,
+    period: {
+      cutoffStart: run.payrollPeriod.cutoffStart,
+      cutoffEnd: run.payrollPeriod.cutoffEnd,
+      payDate: run.payrollPeriod.payDate,
+    },
+    totalEmployees: run.payslips.length,
+    totalPayrollAmount: totalPayroll.toFixed(2),
+    bankSummaries,
+    rows,
+  };
+}
