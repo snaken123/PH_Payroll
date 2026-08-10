@@ -62,6 +62,8 @@ export interface PayrollEngineInput {
   isManagerialExempt: boolean;
   timesheets: TimesheetFact[];
   allowances: AllowanceInput[];
+  /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to true. */
+  isSemiMonthly?: boolean;
   /**
    * Whether this cutoff carries the monthly SSS/PhilHealth/Pag-IBIG
    * deduction. Common PH SME convention (not a universal legal requirement):
@@ -113,6 +115,7 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     basicRate: input.basicRate,
     standardWorkDaysPerMonth: input.standardWorkDaysPerMonth,
     timesheets: input.timesheets,
+    isSemiMonthly: input.isSemiMonthly ?? false,
   });
   lineItems.push({
     category: "BASIC_PAY",

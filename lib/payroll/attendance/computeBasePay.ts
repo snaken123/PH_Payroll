@@ -9,6 +9,8 @@ export interface BasePayInput {
   /** Required for MONTHLY_RATE proration — divisor to derive a daily rate. */
   standardWorkDaysPerMonth?: Decimal.Value;
   timesheets: TimesheetFact[];
+  /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to false if unsupplied. */
+  isSemiMonthly?: boolean;
 }
 
 export interface BasePayResult {
@@ -96,12 +98,13 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
   );
   const lateUndertimeDeduction = hourlyRateEquivalent.times(lateUndertimeMinutes).dividedBy(60);
 
-  const basePay = rate.minus(absenceDeduction).minus(lateUndertimeDeduction);
+  const grossBasicPay = input.isSemiMonthly ? rate.dividedBy(2) : rate;
+  const basePay = grossBasicPay.minus(absenceDeduction).minus(lateUndertimeDeduction);
 
   return {
     dailyRateEquivalent,
     hourlyRateEquivalent,
-    grossBasicPay: rate,
+    grossBasicPay,
     basePay,
     absenceDeduction,
     lateUndertimeDeduction,

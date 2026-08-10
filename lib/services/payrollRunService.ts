@@ -205,6 +205,7 @@ export async function computeAndPersistPayrollRun({
         isManagerialExempt: emp.isManagerialExempt,
         timesheets,
         allowances,
+        isSemiMonthly: periodType === PeriodType.FIRST_HALF || periodType === PeriodType.SECOND_HALF,
         isStatutoryDeductionCutoff,
         monthlyEquivalentCompensation: monthlyEquivalentCompensation.toString(),
         rates: rateInputs,
