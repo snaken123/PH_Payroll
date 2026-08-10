@@ -59,6 +59,7 @@ interface CompanyData {
 interface BankAccountData {
   id: string;
   bankName: string;
+  nickname: string | null;
   accountNumber: string;
   accountName: string;
   branchName: string | null;
@@ -95,6 +96,7 @@ export function SettingsClient({
   const [bankDialogOpen, setBankDialogOpen] = useState(false);
   const [newBank, setNewBank] = useState({
     bankName: "",
+    nickname: "",
     accountNumber: "",
     accountName: company.legalName,
     branchName: "",
@@ -182,6 +184,7 @@ export function SettingsClient({
       setBankDialogOpen(false);
       setNewBank({
         bankName: "",
+        nickname: "",
         accountNumber: "",
         accountName: company.legalName,
         branchName: "",
@@ -469,6 +472,16 @@ export function SettingsClient({
                   </div>
 
                   <div className="space-y-1">
+                    <Label htmlFor="bankNickname">Account Nickname (Optional)</Label>
+                    <Input
+                      id="bankNickname"
+                      placeholder="e.g. Main Payroll Account, Allowance BPI"
+                      value={newBank.nickname}
+                      onChange={(e) => setNewBank({ ...newBank, nickname: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
                     <Label htmlFor="accountNumber">Company Account Number</Label>
                     <Input
                       id="accountNumber"
@@ -553,8 +566,13 @@ export function SettingsClient({
                   {bankAccounts.map((b) => (
                     <TableRow key={b.id}>
                       <TableCell className="font-semibold flex items-center gap-2">
-                        <LandmarkIcon className="size-4 text-primary" />
-                        {b.bankName}
+                        <LandmarkIcon className="size-4 text-primary shrink-0" />
+                        <div>
+                          <span>{b.bankName}</span>
+                          {b.nickname && (
+                            <span className="block text-xs font-normal text-muted-foreground">{b.nickname}</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono">{b.accountNumber}</TableCell>
                       <TableCell>{b.accountName}</TableCell>

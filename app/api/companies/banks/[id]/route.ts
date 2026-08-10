@@ -47,6 +47,7 @@ export async function PATCH(
         where: { id },
         data: {
           bankName: data.bankName,
+          nickname: data.nickname !== undefined ? data.nickname : existing.nickname,
           accountNumber: data.accountNumber,
           accountName: data.accountName,
           branchName: data.branchName !== undefined ? data.branchName : existing.branchName,

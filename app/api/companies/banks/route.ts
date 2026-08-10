@@ -60,6 +60,7 @@ export async function POST(request: Request) {
         data: {
           companyId: ctx.companyId,
           bankName: data.bankName,
+          nickname: data.nickname || null,
           accountNumber: data.accountNumber,
           accountName: data.accountName,
           branchName: data.branchName || null,

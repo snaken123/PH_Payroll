@@ -113,6 +113,7 @@ model CompanyBankAccount {
   id            String   @id @default(cuid())
   companyId     String
   bankName      String
+  nickname      String?
   accountNumber String
   accountName   String
   branchName    String?

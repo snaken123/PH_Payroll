@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createCompanyBankAccountSchema = z.object({
   bankName: z.string().min(1, "Bank Name is required"),
+  nickname: z.string().optional().nullable(),
   accountNumber: z.string().min(1, "Account Number is required"),
   accountName: z.string().min(1, "Account Name is required"),
   branchName: z.string().optional().nullable(),
