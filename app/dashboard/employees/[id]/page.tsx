@@ -16,6 +16,8 @@ import { ClearanceToggle, ComputeFinalPayButton } from "@/components/employees/s
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
 import type { PayBasis } from "@/lib/payroll/types";
 
+import { WageSector } from "@/lib/generated/prisma/enums";
+
 const LOAN_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   PENDING_APPROVAL: "secondary",
   ACTIVE: "default",
@@ -58,7 +60,7 @@ export default async function EmployeeDetailPage({
     const applicableWage = await prisma.minimumWageRate.findFirst({
       where: {
         region: employee.branch.region,
-        sector: "NON_AGRICULTURE",
+        sector: WageSector.NON_AGRICULTURE,
         effectiveFrom: { lte: today },
         OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }],
       },
