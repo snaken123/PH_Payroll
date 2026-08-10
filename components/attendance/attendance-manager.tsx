@@ -76,7 +76,10 @@ export function AttendanceManager({ employees }: { employees: EmployeeOption[] }
   }, [employeeId, start, end]);
 
   useEffect(() => {
-    fetchTimesheets();
+    const timer = setTimeout(() => {
+      void fetchTimesheets();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchTimesheets]);
 
   async function generateDefaults() {

@@ -4,14 +4,17 @@ import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
 import { mutationErrorResponse } from "@/lib/api-error";
 
-// Segregation of duties: the person who computed a run isn't required to be
-// an APPROVER, but approving requires that role (or ownership).
-const APPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.APPROVER];
+// Segregation of duties: payroll admin or HR staff computes & submits run for approval
+const SUBMIT_ROLES = [
+  CompanyRole.COMPANY_OWNER,
+  CompanyRole.PAYROLL_ADMIN,
+  CompanyRole.HR_STAFF,
+];
 
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(APPROVE_ROLES);
+    ctx = await requireTenantRole(SUBMIT_ROLES);
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -26,14 +29,17 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (run.status !== "DRAFT" && run.status !== "PENDING_APPROVAL") {
-    return NextResponse.json({ error: `Cannot approve a run in ${run.status} status` }, { status: 409 });
+  if (run.status !== "DRAFT") {
+    return NextResponse.json(
+      { error: `Cannot submit a run in ${run.status} status for approval` },
+      { status: 409 }
+    );
   }
 
   try {
     const updated = await prisma.payrollRun.update({
       where: { id },
-      data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
+      data: { status: "PENDING_APPROVAL" },
     });
     return NextResponse.json({ run: updated });
   } catch (err) {

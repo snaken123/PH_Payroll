@@ -24,6 +24,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/employees" className="text-muted-foreground hover:text-foreground">
                 Employees
               </Link>
+              <Link href="/admin/rates" className="text-muted-foreground hover:text-foreground">
+                Statutory Rates
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">

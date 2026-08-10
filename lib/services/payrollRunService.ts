@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { computePayroll, type AllowanceInput } from "@/lib/payroll/engine";
 import { estimateMonthlyEquivalentCompensation } from "@/lib/payroll/estimateMonthlyEquivalent";
 import type { ActiveLoanInput } from "@/lib/payroll/deductions/computeLoanDeductions";
@@ -33,13 +34,14 @@ export async function computeAndPersistPayrollRun({
     create: { companyId, cutoffStart, cutoffEnd, payDate, periodType },
   });
 
-  const [sssBrackets, philhealthConfig, pagibigBracket, birBrackets] = await Promise.all([
+  const [sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings] = await Promise.all([
     prisma.sssContributionBracket.findMany({ where: asOfWhere(cutoffEnd) }),
     prisma.philhealthConfig.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
     prisma.pagibigContributionBracket.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
     prisma.birWithholdingBracket.findMany({
       where: { ...asOfWhere(cutoffEnd), payPeriodType: "SEMI_MONTHLY" },
     }),
+    prisma.deMinimisCeiling.findMany({ where: asOfWhere(cutoffEnd) }),
   ]);
 
   if (!philhealthConfig || !pagibigBracket || sssBrackets.length === 0 || birBrackets.length === 0) {
@@ -47,6 +49,8 @@ export async function computeAndPersistPayrollRun({
       "Statutory rate tables are incomplete for this period — a platform admin must configure rates before payroll can run."
     );
   }
+
+  const deMinimisCeilingMap = new Map(deMinimisCeilings.map((c) => [c.category, c]));
 
   const employees = await prisma.employee.findMany({
     where: {
@@ -72,6 +76,7 @@ export async function computeAndPersistPayrollRun({
     philhealthConfigId: philhealthConfig.id,
     pagibigBracketId: pagibigBracket.id,
     birBracketIds: birBrackets.map((b) => b.id),
+    deMinimisCeilingIds: deMinimisCeilings.map((c) => c.id),
     asOf: cutoffEnd.toISOString(),
   };
 
@@ -151,11 +156,18 @@ export async function computeAndPersistPayrollRun({
         isRestDay: t.isRestDay,
       }));
 
-      const allowances: AllowanceInput[] = comp.allowances.map((a) => ({
-        label: a.label,
-        amount: a.amount.toString(),
-        isTaxable: a.isTaxable,
-      }));
+      const allowances: AllowanceInput[] = comp.allowances.map((a) => {
+        const ceiling = a.deMinimisCategory ? deMinimisCeilingMap.get(a.deMinimisCategory) : null;
+        return {
+          label: a.label,
+          amount: a.amount.toString(),
+          isTaxable: a.isTaxable,
+          isDeMinimis: a.isDeMinimis,
+          deMinimisCategory: a.deMinimisCategory,
+          deMinimisCeilingAmount: ceiling ? ceiling.ceilingAmount.toString() : null,
+          deMinimisFrequency: ceiling ? ceiling.frequency : null,
+        };
+      });
 
       const monthlyEquivalentCompensation = estimateMonthlyEquivalentCompensation(
         comp.payBasis as PayBasis,
@@ -212,7 +224,9 @@ export async function computeAndPersistPayrollRun({
           description: li.description,
           amount: li.amount.toFixed(2),
           quantity: li.quantity ? li.quantity.toFixed(2) : null,
-          sourceRef: li.loanId ? { loanId: li.loanId } : undefined,
+          sourceRef: li.loanId
+            ? { loanId: li.loanId }
+            : (li.sourceRef as Prisma.InputJsonObject | undefined),
         }));
       });
       if (lineItemsData.length > 0) {

@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   PalmtreeIcon,
   WalletIcon,
+  BanknoteIcon,
   FileTextIcon,
   BriefcaseIcon,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/attendance", label: "Attendance", icon: ClockIcon },
   { href: "/dashboard/holidays", label: "Holidays", icon: CalendarDaysIcon },
   { href: "/dashboard/leave", label: "Leave", icon: PalmtreeIcon },
+  { href: "/dashboard/loans", label: "Loans", icon: BanknoteIcon },
   { href: "/dashboard/payroll", label: "Payroll", icon: WalletIcon },
   { href: "/dashboard/reports", label: "Reports", icon: FileTextIcon },
   { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon },

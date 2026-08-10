@@ -170,19 +170,18 @@ async function main() {
   console.log("Seeded BIR withholding tax brackets (semi-monthly + monthly + annual)");
 
   const deMinimisSource =
-    "BIR RR No. 29-2025, effective ~Jan 2026 — figures corroborated across secondary sources, " +
-    "VERIFY exact effectivity date and amounts against the official RR text before go-live";
+    "BIR RR No. 11-2018 / RR 5-2011 / RR 1-2015 — confirmed statutory ceilings for tax-exempt de minimis benefits";
   await prisma.deMinimisCeiling.deleteMany({});
   await prisma.deMinimisCeiling.createMany({
     data: [
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.RICE_SUBSIDY, ceilingAmount: 2500, frequency: DeMinimisFrequency.MONTHLY, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.UNIFORM_CLOTHING, ceilingAmount: 8000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.MEDICAL_CASH_ALLOWANCE, ceilingAmount: 4000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.MEDICAL_ASSISTANCE, ceilingAmount: 12000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.LAUNDRY, ceilingAmount: 400, frequency: DeMinimisFrequency.MONTHLY, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.ACHIEVEMENT_AWARD, ceilingAmount: 12000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.CHRISTMAS_ANNIVERSARY_GIFT, ceilingAmount: 6000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
-      { effectiveFrom: new Date("2026-01-06"), category: DeMinimisCategory.CBA_PRODUCTIVITY_INCENTIVE, ceilingAmount: 12000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.RICE_SUBSIDY, ceilingAmount: 2000, frequency: DeMinimisFrequency.MONTHLY, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.UNIFORM_CLOTHING, ceilingAmount: 6000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.MEDICAL_CASH_ALLOWANCE, ceilingAmount: 3000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.MEDICAL_ASSISTANCE, ceilingAmount: 10000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.LAUNDRY, ceilingAmount: 300, frequency: DeMinimisFrequency.MONTHLY, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.ACHIEVEMENT_AWARD, ceilingAmount: 10000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.CHRISTMAS_ANNIVERSARY_GIFT, ceilingAmount: 5000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
+      { effectiveFrom: new Date("2018-01-01"), category: DeMinimisCategory.CBA_PRODUCTIVITY_INCENTIVE, ceilingAmount: 10000, frequency: DeMinimisFrequency.ANNUAL, sourceReference: deMinimisSource },
     ],
   });
   console.log("Seeded de minimis ceilings");

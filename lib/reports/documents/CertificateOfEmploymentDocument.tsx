@@ -34,7 +34,7 @@ export function CertificateOfEmploymentDocument({ data }: { data: CertificateOfE
         </Text>
 
         <Text style={{ marginBottom: 20, lineHeight: 1.6 }}>
-          This certification is issued upon the employee's request for whatever legal purpose it may serve.
+          This certification is issued upon the employee&apos;s request for whatever legal purpose it may serve.
         </Text>
 
         <Text style={{ marginTop: 30 }}>Issued on {formatDate(data.issuedDate)}.</Text>

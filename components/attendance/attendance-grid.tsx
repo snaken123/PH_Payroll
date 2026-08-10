@@ -179,7 +179,10 @@ export function AttendanceGrid() {
   }, [start, end]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [load]);
 
   // Rebuild the full employee x day cell map whenever loaded data changes —
@@ -211,9 +214,11 @@ export function AttendanceGrid() {
           : defaultForDate(date, holidaysByDate);
       }
     }
-    setCells(next);
-    setSelectedEmployees(new Set());
-    setSelectedDates(new Set());
+    void Promise.resolve().then(() => {
+      setCells(next);
+      setSelectedEmployees(new Set());
+      setSelectedDates(new Set());
+    });
   }, [employees, entries, holidays, dates]);
 
   const filteredEmployees = useMemo(() => {

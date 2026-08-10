@@ -67,7 +67,10 @@ export function LeaveManager({
   }, [employeeId]);
 
   useEffect(() => {
-    fetchAll();
+    const timer = setTimeout(() => {
+      void fetchAll();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchAll]);
 
   async function handleDecision(id: string, action: "approve" | "reject") {

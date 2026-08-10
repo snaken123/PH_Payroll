@@ -20,6 +20,10 @@ export interface AllowanceInput {
   label: string;
   amount: Decimal.Value;
   isTaxable: boolean;
+  isDeMinimis?: boolean;
+  deMinimisCategory?: string | null;
+  deMinimisCeilingAmount?: Decimal.Value | null;
+  deMinimisFrequency?: "MONTHLY" | "ANNUAL" | null;
 }
 
 export type LineItemCategory =
@@ -47,6 +51,8 @@ export interface LineItemDraft {
   quantity?: Decimal;
   /** Present only for LOAN_DEDUCTION line items — which Loan this deducted. */
   loanId?: string;
+  /** Audit / tax metadata for the line item. */
+  sourceRef?: Record<string, unknown>;
 }
 
 export interface PayrollEngineInput {
@@ -194,12 +200,39 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   }
 
   // 3. Allowances (recurring, from CompensationRecord)
+  let nonTaxableAllowances = zero;
+
   for (const allowance of input.allowances) {
+    const amount = new Decimal(allowance.amount);
+    let nonTaxableAmount = zero;
+
+    if (!allowance.isTaxable) {
+      if (allowance.isDeMinimis && allowance.deMinimisCeilingAmount) {
+        const ceiling = new Decimal(allowance.deMinimisCeilingAmount);
+        let cutoffCeiling = ceiling;
+        if (allowance.deMinimisFrequency === "ANNUAL") {
+          cutoffCeiling = ceiling.div(24);
+        } else if (allowance.deMinimisFrequency === "MONTHLY") {
+          cutoffCeiling = ceiling.div(2);
+        }
+        nonTaxableAmount = Decimal.min(amount, cutoffCeiling);
+      } else {
+        nonTaxableAmount = amount;
+      }
+    }
+
+    nonTaxableAllowances = nonTaxableAllowances.plus(nonTaxableAmount);
+
     lineItems.push({
       category: "ALLOWANCE",
       direction: "EARNING",
       description: allowance.label,
-      amount: new Decimal(allowance.amount),
+      amount,
+      sourceRef: {
+        isTaxable: allowance.isTaxable,
+        isDeMinimis: !!allowance.isDeMinimis,
+        nonTaxableAmount: nonTaxableAmount.toString(),
+      },
     });
   }
 
@@ -268,11 +301,8 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
 
   // Withholding tax runs every cutoff (it's inherently a per-period concept,
   // unlike SSS/PhilHealth/Pag-IBIG) on THIS cutoff's actual taxable gross:
-  // gross pay minus non-taxable (de minimis) allowances minus whatever
+  // gross pay minus non-taxable (de minimis capped) allowances minus whatever
   // SSS/PhilHealth/Pag-IBIG EE share was actually deducted this cutoff.
-  const nonTaxableAllowances = input.allowances
-    .filter((a) => !a.isTaxable)
-    .reduce((sum, a) => sum.plus(a.amount), zero);
   const taxableIncome = Decimal.max(
     grossPay.minus(nonTaxableAllowances).minus(statutoryEeTotal),
     0

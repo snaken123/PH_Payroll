@@ -90,11 +90,9 @@ export function Form2316Document({ data }: { data: Form2316DocumentData }) {
         </View>
 
         <Text style={styles.footer}>
-          SIMPLIFICATION NOTICE: Net Taxable Compensation above excludes only SSS/PhilHealth/Pag-IBIG
-          employee-share contributions. It does NOT separately exclude non-taxable (de minimis) allowances
-          or apply the ₱90,000 combined 13th-month/other-benefits exemption ceiling — those require
-          per-line-item taxability tracking not yet implemented. Verify this figure against manual
-          computation before filing. Generated from posted payroll runs only.
+          Net Taxable Compensation above excludes SSS/PhilHealth/Pag-IBIG employee contributions, non-taxable (de minimis)
+          allowances, and 13th-month/other-benefits up to the statutory ₱90,000 exemption ceiling (NIRC Sec. 32(B)(7)(e)).
+          Generated from posted payroll runs.
         </Text>
       </Page>
     </Document>

@@ -288,7 +288,7 @@ export async function getForm2316Data(
   const yearStart = new Date(Date.UTC(year, 0, 1));
   const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-  const [employee, company, annualBrackets] = await Promise.all([
+  const [employee, company, annualBrackets, thirteenthMonthConfig] = await Promise.all([
     prisma.employee.findFirst({
       where: { id: employeeId, companyId },
       include: {
@@ -311,6 +311,13 @@ export async function getForm2316Data(
         OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
       },
     }),
+    prisma.thirteenthMonthConfig.findFirst({
+      where: {
+        effectiveFrom: { lte: yearEnd },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: yearEnd } }],
+      },
+      orderBy: { effectiveFrom: "desc" },
+    }),
   ]);
   if (!employee) throw new ReportNotAvailableError("Employee not found");
 
@@ -318,9 +325,13 @@ export async function getForm2316Data(
     throw new ReportNotAvailableError("No ANNUAL BIR withholding brackets configured for this year");
   }
 
+  const exemptionCeiling = thirteenthMonthConfig?.exemptionCeiling.toNumber() ?? 90000;
+
   let totalGrossCompensation = 0;
   let totalStatutoryContributions = 0;
   let cumulativeTaxWithheld = 0;
+  let totalNonTaxableAllowances = 0;
+  let totalThirteenthMonthAndBenefits = 0;
 
   for (const p of employee.payslips) {
     totalGrossCompensation += p.grossPay.toNumber();
@@ -331,13 +342,23 @@ export async function getForm2316Data(
       if (li.category === "WITHHOLDING_TAX") {
         cumulativeTaxWithheld += li.amount.toNumber();
       }
+      if (li.category === "ALLOWANCE") {
+        const ref = li.sourceRef as { nonTaxableAmount?: string; isTaxable?: boolean } | null;
+        if (ref?.nonTaxableAmount !== undefined) {
+          totalNonTaxableAllowances += Number(ref.nonTaxableAmount);
+        } else if (ref?.isTaxable === false) {
+          totalNonTaxableAllowances += li.amount.toNumber();
+        }
+      }
+      if (li.category === "THIRTEENTH_MONTH_ACCRUAL") {
+        totalThirteenthMonthAndBenefits += li.amount.toNumber();
+      }
     }
   }
 
-  // KNOWN SIMPLIFICATION — see Form2316Document's on-document notice: this
-  // does not exclude non-taxable allowances or apply the 13th-month/other-
-  // benefits ₱90,000 exemption ceiling.
-  const totalTaxableCompensation = totalGrossCompensation - totalStatutoryContributions;
+  const exemptThirteenthMonthAndBenefits = Math.min(totalThirteenthMonthAndBenefits, exemptionCeiling);
+  const totalExemptions = totalStatutoryContributions + totalNonTaxableAllowances + exemptThirteenthMonthAndBenefits;
+  const totalTaxableCompensation = Math.max(0, totalGrossCompensation - totalExemptions);
 
   const annualization = computeAnnualization(
     totalTaxableCompensation,

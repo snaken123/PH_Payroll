@@ -23,7 +23,7 @@ export function RunActions({ runId, status }: { runId: string; status: string })
   const [voidOpen, setVoidOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
 
-  async function callAction(action: "approve" | "post" | "void", body?: unknown) {
+  async function callAction(action: "submit" | "approve" | "post" | "void", body?: unknown) {
     setBusy(true);
     const res = await fetch(`/api/payroll/runs/${runId}/${action}`, {
       method: "POST",
@@ -38,13 +38,18 @@ export function RunActions({ runId, status }: { runId: string; status: string })
       return;
     }
 
-    toast.success(`Run ${action === "approve" ? "approved" : action === "post" ? "posted" : "voided"}`);
+    toast.success(`Run ${action === "submit" ? "submitted for approval" : action === "approve" ? "approved" : action === "post" ? "posted" : "voided"}`);
     router.refresh();
   }
 
-  if (status === "DRAFT") {
+  if (status === "DRAFT" || status === "PENDING_APPROVAL") {
     return (
       <div className="flex gap-2">
+        {status === "DRAFT" && (
+          <Button variant="outline" onClick={() => callAction("submit")} disabled={busy}>
+            Submit for Approval
+          </Button>
+        )}
         <Button onClick={() => callAction("approve")} disabled={busy}>
           Approve
         </Button>

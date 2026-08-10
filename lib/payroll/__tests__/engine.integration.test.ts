@@ -195,3 +195,38 @@ describe("computePayroll — managerial-exempt employee with overtime and holida
     expect(result.grossPay.toNumber()).toBe(44000);
   });
 });
+
+describe("computePayroll — de minimis allowance ceiling capping", () => {
+  it("caps non-taxable de minimis allowances at statutory ceiling and taxes the excess", () => {
+    const result = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 30000,
+      standardWorkDaysPerMonth: 22,
+      isManagerialExempt: false,
+      timesheets: Array.from({ length: 11 }, () => fact()),
+      allowances: [
+        {
+          label: "Rice subsidy",
+          amount: 2500, // exceeds semi-monthly cutoff cap of ₱1,000 (₱2,000 monthly / 2)
+          isTaxable: false,
+          isDeMinimis: true,
+          deMinimisCategory: "RICE_SUBSIDY",
+          deMinimisCeilingAmount: 2000,
+          deMinimisFrequency: "MONTHLY",
+        },
+      ],
+      isStatutoryDeductionCutoff: true,
+      monthlyEquivalentCompensation: 30000,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    expect(result.grossPay.toNumber()).toBe(32500);
+    // SSS 1500 + PhilHealth 750 + PagIBIG 200 = 2450
+    // Non-taxable portion = 1000 (ceiling for semi-monthly)
+    // Taxable income = 32500 - 1000 - 2450 = 29050
+    // Tax = 937.5 + (29050 - 16667) * 0.2 = 3414.1
+    const allowanceLine = result.lineItems.find((li) => li.category === "ALLOWANCE");
+    expect(allowanceLine?.sourceRef?.nonTaxableAmount).toBe("1000");
+    expect(result.totalStatutoryDeductions.toNumber()).toBe(2450 + 3414.1);
+  });
+});

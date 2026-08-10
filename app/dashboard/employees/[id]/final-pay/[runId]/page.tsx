@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { FinalPayActions } from "@/components/finalpay/final-pay-actions";
 
+import { AddManualLineItemDialog } from "@/components/finalpay/add-manual-line-item-dialog";
+
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   DRAFT: "secondary",
   APPROVED: "default",
@@ -63,13 +65,14 @@ export default async function FinalPayRunDetailPage({
       {netFinalPay < 0 && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <strong>Employee owes the company ₱{Math.abs(netFinalPay).toLocaleString()}.</strong> Deductions exceed
-          what's owed to the employee — this is not floored at zero.
+          what&apos;s owed to the employee — this is not floored at zero.
         </div>
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Line items</CardTitle>
+          {run.status === "DRAFT" && <AddManualLineItemDialog runId={run.id} />}
         </CardHeader>
         <CardContent>
           <Table>
