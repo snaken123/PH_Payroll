@@ -54,6 +54,7 @@ interface CompanyData {
   cutoff2StartDay: number;
   cutoff2EndDay: number;
   payDateOffsetDays: number;
+  standardWorkDaysPerMonth: number;
 }
 
 interface BankAccountData {
@@ -121,6 +122,7 @@ export function SettingsClient({
     cutoff2StartDay: company.cutoff2StartDay,
     cutoff2EndDay: company.cutoff2EndDay,
     payDateOffsetDays: company.payDateOffsetDays,
+    standardWorkDaysPerMonth: company.standardWorkDaysPerMonth ?? 22,
   });
 
   // Add Company Form State
@@ -417,16 +419,32 @@ export function SettingsClient({
               </div>
             </div>
 
-            <div className="space-y-2 max-w-xs">
-              <Label htmlFor="payDateOffsetDays">Default Pay Date Offset (Days after cutoff end)</Label>
-              <Input
-                id="payDateOffsetDays"
-                type="number"
-                min={0}
-                max={30}
-                value={formData.payDateOffsetDays}
-                onChange={(e) => setFormData({ ...formData, payDateOffsetDays: Number(e.target.value) })}
-              />
+            <div className="grid grid-cols-2 gap-4 max-w-lg">
+              <div className="space-y-2">
+                <Label htmlFor="payDateOffsetDays">Default Pay Date Offset (Days)</Label>
+                <Input
+                  id="payDateOffsetDays"
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={formData.payDateOffsetDays}
+                  onChange={(e) => setFormData({ ...formData, payDateOffsetDays: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="standardWorkDaysPerMonth">Standard Work Days / Month</Label>
+                <Input
+                  id="standardWorkDaysPerMonth"
+                  type="number"
+                  step="0.1"
+                  min={1}
+                  max={31}
+                  value={formData.standardWorkDaysPerMonth}
+                  onChange={(e) => setFormData({ ...formData, standardWorkDaysPerMonth: Number(e.target.value) })}
+                />
+                <p className="text-[11px] text-muted-foreground">Default monthly rate divisor (e.g., 22, 21.75, 26)</p>
+              </div>
             </div>
           </CardContent>
           <CardFooter>

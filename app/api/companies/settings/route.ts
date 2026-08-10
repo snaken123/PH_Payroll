@@ -61,6 +61,7 @@ export async function PATCH(request: Request) {
         cutoff2StartDay: data.cutoff2StartDay,
         cutoff2EndDay: data.cutoff2EndDay,
         payDateOffsetDays: data.payDateOffsetDays,
+        standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
       },
     });
 

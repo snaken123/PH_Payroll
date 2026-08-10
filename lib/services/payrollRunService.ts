@@ -34,7 +34,8 @@ export async function computeAndPersistPayrollRun({
     create: { companyId, cutoffStart, cutoffEnd, payDate, periodType },
   });
 
-  const [sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings] = await Promise.all([
+  const [company, sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings] = await Promise.all([
+    prisma.company.findUnique({ where: { id: companyId } }),
     prisma.sssContributionBracket.findMany({ where: asOfWhere(cutoffEnd) }),
     prisma.philhealthConfig.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
     prisma.pagibigContributionBracket.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
@@ -50,6 +51,7 @@ export async function computeAndPersistPayrollRun({
     );
   }
 
+  const companyWorkDays = (company?.standardWorkDaysPerMonth ?? 22).toString();
   const deMinimisCeilingMap = new Map(deMinimisCeilings.map((c) => [c.category, c]));
 
   const employees = await prisma.employee.findMany({
@@ -185,7 +187,7 @@ export async function computeAndPersistPayrollRun({
       const monthlyEquivalentCompensation = estimateMonthlyEquivalentCompensation(
         comp.payBasis as PayBasis,
         comp.basicRate.toString(),
-        comp.standardWorkDaysPerMonth?.toString() || "22"
+        comp.standardWorkDaysPerMonth?.toString() || companyWorkDays
       );
 
       const activeLoans: ActiveLoanInput[] = emp.loans.map((l) => ({
@@ -199,7 +201,7 @@ export async function computeAndPersistPayrollRun({
       const result = computePayroll({
         payBasis: comp.payBasis as PayBasis,
         basicRate: comp.basicRate.toString(),
-        standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString() || "22",
+        standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString() || companyWorkDays,
         isManagerialExempt: emp.isManagerialExempt,
         timesheets,
         allowances,

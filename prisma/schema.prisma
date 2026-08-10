@@ -88,6 +88,7 @@ model Company {
   cutoff2StartDay          Int           @default(16)
   cutoff2EndDay            Int           @default(0)
   payDateOffsetDays        Int           @default(5)
+  standardWorkDaysPerMonth Float         @default(22.0)
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 
