@@ -81,6 +81,13 @@ model Company {
   registeredAddress        String
   region                   String
   status                   CompanyStatus @default(ONBOARDING)
+  // Pay Schedule Configuration (Per Company)
+  payScheduleStyle         String        @default("STANDARD_1_15")
+  cutoff1StartDay          Int           @default(1)
+  cutoff1EndDay            Int           @default(15)
+  cutoff2StartDay          Int           @default(16)
+  cutoff2EndDay            Int           @default(0)
+  payDateOffsetDays        Int           @default(5)
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 
@@ -200,6 +207,7 @@ model Employee {
   bankAccountNumber      String?
   bankName               String?
   paymentMethod          PaymentMethod    @default(BANK_TRANSFER)
+  isIncludedInAlphalist  Boolean          @default(true)
   createdAt              DateTime         @default(now())
   updatedAt               DateTime        @updatedAt
 

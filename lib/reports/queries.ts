@@ -649,7 +649,7 @@ export async function getBirAlphalistData(
       orderBy: { effectiveFrom: "desc" },
     }),
     prisma.employee.findMany({
-      where: { companyId },
+      where: { companyId, isIncludedInAlphalist: true },
       include: {
         payslips: {
           where: {

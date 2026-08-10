@@ -1,23 +1,39 @@
 import { z } from "zod";
 
+export const updateCompanySettingsSchema = z.object({
+  legalName: z.string().min(1, "Legal Name is required"),
+  tradeName: z.string().optional().nullable(),
+  tin: z.string().min(1, "TIN is required"),
+  rdoCode: z.string().min(1, "RDO Code is required"),
+  sssEmployerNumber: z.string().optional().nullable(),
+  philhealthEmployerNumber: z.string().optional().nullable(),
+  pagibigEmployerId: z.string().optional().nullable(),
+  registeredAddress: z.string().min(1, "Registered Address is required"),
+  region: z.string().min(1, "Region is required"),
+  payScheduleStyle: z.string().default("STANDARD_1_15"),
+  cutoff1StartDay: z.number().int().min(1).max(31).default(1),
+  cutoff1EndDay: z.number().int().min(1).max(31).default(15),
+  cutoff2StartDay: z.number().int().min(1).max(31).default(16),
+  cutoff2EndDay: z.number().int().min(0).max(31).default(0),
+  payDateOffsetDays: z.number().int().min(0).max(30).default(5),
+});
+
+export type UpdateCompanySettingsInput = z.infer<typeof updateCompanySettingsSchema>;
+
 export const createCompanySchema = z.object({
-  companyCode: z
-    .string()
-    .min(2, "At least 2 characters")
-    .max(40)
-    .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, and hyphens only"),
-  legalName: z.string().min(2, "Required"),
-  tradeName: z.string().optional(),
-  tin: z.string().min(9, "Enter a valid TIN"),
-  rdoCode: z.string().min(1, "Required"),
-  sssEmployerNumber: z.string().optional(),
-  philhealthEmployerNumber: z.string().optional(),
-  pagibigEmployerId: z.string().optional(),
-  registeredAddress: z.string().min(2, "Required"),
-  region: z.string().min(1, "Required"),
-  ownerName: z.string().min(2, "Required"),
-  ownerEmail: z.string().email("Enter a valid email"),
-  ownerPassword: z.string().min(8, "At least 8 characters"),
+  companyCode: z.string().min(2, "Company Code is required"),
+  legalName: z.string().min(1, "Legal Name is required"),
+  tradeName: z.string().optional().nullable(),
+  tin: z.string().min(1, "TIN is required"),
+  rdoCode: z.string().min(1, "RDO Code is required"),
+  sssEmployerNumber: z.string().optional().nullable(),
+  philhealthEmployerNumber: z.string().optional().nullable(),
+  pagibigEmployerId: z.string().optional().nullable(),
+  registeredAddress: z.string().min(1, "Registered Address is required"),
+  region: z.string().min(1, "Region is required"),
+  ownerName: z.string().min(1, "Owner Name is required"),
+  ownerEmail: z.string().email("Valid Owner Email is required"),
+  ownerPassword: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;

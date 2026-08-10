@@ -13,6 +13,7 @@ import {
   FileTextIcon,
   BriefcaseIcon,
   UserCheckIcon,
+  SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/reports", label: "Reports", icon: FileTextIcon },
   { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon },
   { href: "/dashboard/my-pay", label: "My Pay", icon: UserCheckIcon },
+  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
 export function DashboardNav() {
