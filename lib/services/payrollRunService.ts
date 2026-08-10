@@ -115,6 +115,19 @@ export async function computeAndPersistPayrollRun({
     })),
   };
 
+  const existingActiveRun = await prisma.payrollRun.findFirst({
+    where: {
+      companyId,
+      payrollPeriodId: period.id,
+      status: { in: ["DRAFT", "PENDING_APPROVAL", "APPROVED"] },
+    },
+  });
+  if (existingActiveRun) {
+    throw new PayrollRunError(
+      `An active payroll run (#${existingActiveRun.runNumber}) for this cutoff period already exists (${existingActiveRun.status}). Please review or void the existing run in Payroll History.`
+    );
+  }
+
   const lastRun = await prisma.payrollRun.findFirst({
     where: { companyId },
     orderBy: { runNumber: "desc" },

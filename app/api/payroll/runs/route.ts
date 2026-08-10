@@ -54,10 +54,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ runId }, { status: 201 });
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof PayrollRunError) {
       return NextResponse.json({ error: err.message }, { status: 422 });
     }
-    throw err;
+    const message = err instanceof Error ? err.message : "Failed to run payroll";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
