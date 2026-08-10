@@ -8,8 +8,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
+import { Building2Icon } from "lucide-react";
 
 interface CompanyOption {
   id: string;
@@ -29,10 +29,19 @@ export function CompanySwitcher() {
       .catch(() => setCompanies([]));
   }, []);
 
-  // Only worth showing to users who actually belong to more than one
-  // company — the common case is exactly one, where this would just be
-  // a disabled-looking dropdown with nothing to switch to.
-  if (companies.length <= 1) return null;
+  const activeCompany = companies.find((c) => c.id === session?.user.companyId);
+
+  // If only 1 company or no extra companies available, show styled company badge
+  if (companies.length <= 1) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground">
+        <Building2Icon className="size-3.5 text-primary" />
+        <span className="truncate max-w-[160px]">
+          {activeCompany?.legalName ?? "My Company"}
+        </span>
+      </div>
+    );
+  }
 
   async function switchCompany(companyId: string | null) {
     if (!companyId) return;
@@ -44,13 +53,22 @@ export function CompanySwitcher() {
   }
 
   return (
-    <Select value={session?.user.companyId ?? undefined} onValueChange={switchCompany} disabled={switching}>
-      <SelectTrigger className="w-56" aria-label="Switch company">
-        <SelectValue placeholder="Select company" />
+    <Select
+      value={session?.user.companyId ?? undefined}
+      onValueChange={switchCompany}
+      disabled={switching}
+    >
+      <SelectTrigger className="w-56 text-xs font-medium" aria-label="Switch company">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Building2Icon className="size-3.5 text-primary shrink-0" />
+          <span className="truncate">
+            {activeCompany?.legalName ?? "Select company"}
+          </span>
+        </div>
       </SelectTrigger>
       <SelectContent>
         {companies.map((c) => (
-          <SelectItem key={c.id} value={c.id}>
+          <SelectItem key={c.id} value={c.id} className="text-xs font-medium">
             {c.legalName}
           </SelectItem>
         ))}
