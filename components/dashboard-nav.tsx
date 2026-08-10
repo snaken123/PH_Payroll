@@ -12,6 +12,7 @@ import {
   BanknoteIcon,
   FileTextIcon,
   BriefcaseIcon,
+  UserCheckIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,13 +26,14 @@ const NAV_ITEMS = [
   { href: "/dashboard/payroll", label: "Payroll", icon: WalletIcon },
   { href: "/dashboard/reports", label: "Reports", icon: FileTextIcon },
   { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon },
+  { href: "/dashboard/my-pay", label: "My Pay", icon: UserCheckIcon },
 ] as const;
 
 export function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 overflow-x-auto text-sm">
+    <nav className="flex gap-1 overflow-x-auto text-sm no-scrollbar py-0.5">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
         return (
@@ -40,14 +42,14 @@ export function DashboardNav() {
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 transition-colors",
+              "group relative flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150",
               isActive
-                ? "bg-muted text-foreground font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             )}
           >
-            <Icon className="size-4" />
-            {label}
+            <Icon className={cn("size-3.5 transition-transform group-hover:scale-110", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground")} />
+            <span>{label}</span>
           </Link>
         );
       })}
