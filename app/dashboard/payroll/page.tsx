@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Pager } from "@/components/ui/pager";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parsePageParam, paginationMeta } from "@/lib/pagination";
+import { RunActions } from "@/components/payroll/run-actions";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   DRAFT: "secondary",
+  PENDING_APPROVAL: "outline",
   APPROVED: "default",
   POSTED: "default",
   VOID: "destructive",
@@ -58,15 +60,16 @@ export default async function PayrollPage({
                   <TableHead>Pay date</TableHead>
                   <TableHead>Employees</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {runs.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className="hover:bg-muted/40 transition-colors">
                     <TableCell>
                       <Link
                         href={`/dashboard/payroll/${r.id}`}
-                        className="font-medium underline-offset-4 hover:underline"
+                        className="font-bold underline-offset-4 hover:underline text-primary"
                       >
                         #{r.runNumber}
                       </Link>
@@ -76,9 +79,17 @@ export default async function PayrollPage({
                       {r.payrollPeriod.cutoffEnd.toLocaleDateString()}
                     </TableCell>
                     <TableCell>{r.payrollPeriod.payDate.toLocaleDateString()}</TableCell>
-                    <TableCell>{r._count.payslips}</TableCell>
+                    <TableCell>{r._count.payslips} employees</TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[r.status] ?? "secondary"}>{r.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <RunActions runId={r.id} status={r.status} />
+                        <Link href={`/dashboard/payroll/${r.id}`} className="text-xs font-medium text-primary hover:underline">
+                          View &rarr;
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
