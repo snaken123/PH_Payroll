@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, getTenantContext } from "@/lib/db/scoped";
@@ -74,7 +75,19 @@ export default async function PayrollRunDetailPage({
         </CardHeader>
         <CardContent>
           {run.payslips.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No payslips in this run.</p>
+            <div className="py-8 text-center space-y-3">
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 max-w-lg mx-auto text-sm space-y-2">
+                <p className="font-semibold">Why are there 0 payslips in this run?</p>
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  No active employees with compensation records effective on or before {run.payrollPeriod.cutoffEnd.toLocaleDateString()} were found for this company.
+                </p>
+                <div className="pt-1 flex items-center justify-center gap-3">
+                  <Button size="sm" variant="outline" render={<Link href="/dashboard/employees" />}>
+                    Go to Employee Directory &rarr;
+                  </Button>
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               <Table>
