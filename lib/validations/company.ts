@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { StatutoryDeductionTiming } from "@/lib/generated/prisma/enums";
 
 export const updateCompanySettingsSchema = z.object({
   legalName: z.string().min(1, "Legal Name is required"),
@@ -17,6 +17,7 @@ export const updateCompanySettingsSchema = z.object({
   cutoff2EndDay: z.number().int().min(0).max(31).default(0),
   payDateOffsetDays: z.number().int().min(0).max(30).default(5),
   standardWorkDaysPerMonth: z.number().min(1).max(31).default(22),
+  statutoryDeductionTiming: z.nativeEnum(StatutoryDeductionTiming).default(StatutoryDeductionTiming.SECOND_HALF),
 });
 
 export type UpdateCompanySettingsInput = z.infer<typeof updateCompanySettingsSchema>;

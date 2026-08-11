@@ -55,6 +55,7 @@ interface CompanyData {
   cutoff2EndDay: number;
   payDateOffsetDays: number;
   standardWorkDaysPerMonth: number;
+  statutoryDeductionTiming?: "FIRST_HALF" | "SECOND_HALF" | "SPLIT";
 }
 
 interface BankAccountData {
@@ -123,6 +124,7 @@ export function SettingsClient({
     cutoff2EndDay: company.cutoff2EndDay,
     payDateOffsetDays: company.payDateOffsetDays,
     standardWorkDaysPerMonth: company.standardWorkDaysPerMonth ?? 22,
+    statutoryDeductionTiming: company.statutoryDeductionTiming ?? "SECOND_HALF",
   });
 
   // Add Company Form State
@@ -444,6 +446,30 @@ export function SettingsClient({
                   onChange={(e) => setFormData({ ...formData, standardWorkDaysPerMonth: Number(e.target.value) })}
                 />
                 <p className="text-[11px] text-muted-foreground">Default monthly rate divisor (e.g., 22, 21.75, 26)</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 max-w-lg pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="statutoryDeductionTiming">Statutory Deduction Timing (SSS, PhilHealth, Pag-IBIG)</Label>
+                <Select
+                  value={formData.statutoryDeductionTiming}
+                  onValueChange={(val: "FIRST_HALF" | "SECOND_HALF" | "SPLIT") =>
+                    setFormData((prev) => ({ ...prev, statutoryDeductionTiming: val }))
+                  }
+                >
+                  <SelectTrigger id="statutoryDeductionTiming">
+                    <SelectValue placeholder="Select statutory deduction timing" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SECOND_HALF">2nd Half Cutoff (Default — Deduct 100% on 16th–End)</SelectItem>
+                    <SelectItem value="FIRST_HALF">1st Half Cutoff (Deduct 100% on 1st–15th)</SelectItem>
+                    <SelectItem value="SPLIT">Split 50% / 50% (Deduct half on 1st half, half on 2nd half)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Controls when SSS, PhilHealth, and Pag-IBIG contributions are deducted during semi-monthly payroll runs.
+                </p>
               </div>
             </div>
           </CardContent>

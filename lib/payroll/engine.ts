@@ -64,6 +64,8 @@ export interface PayrollEngineInput {
   allowances: AllowanceInput[];
   /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to true. */
   isSemiMonthly?: boolean;
+  /** Optional scale factor for statutory deductions (e.g. 0.5 when company timing is set to SPLIT across cutoffs). Defaults to 1. */
+  statutoryDeductionScale?: Decimal.Value;
   /**
    * Whether this cutoff carries the monthly SSS/PhilHealth/Pag-IBIG
    * deduction. Common PH SME convention (not a universal legal requirement):
@@ -251,55 +253,63 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   let statutoryEeTotal = zero;
 
   if (input.isStatutoryDeductionCutoff) {
+    const scale = new Decimal(input.statutoryDeductionScale ?? 1);
+
     const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
+    const sssEe = sss.totalEmployeeContribution.times(scale);
+    const sssEr = sss.totalEmployerContribution.times(scale);
     lineItems.push({
       category: "SSS_EE",
       direction: "DEDUCTION",
       description: "SSS employee share",
-      amount: sss.totalEmployeeContribution,
+      amount: sssEe,
     });
     lineItems.push({
       category: "SSS_ER",
       direction: "EMPLOYER_CONTRIBUTION",
       description: "SSS employer share",
-      amount: sss.totalEmployerContribution,
+      amount: sssEr,
     });
 
     const philhealth = getPhilhealthContribution(
       input.monthlyEquivalentCompensation,
       input.rates.philhealthConfig
     );
+    const phEe = philhealth.eeShare.times(scale);
+    const phEr = philhealth.erShare.times(scale);
     lineItems.push({
       category: "PHILHEALTH_EE",
       direction: "DEDUCTION",
       description: "PhilHealth employee share",
-      amount: philhealth.eeShare,
+      amount: phEe,
     });
     lineItems.push({
       category: "PHILHEALTH_ER",
       direction: "EMPLOYER_CONTRIBUTION",
       description: "PhilHealth employer share",
-      amount: philhealth.erShare,
+      amount: phEr,
     });
 
     const pagibig = getPagibigContribution(
       input.monthlyEquivalentCompensation,
       input.rates.pagibigBracket
     );
+    const pagibigEe = pagibig.eeShare.times(scale);
+    const pagibigEr = pagibig.erShare.times(scale);
     lineItems.push({
       category: "PAGIBIG_EE",
       direction: "DEDUCTION",
       description: "Pag-IBIG employee share",
-      amount: pagibig.eeShare,
+      amount: pagibigEe,
     });
     lineItems.push({
       category: "PAGIBIG_ER",
       direction: "EMPLOYER_CONTRIBUTION",
       description: "Pag-IBIG employer share",
-      amount: pagibig.erShare,
+      amount: pagibigEr,
     });
 
-    statutoryEeTotal = sss.totalEmployeeContribution.plus(philhealth.eeShare).plus(pagibig.eeShare);
+    statutoryEeTotal = sssEe.plus(phEe).plus(pagibigEe);
   }
 
   // Withholding tax runs every cutoff (it's inherently a per-period concept,

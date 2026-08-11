@@ -68,29 +68,36 @@ enum CompanyStatus {
   SUSPENDED
 }
 
+enum StatutoryDeductionTiming {
+  FIRST_HALF
+  SECOND_HALF
+  SPLIT
+}
+
 model Company {
-  id                       String        @id @default(cuid())
-  companyCode              String        @unique
+  id                       String                   @id @default(cuid())
+  companyCode              String                   @unique
   legalName                String
   tradeName                String?
-  tin                      String        @unique
+  tin                      String                   @unique
   rdoCode                  String
   sssEmployerNumber        String?
   philhealthEmployerNumber String?
   pagibigEmployerId        String?
   registeredAddress        String
   region                   String
-  status                   CompanyStatus @default(ONBOARDING)
+  status                   CompanyStatus            @default(ONBOARDING)
   // Pay Schedule Configuration (Per Company)
-  payScheduleStyle         String        @default("STANDARD_1_15")
-  cutoff1StartDay          Int           @default(1)
-  cutoff1EndDay            Int           @default(15)
-  cutoff2StartDay          Int           @default(16)
-  cutoff2EndDay            Int           @default(0)
-  payDateOffsetDays        Int           @default(5)
-  standardWorkDaysPerMonth Float         @default(22.0)
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
+  payScheduleStyle         String                   @default("STANDARD_1_15")
+  cutoff1StartDay          Int                      @default(1)
+  cutoff1EndDay            Int                      @default(15)
+  cutoff2StartDay          Int                      @default(16)
+  cutoff2EndDay            Int                      @default(0)
+  payDateOffsetDays        Int                      @default(5)
+  standardWorkDaysPerMonth Float                    @default(22.0)
+  statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
 
   branches       CompanyBranch[]
   memberships    CompanyMembership[]

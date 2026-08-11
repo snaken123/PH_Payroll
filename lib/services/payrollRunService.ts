@@ -69,7 +69,19 @@ export async function computeAndPersistPayrollRun({
     },
   });
 
-  const isStatutoryDeductionCutoff = periodType === PeriodType.SECOND_HALF;
+  const timing = company?.statutoryDeductionTiming ?? "SECOND_HALF";
+  let isStatutoryDeductionCutoff = false;
+  let statutoryDeductionScale = 1;
+
+  if (timing === "FIRST_HALF") {
+    isStatutoryDeductionCutoff = periodType === PeriodType.FIRST_HALF;
+  } else if (timing === "SPLIT") {
+    isStatutoryDeductionCutoff = true;
+    statutoryDeductionScale = 0.5;
+  } else {
+    // SECOND_HALF (default)
+    isStatutoryDeductionCutoff = periodType === PeriodType.SECOND_HALF;
+  }
 
   const statutoryRateSnapshot = {
     sssBracketIds: sssBrackets.map((b) => b.id),
@@ -207,6 +219,7 @@ export async function computeAndPersistPayrollRun({
         allowances,
         isSemiMonthly: periodType === PeriodType.FIRST_HALF || periodType === PeriodType.SECOND_HALF,
         isStatutoryDeductionCutoff,
+        statutoryDeductionScale,
         monthlyEquivalentCompensation: monthlyEquivalentCompensation.toString(),
         rates: rateInputs,
         activeLoans,
