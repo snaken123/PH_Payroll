@@ -454,9 +454,14 @@ export function SettingsClient({
                 <Label htmlFor="statutoryDeductionTiming">Statutory Deduction Timing (SSS, PhilHealth, Pag-IBIG)</Label>
                 <Select
                   value={formData.statutoryDeductionTiming}
-                  onValueChange={(val: "FIRST_HALF" | "SECOND_HALF" | "SPLIT") =>
-                    setFormData((prev) => ({ ...prev, statutoryDeductionTiming: val }))
-                  }
+                  onValueChange={(val) => {
+                    if (val) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        statutoryDeductionTiming: val as "FIRST_HALF" | "SECOND_HALF" | "SPLIT",
+                      }));
+                    }
+                  }}
                 >
                   <SelectTrigger id="statutoryDeductionTiming">
                     <SelectValue placeholder="Select statutory deduction timing" />
