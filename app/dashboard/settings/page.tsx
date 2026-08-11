@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getTenantContext } from "@/lib/db/scoped";
 import { SettingsClient } from "./settings-client";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function SettingsPage() {
   const ctx = await getTenantContext();
@@ -30,12 +31,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Company Settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Configure pay period cutoffs, company tax details, payroll bank accounts, theme preferences, and BIR Alphalist inclusions for {company.legalName}.
-        </p>
-      </div>
+      <PageHeader
+        title={`Company Settings — ${company.legalName}`}
+        description="Configure pay period cutoffs, standard work days, company tax registration, payroll disbursement bank accounts, and BIR Alphalist inclusions."
+      />
 
       <SettingsClient company={company} bankAccounts={bankAccounts} employees={employees} />
     </div>

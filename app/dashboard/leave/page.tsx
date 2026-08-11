@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { LeaveManager } from "@/components/leave/leave-manager";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function LeavePage() {
   const ctx = await getTenantContext();
@@ -23,7 +24,10 @@ export default async function LeavePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Leave</h1>
+      <PageHeader
+        title="Leave Management &amp; Approvals"
+        description="Process employee leave requests (SIL, Vacation, Sick, Maternity, Paternity) and track annual leave balances."
+      />
       <LeaveManager employees={employees} leaveTypes={leaveTypes} />
     </div>
   );

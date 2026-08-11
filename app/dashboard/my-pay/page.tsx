@@ -3,8 +3,11 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { MetricCard } from "@/components/ui/metric-card";
+import { WalletIcon, BanknoteIcon, DownloadIcon, PalmtreeIcon, FileTextIcon } from "lucide-react";
 
 export default async function EmployeeSelfServicePage() {
   const session = await getAuthSession();
@@ -40,12 +43,12 @@ export default async function EmployeeSelfServicePage() {
   if (!employee) {
     return (
       <div className="mx-auto max-w-xl py-12 text-center space-y-4">
-        <Card className="p-6">
-          <CardTitle className="text-xl">Employee Portal</CardTitle>
-          <CardDescription className="mt-2">
-            Your login account ({session.user.email}) is not associated with an employee HR profile yet.
+        <Card className="p-6 border-slate-200/80 shadow-xs dark:border-slate-800">
+          <CardTitle className="text-lg font-bold">Employee Self-Service Portal</CardTitle>
+          <CardDescription className="mt-2 text-xs">
+            Your login account ({session.user.email}) is not linked to an active employee HR profile yet.
           </CardDescription>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="mt-4 text-xs text-slate-500">
             Please ask your employer or HR/Payroll administrator to link your user account to your employee record in the Employee Directory.
           </p>
         </Card>
@@ -57,84 +60,83 @@ export default async function EmployeeSelfServicePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">My Pay & Benefits</h1>
-        <p className="text-sm text-muted-foreground">
-          {employee.firstName} {employee.lastName} ({employee.employeeNumber}) · {employee.company.legalName}
-        </p>
-      </div>
+      <PageHeader
+        title={`My Pay &amp; Benefits — ${employee.firstName} ${employee.lastName}`}
+        description={`Employee ID: ${employee.employeeNumber} · ${employee.company.legalName}`}
+        actions={<StatusBadge status={employee.employmentStatus} />}
+      />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Employment Status</CardDescription>
-            <CardTitle className="text-lg">
-              <Badge variant="default">{employee.employmentStatus}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Position: {employee.positionTitle || "N/A"}<br />
-            Hired: {new Date(employee.dateHired).toLocaleDateString()}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Current Basic Compensation</CardDescription>
-            <CardTitle className="text-lg">
-              {activeComp ? `₱${Number(activeComp.basicRate).toLocaleString()}` : "N/A"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Pay Basis: {activeComp?.payBasis.replaceAll("_", " ") ?? "N/A"}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Recent Payslips</CardDescription>
-            <CardTitle className="text-lg">{employee.payslips.length} Posted</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Latest: {employee.payslips[0] ? new Date(employee.payslips[0].payrollRun.payrollPeriod.cutoffEnd).toLocaleDateString() : "None"}
-          </CardContent>
-        </Card>
+      {/* KPI Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          title="Current Basic Compensation"
+          value={activeComp ? `₱${Number(activeComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "N/A"}
+          subtitle={`Pay Basis: ${activeComp?.payBasis.replaceAll("_", " ") ?? "N/A"}`}
+          icon={BanknoteIcon}
+        />
+        <MetricCard
+          title="Posted Payslips"
+          value={employee.payslips.length}
+          subtitle={employee.payslips[0] ? `Latest: ${new Date(employee.payslips[0].payrollRun.payrollPeriod.cutoffEnd).toLocaleDateString()}` : "No posted runs"}
+          icon={WalletIcon}
+        />
+        <MetricCard
+          title="Active Loans / Advances"
+          value={employee.loans.length}
+          subtitle="Auto-deducted on cutoffs"
+          icon={FileTextIcon}
+        />
       </div>
 
       {/* Posted Payslips */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Payslips</CardTitle>
-          <CardDescription>Historical posted payslips available for download.</CardDescription>
+      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <WalletIcon className="size-4 text-blue-600" /> Historical Payslips
+          </CardTitle>
+          <CardDescription className="text-xs">Download official PDF payslips for your records.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {employee.payslips.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No posted payslips yet.</p>
+            <div className="py-12 text-center text-xs text-slate-500">No posted payslips available yet.</div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Cutoff Period</TableHead>
-                  <TableHead>Pay Date</TableHead>
-                  <TableHead>Gross Pay</TableHead>
-                  <TableHead>Deductions</TableHead>
-                  <TableHead>Net Pay</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Gross Pay</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Total Deductions</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Net Take-Home</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employee.payslips.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">
+                  <TableRow key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <TableCell className="font-medium text-xs text-slate-900 dark:text-slate-100">
                       {new Date(p.payrollRun.payrollPeriod.cutoffStart).toLocaleDateString()} – {new Date(p.payrollRun.payrollPeriod.cutoffEnd).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{new Date(p.payrollRun.payrollPeriod.payDate).toLocaleDateString()}</TableCell>
-                    <TableCell>₱{Number(p.grossPay).toLocaleString()}</TableCell>
-                    <TableCell>₱{(Number(p.totalStatutoryDeductions) + Number(p.totalOtherDeductions)).toLocaleString()}</TableCell>
-                    <TableCell className="font-bold text-foreground">₱{Number(p.netPay).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {new Date(p.payrollRun.payrollPeriod.payDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs">
+                      ₱{Number(p.grossPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-slate-600 dark:text-slate-400">
+                      ₱{(Number(p.totalStatutoryDeductions) + Number(p.totalOtherDeductions)).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                      ₱{Number(p.netPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" render={<a href={`/api/reports/payslip/${p.id}`} target="_blank" />}>
-                        Download PDF
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs font-semibold"
+                        render={<a href={`/api/reports/payslip/${p.id}`} target="_blank" />}
+                      >
+                        <DownloadIcon className="size-3.5" /> PDF
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -146,35 +148,37 @@ export default async function EmployeeSelfServicePage() {
       </Card>
 
       {/* Leave Balances */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Leave Balances</CardTitle>
-          <CardDescription>Entitled and remaining leave days for the current calendar year.</CardDescription>
+      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <PalmtreeIcon className="size-4 text-blue-600" /> Annual Leave Balances
+          </CardTitle>
+          <CardDescription className="text-xs">Entitled, used, and remaining leave balance days.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {employee.leaveBalances.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No leave balances assigned.</p>
+            <div className="py-12 text-center text-xs text-slate-500">No leave balances assigned.</div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Leave Type</TableHead>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Entitled</TableHead>
-                  <TableHead>Used</TableHead>
-                  <TableHead>Remaining</TableHead>
+                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Type</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Year</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Entitled</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Used</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Remaining Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employee.leaveBalances.map((b) => {
                   const remaining = Number(b.entitledDays) + Number(b.carriedOverDays) + Number(b.adjustedDays) - Number(b.usedDays);
                   return (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-medium">{b.leaveType.name}</TableCell>
-                      <TableCell>{b.year}</TableCell>
-                      <TableCell>{Number(b.entitledDays)} days</TableCell>
-                      <TableCell>{Number(b.usedDays)} days</TableCell>
-                      <TableCell className="font-bold">{remaining} days</TableCell>
+                    <TableRow key={b.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <TableCell className="font-bold text-xs text-slate-900 dark:text-slate-100">{b.leaveType.name}</TableCell>
+                      <TableCell className="text-xs font-medium">{b.year}</TableCell>
+                      <TableCell className="text-xs font-medium">{Number(b.entitledDays)} days</TableCell>
+                      <TableCell className="text-xs font-medium text-slate-600 dark:text-slate-400">{Number(b.usedDays)} days</TableCell>
+                      <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">{remaining} days</TableCell>
                     </TableRow>
                   );
                 })}
