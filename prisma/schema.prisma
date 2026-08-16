@@ -243,8 +243,12 @@ model Employee {
   bankSplitValue         Decimal?           @db.Decimal(14, 2)
   paymentMethod          PaymentMethod      @default(BANK_TRANSFER)
   isIncludedInAlphalist  Boolean            @default(true)
+  // Individual statutory deduction flags
+  isDeductSss            Boolean            @default(true)
+  isDeductPhilhealth     Boolean            @default(true)
+  isDeductPagibig        Boolean            @default(true)
   createdAt              DateTime           @default(now())
-  updatedAt               DateTime        @updatedAt
+  updatedAt              DateTime           @updatedAt
 
   company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch              CompanyBranch        @relation(fields: [branchId], references: [id])
