@@ -177,6 +177,25 @@ export function EditEmployeeProfileDialog({
             <Label htmlFor="pagibigNumber">Pag-IBIG number</Label>
             <Input id="pagibigNumber" {...register("pagibigNumber")} />
           </div>
+
+          <div className="space-y-2.5 sm:col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Statutory Deductions (Opt-in / Opt-out)</Label>
+            <div className="flex flex-wrap gap-5 pt-1">
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductSss")} />
+                <span>Deduct SSS Contribution</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPhilhealth")} />
+                <span>Deduct PhilHealth Contribution</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPagibig")} />
+                <span>Deduct Pag-IBIG Contribution</span>
+              </label>
+            </div>
+          </div>
+
           <DialogFooter className="sm:col-span-2">
             <Button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Save changes"}

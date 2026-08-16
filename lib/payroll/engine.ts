@@ -79,6 +79,10 @@ export interface PayrollEngineInput {
    * contribution base — independent of this cutoff's actual gross pay.
    */
   monthlyEquivalentCompensation: Decimal.Value;
+  /** Per-employee statutory deduction opt-in/opt-out flags. Default to true. */
+  isDeductSss?: boolean;
+  isDeductPhilhealth?: boolean;
+  isDeductPagibig?: boolean;
   rates: {
     sssBrackets: SssBracketRow[];
     philhealthConfig: PhilhealthConfigRow;
@@ -255,59 +259,73 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   if (input.isStatutoryDeductionCutoff) {
     const scale = new Decimal(input.statutoryDeductionScale ?? 1);
 
-    const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
-    const sssEe = sss.totalEmployeeContribution.times(scale);
-    const sssEr = sss.totalEmployerContribution.times(scale);
-    lineItems.push({
-      category: "SSS_EE",
-      direction: "DEDUCTION",
-      description: "SSS employee share",
-      amount: sssEe,
-    });
-    lineItems.push({
-      category: "SSS_ER",
-      direction: "EMPLOYER_CONTRIBUTION",
-      description: "SSS employer share",
-      amount: sssEr,
-    });
+    const isDeductSss = input.isDeductSss ?? true;
+    const isDeductPhilhealth = input.isDeductPhilhealth ?? true;
+    const isDeductPagibig = input.isDeductPagibig ?? true;
 
-    const philhealth = getPhilhealthContribution(
-      input.monthlyEquivalentCompensation,
-      input.rates.philhealthConfig
-    );
-    const phEe = philhealth.eeShare.times(scale);
-    const phEr = philhealth.erShare.times(scale);
-    lineItems.push({
-      category: "PHILHEALTH_EE",
-      direction: "DEDUCTION",
-      description: "PhilHealth employee share",
-      amount: phEe,
-    });
-    lineItems.push({
-      category: "PHILHEALTH_ER",
-      direction: "EMPLOYER_CONTRIBUTION",
-      description: "PhilHealth employer share",
-      amount: phEr,
-    });
+    let sssEe = zero;
+    let phEe = zero;
+    let pagibigEe = zero;
 
-    const pagibig = getPagibigContribution(
-      input.monthlyEquivalentCompensation,
-      input.rates.pagibigBracket
-    );
-    const pagibigEe = pagibig.eeShare.times(scale);
-    const pagibigEr = pagibig.erShare.times(scale);
-    lineItems.push({
-      category: "PAGIBIG_EE",
-      direction: "DEDUCTION",
-      description: "Pag-IBIG employee share",
-      amount: pagibigEe,
-    });
-    lineItems.push({
-      category: "PAGIBIG_ER",
-      direction: "EMPLOYER_CONTRIBUTION",
-      description: "Pag-IBIG employer share",
-      amount: pagibigEr,
-    });
+    if (isDeductSss) {
+      const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
+      sssEe = sss.totalEmployeeContribution.times(scale);
+      const sssEr = sss.totalEmployerContribution.times(scale);
+      lineItems.push({
+        category: "SSS_EE",
+        direction: "DEDUCTION",
+        description: "SSS employee share",
+        amount: sssEe,
+      });
+      lineItems.push({
+        category: "SSS_ER",
+        direction: "EMPLOYER_CONTRIBUTION",
+        description: "SSS employer share",
+        amount: sssEr,
+      });
+    }
+
+    if (isDeductPhilhealth) {
+      const philhealth = getPhilhealthContribution(
+        input.monthlyEquivalentCompensation,
+        input.rates.philhealthConfig
+      );
+      phEe = philhealth.eeShare.times(scale);
+      const phEr = philhealth.erShare.times(scale);
+      lineItems.push({
+        category: "PHILHEALTH_EE",
+        direction: "DEDUCTION",
+        description: "PhilHealth employee share",
+        amount: phEe,
+      });
+      lineItems.push({
+        category: "PHILHEALTH_ER",
+        direction: "EMPLOYER_CONTRIBUTION",
+        description: "PhilHealth employer share",
+        amount: phEr,
+      });
+    }
+
+    if (isDeductPagibig) {
+      const pagibig = getPagibigContribution(
+        input.monthlyEquivalentCompensation,
+        input.rates.pagibigBracket
+      );
+      pagibigEe = pagibig.eeShare.times(scale);
+      const pagibigEr = pagibig.erShare.times(scale);
+      lineItems.push({
+        category: "PAGIBIG_EE",
+        direction: "DEDUCTION",
+        description: "Pag-IBIG employee share",
+        amount: pagibigEe,
+      });
+      lineItems.push({
+        category: "PAGIBIG_ER",
+        direction: "EMPLOYER_CONTRIBUTION",
+        description: "Pag-IBIG employer share",
+        amount: pagibigEr,
+      });
+    }
 
     statutoryEeTotal = sssEe.plus(phEe).plus(pagibigEe);
   }

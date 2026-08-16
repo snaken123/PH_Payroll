@@ -132,6 +132,9 @@ export const editEmployeeProfileSchema = z.object({
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
+  isDeductSss: z.boolean().default(true),
+  isDeductPhilhealth: z.boolean().default(true),
+  isDeductPagibig: z.boolean().default(true),
 });
 export type EditEmployeeProfileFormValues = z.input<typeof editEmployeeProfileSchema>;
 export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema>;

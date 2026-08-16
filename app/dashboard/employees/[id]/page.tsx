@@ -205,9 +205,27 @@ export default async function EmployeeDetailPage({
               <span className="text-slate-500 font-medium">PhilHealth Number</span>
               <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.philhealthNumber ?? "—"}</span>
             </div>
-            <div className="flex justify-between py-1">
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
               <span className="text-slate-500 font-medium">Pag-IBIG (HDMF) Number</span>
               <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.pagibigNumber ?? "—"}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+              <span className="text-slate-500 font-medium">SSS Contribution</span>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductSss ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                {employee.isDeductSss ? "Active" : "Exempt / Off"}
+              </span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+              <span className="text-slate-500 font-medium">PhilHealth Contribution</span>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPhilhealth ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                {employee.isDeductPhilhealth ? "Active" : "Exempt / Off"}
+              </span>
+            </div>
+            <div className="flex justify-between py-1 items-center">
+              <span className="text-slate-500 font-medium">Pag-IBIG Contribution</span>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                {employee.isDeductPagibig ? "Active" : "Exempt / Off"}
+              </span>
             </div>
           </CardContent>
         </Card>
