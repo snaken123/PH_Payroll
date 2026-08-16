@@ -20,7 +20,7 @@ export default async function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full text-xs font-semibold" render={<Link href="/login" />}>
+          <Button nativeButton={false} variant="outline" className="w-full text-xs font-semibold" render={<Link href="/login" />}>
             Back to Sign In
           </Button>
         </CardContent>
