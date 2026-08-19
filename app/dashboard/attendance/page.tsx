@@ -5,7 +5,7 @@ import { AttendanceGrid } from "@/components/attendance/attendance-grid";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 import { PageHeader } from "@/components/ui/page-header";
-import { ClockIcon, GridIcon, UserIcon } from "lucide-react";
+import { GridIcon, UserIcon } from "lucide-react";
 
 export default async function AttendancePage() {
   const ctx = await getTenantContext();

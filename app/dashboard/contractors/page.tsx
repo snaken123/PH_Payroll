@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { CreateContractorDialog } from "@/components/contractors/create-contractor-dialog";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Pager } from "@/components/ui/pager";
 import { SearchForm } from "@/components/ui/search-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

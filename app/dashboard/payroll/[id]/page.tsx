@@ -43,7 +43,6 @@ export default async function PayrollRunDetailPage({
 
   const totalGross = run.payslips.reduce((sum, p) => sum + Number(p.grossPay), 0);
   const totalStatutory = run.payslips.reduce((sum, p) => sum + Number(p.totalStatutoryDeductions), 0);
-  const totalOther = run.payslips.reduce((sum, p) => sum + Number(p.totalOtherDeductions), 0);
   const totalNet = run.payslips.reduce((sum, p) => sum + Number(p.netPay), 0);
 
   return (

@@ -4,7 +4,6 @@ import { getAuthSession } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CompanySwitcher } from "@/components/company-switcher";
 import { ShieldAlertIcon, Building2Icon, UsersIcon, BookOpenIcon, ArrowRightIcon } from "lucide-react";
-import { StatusBadge } from "@/components/ui/status-badge";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();

@@ -16,8 +16,6 @@ import {
   BanknoteIcon,
   ArrowRightIcon,
   FileTextIcon,
-  ShieldCheckIcon,
-  ClockIcon,
   UserCheckIcon,
 } from "lucide-react";
 

@@ -597,7 +597,7 @@ export function SettingsClient({
               <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
                 <LandmarkIcon className="size-8 mx-auto text-muted-foreground/50" />
                 <p>No bank accounts configured for this company yet.</p>
-                <p className="text-xs">Click "Add Bank Account" above to register your disbursing bank.</p>
+                <p className="text-xs">Click &quot;Add Bank Account&quot; above to register your disbursing bank.</p>
               </div>
             ) : (
               <Table>

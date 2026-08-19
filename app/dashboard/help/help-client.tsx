@@ -17,7 +17,6 @@ import {
   ExternalLinkIcon,
   LandmarkIcon,
   InfoIcon,
-  SearchIcon,
 } from "lucide-react";
 
 interface SssBracket {
