@@ -229,4 +229,46 @@ describe("computePayroll — de minimis allowance ceiling capping", () => {
     expect(allowanceLine?.sourceRef?.nonTaxableAmount).toBe("1000");
     expect(result.totalStatutoryDeductions.toNumber()).toBe(2450 + 3414.1);
   });
+
+  it("honors manual entry mode and nominated contribution amounts for SSS, PhilHealth, and Pag-IBIG", () => {
+    const result = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 30000,
+      standardWorkDaysPerMonth: 22,
+      isManagerialExempt: false,
+      timesheets: Array.from({ length: 11 }, () => fact()),
+      allowances: [],
+      isStatutoryDeductionCutoff: true,
+      monthlyEquivalentCompensation: 30000,
+      isDeductSss: true,
+      sssDeductionMode: "MANUAL",
+      sssCustomAmountEe: 750,
+      sssCustomAmountEr: 1500,
+      isDeductPhilhealth: true,
+      philhealthDeductionMode: "MANUAL",
+      philhealthCustomAmountEe: 450,
+      philhealthCustomAmountEr: 450,
+      isDeductPagibig: true,
+      pagibigDeductionMode: "MANUAL",
+      pagibigCustomAmountEe: 300,
+      pagibigCustomAmountEr: 300,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    const sssEe = result.lineItems.find((li) => li.category === "SSS_EE");
+    expect(sssEe?.amount.toNumber()).toBe(750);
+    expect(sssEe?.description).toContain("manual entry");
+
+    const phEe = result.lineItems.find((li) => li.category === "PHILHEALTH_EE");
+    expect(phEe?.amount.toNumber()).toBe(450);
+
+    const pagibigEe = result.lineItems.find((li) => li.category === "PAGIBIG_EE");
+    expect(pagibigEe?.amount.toNumber()).toBe(300);
+
+    const eeSum = (sssEe?.amount.toNumber() ?? 0) + (phEe?.amount.toNumber() ?? 0) + (pagibigEe?.amount.toNumber() ?? 0);
+    expect(eeSum).toBe(1500);
+
+    // Total statutory deductions = 1500 (EE shares) + 3304.1 (Withholding Tax) = 4804.1
+    expect(result.totalStatutoryDeductions.toNumber()).toBe(4804.1);
+  });
 });

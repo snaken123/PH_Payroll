@@ -211,21 +211,27 @@ export default async function EmployeeDetailPage({
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
               <span className="text-slate-500 font-medium">SSS Contribution</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductSss ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                {employee.isDeductSss ? "Active" : "Exempt / Off"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductSss ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                  {employee.isDeductSss ? (employee.sssDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.sssCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
+                </span>
+              </div>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
               <span className="text-slate-500 font-medium">PhilHealth Contribution</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPhilhealth ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                {employee.isDeductPhilhealth ? "Active" : "Exempt / Off"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPhilhealth ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                  {employee.isDeductPhilhealth ? (employee.philhealthDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.philhealthCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
+                </span>
+              </div>
             </div>
             <div className="flex justify-between py-1 items-center">
               <span className="text-slate-500 font-medium">Pag-IBIG Contribution</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                {employee.isDeductPagibig ? "Active" : "Exempt / Off"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                  {employee.isDeductPagibig ? (employee.pagibigDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.pagibigCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

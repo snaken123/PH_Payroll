@@ -81,8 +81,20 @@ export interface PayrollEngineInput {
   monthlyEquivalentCompensation: Decimal.Value;
   /** Per-employee statutory deduction opt-in/opt-out flags. Default to true. */
   isDeductSss?: boolean;
+  sssDeductionMode?: "TABLE" | "MANUAL";
+  sssCustomAmountEe?: Decimal.Value | null;
+  sssCustomAmountEr?: Decimal.Value | null;
+
   isDeductPhilhealth?: boolean;
+  philhealthDeductionMode?: "TABLE" | "MANUAL";
+  philhealthCustomAmountEe?: Decimal.Value | null;
+  philhealthCustomAmountEr?: Decimal.Value | null;
+
   isDeductPagibig?: boolean;
+  pagibigDeductionMode?: "TABLE" | "MANUAL";
+  pagibigCustomAmountEe?: Decimal.Value | null;
+  pagibigCustomAmountEr?: Decimal.Value | null;
+
   rates: {
     sssBrackets: SssBracketRow[];
     philhealthConfig: PhilhealthConfigRow;
@@ -127,10 +139,6 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     category: "BASIC_PAY",
     direction: "EARNING",
     description: "Basic pay",
-    // Gross, pre-deduction figure — absence/late deductions are their own
-    // separate DEDUCTION line items below; using the already-net basePay
-    // here would double-count those deductions when grossPay sums earnings
-    // minus deductions.
     amount: base.grossBasicPay,
   });
 
@@ -268,61 +276,97 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     let pagibigEe = zero;
 
     if (isDeductSss) {
-      const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
-      sssEe = sss.totalEmployeeContribution.times(scale);
-      const sssEr = sss.totalEmployerContribution.times(scale);
+      let unscaledEe = zero;
+      let unscaledEr = zero;
+
+      if (input.sssDeductionMode === "MANUAL") {
+        unscaledEe = new Decimal(input.sssCustomAmountEe ?? 0);
+        unscaledEr = new Decimal(input.sssCustomAmountEr ?? 0);
+      } else {
+        const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
+        unscaledEe = sss.totalEmployeeContribution;
+        unscaledEr = sss.totalEmployerContribution;
+      }
+
+      sssEe = unscaledEe.times(scale);
+      const sssEr = unscaledEr.times(scale);
+
       lineItems.push({
         category: "SSS_EE",
         direction: "DEDUCTION",
-        description: "SSS employee share",
+        description: input.sssDeductionMode === "MANUAL" ? "SSS employee share (manual entry)" : "SSS employee share",
         amount: sssEe,
       });
       lineItems.push({
         category: "SSS_ER",
         direction: "EMPLOYER_CONTRIBUTION",
-        description: "SSS employer share",
+        description: input.sssDeductionMode === "MANUAL" ? "SSS employer share (manual entry)" : "SSS employer share",
         amount: sssEr,
       });
     }
 
     if (isDeductPhilhealth) {
-      const philhealth = getPhilhealthContribution(
-        input.monthlyEquivalentCompensation,
-        input.rates.philhealthConfig
-      );
-      phEe = philhealth.eeShare.times(scale);
-      const phEr = philhealth.erShare.times(scale);
+      let unscaledEe = zero;
+      let unscaledEr = zero;
+
+      if (input.philhealthDeductionMode === "MANUAL") {
+        unscaledEe = new Decimal(input.philhealthCustomAmountEe ?? 0);
+        unscaledEr = new Decimal(input.philhealthCustomAmountEr ?? 0);
+      } else {
+        const philhealth = getPhilhealthContribution(
+          input.monthlyEquivalentCompensation,
+          input.rates.philhealthConfig
+        );
+        unscaledEe = philhealth.eeShare;
+        unscaledEr = philhealth.erShare;
+      }
+
+      phEe = unscaledEe.times(scale);
+      const phEr = unscaledEr.times(scale);
+
       lineItems.push({
         category: "PHILHEALTH_EE",
         direction: "DEDUCTION",
-        description: "PhilHealth employee share",
+        description: input.philhealthDeductionMode === "MANUAL" ? "PhilHealth employee share (manual entry)" : "PhilHealth employee share",
         amount: phEe,
       });
       lineItems.push({
         category: "PHILHEALTH_ER",
         direction: "EMPLOYER_CONTRIBUTION",
-        description: "PhilHealth employer share",
+        description: input.philhealthDeductionMode === "MANUAL" ? "PhilHealth employer share (manual entry)" : "PhilHealth employer share",
         amount: phEr,
       });
     }
 
     if (isDeductPagibig) {
-      const pagibig = getPagibigContribution(
-        input.monthlyEquivalentCompensation,
-        input.rates.pagibigBracket
-      );
-      pagibigEe = pagibig.eeShare.times(scale);
-      const pagibigEr = pagibig.erShare.times(scale);
+      let unscaledEe = zero;
+      let unscaledEr = zero;
+
+      if (input.pagibigDeductionMode === "MANUAL") {
+        unscaledEe = new Decimal(input.pagibigCustomAmountEe ?? 0);
+        unscaledEr = new Decimal(input.pagibigCustomAmountEr ?? 0);
+      } else {
+        const pagibig = getPagibigContribution(
+          input.monthlyEquivalentCompensation,
+          input.rates.pagibigBracket
+        );
+        unscaledEe = pagibig.eeShare;
+        unscaledEr = pagibig.erShare;
+      }
+
+      pagibigEe = unscaledEe.times(scale);
+      const pagibigEr = unscaledEr.times(scale);
+
       lineItems.push({
         category: "PAGIBIG_EE",
         direction: "DEDUCTION",
-        description: "Pag-IBIG employee share",
+        description: input.pagibigDeductionMode === "MANUAL" ? "Pag-IBIG employee share (manual entry)" : "Pag-IBIG employee share",
         amount: pagibigEe,
       });
       lineItems.push({
         category: "PAGIBIG_ER",
         direction: "EMPLOYER_CONTRIBUTION",
-        description: "Pag-IBIG employer share",
+        description: input.pagibigDeductionMode === "MANUAL" ? "Pag-IBIG employer share (manual entry)" : "Pag-IBIG employer share",
         amount: pagibigEr,
       });
     }

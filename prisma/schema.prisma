@@ -191,6 +191,11 @@ enum CivilStatus {
   ANNULLED
 }
 
+enum StatutoryDeductionMode {
+  TABLE
+  MANUAL
+}
+
 // Contractors/freelancers are intentionally NOT modeled here — they're
 // handled by a fully separate Contractor/ContractorPayment module (Phase 5)
 // since they're subject to expanded withholding tax (2307), not compensation
@@ -243,11 +248,23 @@ model Employee {
   bankSplitValue         Decimal?           @db.Decimal(14, 2)
   paymentMethod          PaymentMethod      @default(BANK_TRANSFER)
   isIncludedInAlphalist  Boolean            @default(true)
-  // Individual statutory deduction flags
-  isDeductSss            Boolean            @default(true)
-  isDeductPhilhealth     Boolean            @default(true)
-  isDeductPagibig        Boolean            @default(true)
-  createdAt              DateTime           @default(now())
+
+  // Individual statutory deduction flags & manual override fields
+  isDeductSss              Boolean                @default(true)
+  sssDeductionMode         StatutoryDeductionMode @default(TABLE)
+  sssCustomAmountEe        Decimal?               @db.Decimal(14, 2)
+  sssCustomAmountEr        Decimal?               @db.Decimal(14, 2)
+
+  isDeductPhilhealth       Boolean                @default(true)
+  philhealthDeductionMode  StatutoryDeductionMode @default(TABLE)
+  philhealthCustomAmountEe Decimal?               @db.Decimal(14, 2)
+  philhealthCustomAmountEr Decimal?               @db.Decimal(14, 2)
+
+  isDeductPagibig          Boolean                @default(true)
+  pagibigDeductionMode     StatutoryDeductionMode @default(TABLE)
+  pagibigCustomAmountEe    Decimal?               @db.Decimal(14, 2)
+  pagibigCustomAmountEr    Decimal?               @db.Decimal(14, 2)
+  createdAt                DateTime               @default(now())
   updatedAt              DateTime           @updatedAt
 
   company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)

@@ -13,6 +13,8 @@ export const civilStatusValues = ["SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "
 
 export const payBasisValues = ["MONTHLY_RATE", "DAILY_RATE", "HOURLY_RATE"] as const;
 
+export const statutoryDeductionModeValues = ["TABLE", "MANUAL"] as const;
+
 export const allowanceSchema = z.object({
   label: z.string().min(1, "Required"),
   amount: z.coerce.number().nonnegative("Must be 0 or greater"),
@@ -34,6 +36,18 @@ export const createEmployeeSchema = z.object({
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
+  isDeductSss: z.boolean().default(true),
+  sssDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  sssCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  sssCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductPhilhealth: z.boolean().default(true),
+  philhealthDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  philhealthCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  philhealthCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductPagibig: z.boolean().default(true),
+  pagibigDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
   employeeType: z.enum(employeeTypeValues),
   isManagerialExempt: z.boolean().default(false),
   dateHired: z.string().min(1, "Required"),
@@ -103,6 +117,18 @@ export const updateEmployeeSchema = z.object({
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
+  isDeductSss: z.boolean().optional(),
+  sssDeductionMode: z.enum(statutoryDeductionModeValues).optional(),
+  sssCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  sssCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductPhilhealth: z.boolean().optional(),
+  philhealthDeductionMode: z.enum(statutoryDeductionModeValues).optional(),
+  philhealthCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  philhealthCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductPagibig: z.boolean().optional(),
+  pagibigDeductionMode: z.enum(statutoryDeductionModeValues).optional(),
+  pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
   positionTitle: z.string().min(1).optional(),
   departmentName: z.string().optional(),
   employmentStatus: z.enum(employmentStatusValues).optional(),
@@ -133,8 +159,17 @@ export const editEmployeeProfileSchema = z.object({
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
   isDeductSss: z.boolean().default(true),
+  sssDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  sssCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  sssCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
   isDeductPhilhealth: z.boolean().default(true),
+  philhealthDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  philhealthCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  philhealthCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
   isDeductPagibig: z.boolean().default(true),
+  pagibigDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
+  pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
+  pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
 });
 export type EditEmployeeProfileFormValues = z.input<typeof editEmployeeProfileSchema>;
 export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema>;

@@ -178,21 +178,136 @@ export function EditEmployeeProfileDialog({
             <Input id="pagibigNumber" {...register("pagibigNumber")} />
           </div>
 
-          <div className="space-y-2.5 sm:col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Statutory Deductions (Opt-in / Opt-out)</Label>
-            <div className="flex flex-wrap gap-5 pt-1">
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductSss")} />
-                <span>Deduct SSS Contribution</span>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPhilhealth")} />
-                <span>Deduct PhilHealth Contribution</span>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPagibig")} />
-                <span>Deduct Pag-IBIG Contribution</span>
-              </label>
+          <div className="space-y-4 sm:col-span-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Statutory Deductions &amp; Contribution Override</Label>
+              <p className="text-[11px] text-slate-500">Choose between standard statutory rate table calculation or nominated manual contribution overrides.</p>
+            </div>
+
+            {/* SSS Contribution Group */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                  <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductSss")} />
+                  <span>SSS Contribution</span>
+                </label>
+                <Controller
+                  control={control}
+                  name="sssDeductionMode"
+                  render={({ field }) => (
+                    <Select value={field.value ?? "TABLE"} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-7 text-xs w-44">
+                        <SelectValue placeholder="Calculation mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TABLE" className="text-xs">Standard Table Rate</SelectItem>
+                        <SelectItem value="MANUAL" className="text-xs">Manual Entry (Nominated)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <Controller
+                control={control}
+                name="sssDeductionMode"
+                render={({ field }) => field.value === "MANUAL" ? (
+                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+                    <div className="space-y-1">
+                      <Label htmlFor="sssCustomAmountEe" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated EE Share (₱)</Label>
+                      <Input id="sssCustomAmountEe" type="number" step="0.01" placeholder="e.g. 500.00" {...register("sssCustomAmountEe")} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="sssCustomAmountEr" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated ER Share (₱)</Label>
+                      <Input id="sssCustomAmountEr" type="number" step="0.01" placeholder="e.g. 1000.00" {...register("sssCustomAmountEr")} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                ) : <></>}
+              />
+            </div>
+
+            {/* PhilHealth Contribution Group */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                  <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPhilhealth")} />
+                  <span>PhilHealth Contribution</span>
+                </label>
+                <Controller
+                  control={control}
+                  name="philhealthDeductionMode"
+                  render={({ field }) => (
+                    <Select value={field.value ?? "TABLE"} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-7 text-xs w-44">
+                        <SelectValue placeholder="Calculation mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TABLE" className="text-xs">Standard Table Rate</SelectItem>
+                        <SelectItem value="MANUAL" className="text-xs">Manual Entry (Nominated)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <Controller
+                control={control}
+                name="philhealthDeductionMode"
+                render={({ field }) => field.value === "MANUAL" ? (
+                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+                    <div className="space-y-1">
+                      <Label htmlFor="philhealthCustomAmountEe" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated EE Share (₱)</Label>
+                      <Input id="philhealthCustomAmountEe" type="number" step="0.01" placeholder="e.g. 400.00" {...register("philhealthCustomAmountEe")} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="philhealthCustomAmountEr" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated ER Share (₱)</Label>
+                      <Input id="philhealthCustomAmountEr" type="number" step="0.01" placeholder="e.g. 400.00" {...register("philhealthCustomAmountEr")} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                ) : <></>}
+              />
+            </div>
+
+            {/* Pag-IBIG Contribution Group */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                  <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductPagibig")} />
+                  <span>Pag-IBIG (HDMF) Contribution</span>
+                </label>
+                <Controller
+                  control={control}
+                  name="pagibigDeductionMode"
+                  render={({ field }) => (
+                    <Select value={field.value ?? "TABLE"} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-7 text-xs w-44">
+                        <SelectValue placeholder="Calculation mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TABLE" className="text-xs">Standard Table Rate</SelectItem>
+                        <SelectItem value="MANUAL" className="text-xs">Manual Entry (Nominated)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <Controller
+                control={control}
+                name="pagibigDeductionMode"
+                render={({ field }) => field.value === "MANUAL" ? (
+                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+                    <div className="space-y-1">
+                      <Label htmlFor="pagibigCustomAmountEe" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated EE Share (₱)</Label>
+                      <Input id="pagibigCustomAmountEe" type="number" step="0.01" placeholder="e.g. 200.00" {...register("pagibigCustomAmountEe")} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="pagibigCustomAmountEr" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Nominated ER Share (₱)</Label>
+                      <Input id="pagibigCustomAmountEr" type="number" step="0.01" placeholder="e.g. 200.00" {...register("pagibigCustomAmountEr")} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                ) : <></>}
+              />
             </div>
           </div>
 
