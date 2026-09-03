@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getAuthSession } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CompanySwitcher } from "@/components/company-switcher";
-import { ShieldAlertIcon, Building2Icon, UsersIcon, BookOpenIcon, ArrowRightIcon } from "lucide-react";
+import { ShieldAlertIcon, Building2Icon, UsersIcon, BookOpenIcon, ArrowRightIcon, UserCogIcon } from "lucide-react";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();
@@ -29,11 +29,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-200 hover:bg-slate-700/80 transition-colors">
                 <Building2Icon className="size-3.5 text-blue-400" /> Companies
               </Link>
+              <Link href="/admin/users" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors">
+                <UserCogIcon className="size-3.5 text-blue-400" /> Users &amp; Credentials
+              </Link>
               <Link href="/admin/employees" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors">
                 <UsersIcon className="size-3.5 text-blue-400" /> All Employees
               </Link>
               <Link href="/admin/rates" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors">
-                <BookOpenIcon className="size-3.5 text-blue-400" /> Statutory Rate Tables
+                <BookOpenIcon className="size-3.5 text-blue-400" /> Statutory Rates
               </Link>
             </nav>
           </div>
