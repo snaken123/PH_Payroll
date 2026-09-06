@@ -6,7 +6,7 @@ import { env } from "./env";
 import { CompanyRole, PlatformRole } from "./generated/prisma/enums";
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || "ph-payroll-local-development-secret-key-2026",
+  secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",

@@ -1,8 +1,9 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
+import { env } from "@/lib/env";
 
 export async function proxy(req: NextRequest) {
-  const secret = process.env.NEXTAUTH_SECRET || "ph-payroll-local-development-secret-key-2026";
+  const secret = env.NEXTAUTH_SECRET;
   const { pathname } = req.nextUrl;
 
   // Attempt to decode session token with secureCookie: true (HTTPS / Production),
