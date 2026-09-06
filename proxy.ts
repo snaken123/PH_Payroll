@@ -22,7 +22,7 @@ export default withAuth(
     return NextResponse.next();
   },
   {
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || "ph-payroll-local-development-secret-key-2026",
     callbacks: {
       authorized: ({ token }) => !!token,
     },
