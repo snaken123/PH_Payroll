@@ -56,6 +56,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
       }
 
       // Allow the client to switch active company via useSession().update({ companyId })
@@ -64,46 +65,41 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: {
-            name: true,
-            platformRole: true,
-            memberships: {
-              where: { isActive: true },
-              select: { companyId: true, role: true },
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: {
+              name: true,
+              platformRole: true,
+              memberships: {
+                where: { isActive: true },
+                select: { companyId: true, role: true },
+              },
             },
-          },
-        });
+          });
 
-        if (!dbUser) {
-          // User was deleted after the token was issued — invalidate the session.
-          return {};
-        }
+          if (dbUser) {
+            token.name = dbUser.name;
+            token.platformRole = dbUser.platformRole;
 
-        token.name = dbUser.name;
-        token.platformRole = dbUser.platformRole;
+            const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
+            const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId);
 
-        const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
-        const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId);
-
-        if (activeMembership) {
-          token.companyId = activeMembership.companyId;
-          token.companyRole = activeMembership.role;
-        } else if (dbUser.platformRole === PlatformRole.SUPER_ADMIN && requestedCompanyId) {
-          // Super admins can point their session at any company, not just
-          // ones they hold an explicit membership in — requireTenantRole
-          // already bypasses per-company role checks for them, and
-          // assertCompanyId still enforces that this companyId matches the
-          // resource being touched, so this only widens which company they
-          // can select, not what per-request tenant isolation allows.
-          const company = await prisma.company.findUnique({ where: { id: requestedCompanyId }, select: { id: true } });
-          token.companyId = company?.id ?? dbUser.memberships[0]?.companyId ?? null;
-          token.companyRole = null;
-        } else {
-          const fallback = dbUser.memberships[0];
-          token.companyId = fallback?.companyId ?? null;
-          token.companyRole = fallback?.role ?? null;
+            if (activeMembership) {
+              token.companyId = activeMembership.companyId;
+              token.companyRole = activeMembership.role;
+            } else if (dbUser.platformRole === PlatformRole.SUPER_ADMIN && requestedCompanyId) {
+              const company = await prisma.company.findUnique({ where: { id: requestedCompanyId }, select: { id: true } });
+              token.companyId = company?.id ?? dbUser.memberships[0]?.companyId ?? null;
+              token.companyRole = null;
+            } else {
+              const fallback = dbUser.memberships[0];
+              token.companyId = fallback?.companyId ?? null;
+              token.companyRole = fallback?.role ?? null;
+            }
+          }
+        } catch (error) {
+          console.error("NextAuth jwt callback db error:", error);
         }
       }
 
