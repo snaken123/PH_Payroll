@@ -48,6 +48,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        if (
+          urlObj.origin === baseUrlObj.origin ||
+          urlObj.hostname.endsWith("salazar-group.net") ||
+          urlObj.hostname.endsWith("vercel.app")
+        ) {
+          return url;
+        }
+      } catch {
+        // Ignore invalid URLs
+      }
+      return baseUrl;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;

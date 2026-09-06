@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { ShieldAlertIcon, LockIcon, MailIcon, EyeIcon, EyeOffIcon, ShieldCheckIc
 function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
+  const authError = searchParams.get("error");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -26,23 +27,18 @@ function LoginForm() {
     formState: { errors },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
+  useEffect(() => {
+    if (authError === "CredentialsSignin") {
+      toast.error("Invalid email or password");
+    } else if (authError) {
+      toast.error("Authentication failed. Please verify your credentials.");
+    }
+  }, [authError]);
+
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
-    const result = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
-    setSubmitting(false);
+    toast.success("Authenticating... Redirecting to dashboard...");
 
-    if (result?.error) {
-      toast.error("Invalid email or password");
-      return;
-    }
-
-    toast.success("Authentication successful. Redirecting...");
-
-    // Determine target URL: honor callbackUrl if present and safe, otherwise intelligently default to /admin or /dashboard
     let targetUrl =
       callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
         ? callbackUrl
@@ -52,8 +48,12 @@ function LoginForm() {
       targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
     }
 
-    // Perform a full browser navigation to ensure cookies are cleanly sent to the target route
-    window.location.href = targetUrl;
+    await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      callbackUrl: targetUrl,
+      redirect: true,
+    });
   }
 
   function prefillCredentials(email: string) {
