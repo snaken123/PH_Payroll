@@ -37,7 +37,19 @@ function LoginForm() {
 
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
-    toast.success("Authenticating... Redirecting to dashboard...");
+    const result = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setSubmitting(false);
+      toast.error("Invalid email or password. Please try again.");
+      return;
+    }
+
+    toast.success("Authentication successful! Redirecting...");
 
     let targetUrl =
       callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
@@ -48,12 +60,8 @@ function LoginForm() {
       targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
     }
 
-    await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      callbackUrl: targetUrl,
-      redirect: true,
-    });
+    // Force full window replacement to target route
+    window.location.replace(targetUrl);
   }
 
   function prefillCredentials(email: string) {
