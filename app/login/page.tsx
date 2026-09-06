@@ -42,11 +42,15 @@ function LoginForm() {
 
     toast.success("Authentication successful. Redirecting...");
 
-    // Determine target URL: honor callbackUrl if present and safe, otherwise default to home redirect
-    const targetUrl =
+    // Determine target URL: honor callbackUrl if present and safe, otherwise intelligently default to /admin or /dashboard
+    let targetUrl =
       callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
         ? callbackUrl
-        : "/";
+        : "";
+
+    if (!targetUrl || targetUrl === "/") {
+      targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
+    }
 
     // Perform a full browser navigation to ensure cookies are cleanly sent to the target route
     window.location.href = targetUrl;
