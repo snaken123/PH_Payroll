@@ -78,6 +78,8 @@ export async function POST(request: Request) {
           dateHired: new Date(data.dateHired),
           departmentName: data.departmentName || null,
           positionTitle: data.positionTitle,
+          rank: data.rank || null,
+          scheduleType: data.scheduleType || null,
           isManagerialExempt: data.employeeType === "MANAGERIAL_SUPERVISORY" ? data.isManagerialExempt : false,
           paymentMethod: PaymentMethod.BANK_TRANSFER,
           compensationRecords: {

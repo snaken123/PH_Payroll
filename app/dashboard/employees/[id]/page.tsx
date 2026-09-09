@@ -120,6 +120,8 @@ export default async function EmployeeDetailPage({
                 civilStatus: employee.civilStatus,
                 positionTitle: employee.positionTitle,
                 departmentName: employee.departmentName ?? "",
+                rank: employee.rank ?? "",
+                scheduleType: employee.scheduleType ?? "",
                 tin: employee.tin ?? "",
                 sssNumber: employee.sssNumber ?? "",
                 philhealthNumber: employee.philhealthNumber ?? "",
@@ -179,6 +181,14 @@ export default async function EmployeeDetailPage({
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
               <span className="text-slate-500 font-medium">Employee Type</span>
               <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.employeeType.replaceAll("_", " ")}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+              <span className="text-slate-500 font-medium">Rank</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.rank || "Unspecified"}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+              <span className="text-slate-500 font-medium">Schedule Type</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.scheduleType || "Unspecified"}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
               <span className="text-slate-500 font-medium">Date Hired</span>

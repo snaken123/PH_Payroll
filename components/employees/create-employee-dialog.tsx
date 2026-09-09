@@ -13,6 +13,8 @@ import {
   sexValues,
   civilStatusValues,
   payBasisValues,
+  rankValues,
+  scheduleTypeValues,
 } from "@/lib/validations/employee";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,6 +276,52 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
           <div className="space-y-1">
             <Label htmlFor="departmentName">Department</Label>
             <Input id="departmentName" {...register("departmentName")} />
+          </div>
+
+          <div className="space-y-1">
+            <Label>Rank</Label>
+            <Controller
+              control={control}
+              name="rank"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None / Unspecified</SelectItem>
+                    {rankValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label>Schedule Type</Label>
+            <Controller
+              control={control}
+              name="scheduleType"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select schedule type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None / Unspecified</SelectItem>
+                    {scheduleTypeValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-1">

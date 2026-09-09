@@ -27,6 +27,8 @@ import {
   editEmployeeProfileSchema,
   sexValues,
   civilStatusValues,
+  rankValues,
+  scheduleTypeValues,
   type EditEmployeeProfileFormValues,
   type EditEmployeeProfileInput,
 } from "@/lib/validations/employee";
@@ -160,6 +162,50 @@ export function EditEmployeeProfileDialog({
           <div className="space-y-1">
             <Label htmlFor="departmentName">Department</Label>
             <Input id="departmentName" {...register("departmentName")} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="rank">Rank</Label>
+            <Controller
+              control={control}
+              name="rank"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="rank">
+                    <SelectValue placeholder="Select rank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None / Unspecified</SelectItem>
+                    {rankValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="scheduleType">Schedule Type</Label>
+            <Controller
+              control={control}
+              name="scheduleType"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="scheduleType">
+                    <SelectValue placeholder="Select schedule type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None / Unspecified</SelectItem>
+                    {scheduleTypeValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="tin">TIN</Label>

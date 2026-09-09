@@ -15,6 +15,26 @@ export const payBasisValues = ["MONTHLY_RATE", "DAILY_RATE", "HOURLY_RATE"] as c
 
 export const statutoryDeductionModeValues = ["TABLE", "MANUAL"] as const;
 
+export const rankValues = [
+  "FD",
+  "AM1",
+  "AM2",
+  "AS1",
+  "AS2",
+  "CL4",
+  "PROB",
+  "Retainer",
+  "VS",
+] as const;
+
+export const scheduleTypeValues = [
+  "Flexi1",
+  "Flexi2",
+  "On-Call",
+  "Field",
+  "Regular",
+] as const;
+
 export const allowanceSchema = z.object({
   label: z.string().min(1, "Required"),
   amount: z.coerce.number().nonnegative("Must be 0 or greater"),
@@ -54,6 +74,8 @@ export const createEmployeeSchema = z.object({
   dateHired: z.string().min(1, "Required"),
   departmentName: z.string().optional(),
   positionTitle: z.string().min(1, "Required"),
+  rank: z.string().optional().nullable(),
+  scheduleType: z.string().optional().nullable(),
   payBasis: z.enum(payBasisValues),
   basicRate: z.coerce.number().positive("Must be greater than 0"),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
@@ -135,6 +157,8 @@ export const updateEmployeeSchema = z.object({
   pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
   positionTitle: z.string().min(1).optional(),
   departmentName: z.string().optional(),
+  rank: z.string().optional().nullable(),
+  scheduleType: z.string().optional().nullable(),
   employmentStatus: z.enum(employmentStatusValues).optional(),
   isManagerialExempt: z.boolean().optional(),
   managerialExemptReason: z.string().optional(),
@@ -158,6 +182,8 @@ export const editEmployeeProfileSchema = z.object({
   civilStatus: z.enum(civilStatusValues),
   positionTitle: z.string().min(1, "Required"),
   departmentName: z.string().optional(),
+  rank: z.string().optional().nullable(),
+  scheduleType: z.string().optional().nullable(),
   tin: z.string().optional(),
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),

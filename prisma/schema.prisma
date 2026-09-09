@@ -249,6 +249,8 @@ model Employee {
   bankSplitValue         Decimal?           @db.Decimal(14, 2)
   paymentMethod          PaymentMethod      @default(BANK_TRANSFER)
   isIncludedInAlphalist  Boolean            @default(true)
+  rank                   String?
+  scheduleType           String?
 
   // Individual statutory deduction flags & manual override fields
   isDeductSss              Boolean                @default(true)
