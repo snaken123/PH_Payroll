@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +36,15 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+interface CompanyOption {
+  id: string;
+  legalName: string;
+  tradeName?: string | null;
+  companyCode: string;
+}
+
+const INITIAL_ALLOWANCES = ["Communication", "Inter-Company", "Transportation"];
+
 const EMPLOYEE_TYPE_LABELS: Record<(typeof employeeTypeValues)[number], string> = {
   MONTHLY_RANK_AND_FILE: "Monthly rank-and-file",
   DAILY_HOURLY: "Daily / hourly",
@@ -53,19 +62,42 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [allowanceTypes, setAllowanceTypes] = useState<string[]>(INITIAL_ALLOWANCES);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [customLabels, setCustomLabels] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    if (!open) return;
+
+    fetch("/api/allowance-types")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.allowanceTypes) {
+          setAllowanceTypes(data.allowanceTypes);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/companies/options")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.companies) {
+          setCompanies(data.companies);
+        }
+      })
+      .catch(() => {});
+  }, [open]);
+
   const {
     register,
     handleSubmit,
     control,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateEmployeeFormValues, unknown, CreateEmployeeInput>({
     resolver: zodResolver(createEmployeeSchema),
-    // Every Controller-bound Select must start with a defined value —
-    // Base UI's Select decides controlled vs. uncontrolled on first render,
-    // so leaving these `undefined` until the user picks something causes a
-    // console warning and a stuck "value as label" display afterward.
     defaultValues: {
       isManagerialExempt: false,
       branchId: branches[0]?.id ?? "",
@@ -83,13 +115,30 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
   });
 
   const employeeType = watch("employeeType");
+  const watchAllowances = watch("allowances") ?? [];
 
   async function onSubmit(values: CreateEmployeeInput) {
     setSubmitting(true);
+
+    const resolvedAllowances = (values.allowances || []).map((a, idx) => {
+      const customVal = customLabels[idx];
+      const finalLabel = a.label === "OTHER" ? (customVal && customVal.trim() ? customVal.trim() : "Other") : a.label;
+      return {
+        ...a,
+        label: finalLabel,
+        payingCompanyId: a.payingCompanyId || null,
+      };
+    });
+
+    const payload = {
+      ...values,
+      allowances: resolvedAllowances,
+    };
+
     const res = await fetch("/api/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify(payload),
     });
     setSubmitting(false);
 
@@ -101,6 +150,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
 
     toast.success("Employee added");
     reset();
+    setCustomLabels({});
     setOpen(false);
     router.refresh();
   }
@@ -314,72 +364,175 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
             />
           </div>
 
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-3 sm:col-span-2 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
             <div className="flex items-center justify-between">
-              <Label>Allowances</Label>
+              <Label className="font-bold">Allowances</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => appendAllowance({ label: "", amount: 0, isTaxable: true })}
+                onClick={() =>
+                  appendAllowance({
+                    label: allowanceTypes[0] || "Transportation",
+                    amount: 0,
+                    isTaxable: true,
+                    payingCompanyId: "",
+                  })
+                }
               >
                 <PlusIcon /> Add allowance
               </Button>
             </div>
             {allowanceFields.length === 0 && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 e.g. Transportation, Rice, Mobile Phone — optional, added to gross pay each cutoff.
               </p>
             )}
-            {allowanceFields.map((field, index) => (
-              <div key={field.id} className="flex items-end gap-2">
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor={`allowances.${index}.label`}>Label</Label>
-                  <Input
-                    id={`allowances.${index}.label`}
-                    placeholder="e.g. Transportation Allowance"
-                    {...register(`allowances.${index}.label` as const)}
-                  />
-                  {errors.allowances?.[index]?.label && (
-                    <p className="text-sm text-destructive">{errors.allowances[index]?.label?.message}</p>
-                  )}
-                </div>
-                <div className="w-28 space-y-1">
-                  <Label htmlFor={`allowances.${index}.amount`}>Amount (₱)</Label>
-                  <Input
-                    id={`allowances.${index}.amount`}
-                    type="number"
-                    step="0.01"
-                    {...register(`allowances.${index}.amount` as const)}
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 pb-2">
-                  <Controller
-                    control={control}
-                    name={`allowances.${index}.isTaxable` as const}
-                    render={({ field: taxableField }) => (
-                      <Switch
-                        checked={taxableField.value}
-                        onCheckedChange={taxableField.onChange}
-                        id={`allowances.${index}.isTaxable`}
-                      />
-                    )}
-                  />
-                  <Label htmlFor={`allowances.${index}.isTaxable`} className="text-xs">
-                    Taxable
-                  </Label>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeAllowance(index)}
-                  aria-label="Remove allowance"
+            {allowanceFields.map((field, index) => {
+              const currentLabel = watchAllowances[index]?.label ?? field.label;
+              const isCustom = currentLabel === "OTHER" || (!allowanceTypes.includes(currentLabel) && currentLabel !== "");
+
+              return (
+                <div
+                  key={field.id}
+                  className="p-3 rounded-md border border-slate-200/80 dark:border-slate-800 bg-background space-y-2.5 shadow-2xs"
                 >
-                  <XIcon />
-                </Button>
-              </div>
-            ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.label`}>Label Choice</Label>
+                      <Controller
+                        control={control}
+                        name={`allowances.${index}.label` as const}
+                        render={({ field: labelField }) => {
+                          const selectVal = isCustom ? "OTHER" : labelField.value;
+                          return (
+                            <Select
+                              value={selectVal || "OTHER"}
+                              onValueChange={(val) => {
+                                if (val === "OTHER") {
+                                  labelField.onChange("OTHER");
+                                  if (!customLabels[index] && labelField.value !== "OTHER") {
+                                    setCustomLabels((prev) => {
+                                      const next = { ...prev };
+                                      next[index] = labelField.value || "";
+                                      return next;
+                                    });
+                                  }
+                                } else {
+                                  labelField.onChange(val);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select allowance">
+                                  {(value: string) => (value === "OTHER" ? "Other (Custom...)" : value)}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {allowanceTypes.map((type) => (
+                                  <SelectItem key={type} value={type}>
+                                    {type}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="OTHER">Other (Type new allowance...)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          );
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.payingCompanyId`}>Paying Company</Label>
+                      <Controller
+                        control={control}
+                        name={`allowances.${index}.payingCompanyId` as const}
+                        render={({ field: compField }) => (
+                          <Select value={compField.value ?? ""} onValueChange={compField.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Current Company (Default)">
+                                {(value: string) =>
+                                  companies.find((c) => c.id === value)?.legalName ?? "Current Company (Default)"
+                                }
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Current Company (Default)</SelectItem>
+                              {companies.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.legalName} ({c.companyCode})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {isCustom && (
+                    <div className="space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.customLabel`}>Custom Allowance Name</Label>
+                      <Input
+                        id={`create_allowances.${index}.customLabel`}
+                        placeholder="e.g. Internet / Equipment Allowance"
+                        value={customLabels[index] ?? (currentLabel === "OTHER" ? "" : currentLabel)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomLabels((prev) => {
+                            const next = { ...prev };
+                            next[index] = val;
+                            return next;
+                          });
+                          setValue(`allowances.${index}.label` as const, "OTHER");
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="w-32 space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.amount`}>Amount (₱)</Label>
+                      <Input
+                        id={`create_allowances.${index}.amount`}
+                        type="number"
+                        step="0.01"
+                        {...register(`allowances.${index}.amount` as const)}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-5">
+                      <Controller
+                        control={control}
+                        name={`allowances.${index}.isTaxable` as const}
+                        render={({ field: taxableField }) => (
+                          <Switch
+                            checked={taxableField.value}
+                            onCheckedChange={taxableField.onChange}
+                            id={`create_allowances.${index}.isTaxable`}
+                          />
+                        )}
+                      />
+                      <Label htmlFor={`create_allowances.${index}.isTaxable`} className="text-xs">
+                        Taxable
+                      </Label>
+                    </div>
+
+                    <div className="ml-auto pt-5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAllowance(index)}
+                        aria-label="Remove allowance"
+                      >
+                        <XIcon className="size-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="space-y-1">

@@ -41,7 +41,16 @@ export default async function EmployeeDetailPage({
     where: { id },
     include: {
       branch: { select: { name: true, region: true } },
-      compensationRecords: { orderBy: { effectiveFrom: "desc" }, include: { allowances: true } },
+      compensationRecords: {
+        orderBy: { effectiveFrom: "desc" },
+        include: {
+          allowances: {
+            include: {
+              payingCompany: { select: { id: true, legalName: true, tradeName: true } },
+            },
+          },
+        },
+      },
       loans: { orderBy: { startDate: "desc" } },
       finalPayRuns: { orderBy: { finalPayNumber: "desc" } },
     },
@@ -303,7 +312,26 @@ export default async function EmployeeDetailPage({
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Compensation History</CardTitle>
             <CardDescription className="text-xs">Historical basic pay rates, effective dates, and allowances.</CardDescription>
           </div>
-          <AddCompensationDialog employeeId={employee.id} />
+          <AddCompensationDialog
+            employeeId={employee.id}
+            currentCompensation={
+              currentComp
+                ? {
+                    payBasis: currentComp.payBasis,
+                    basicRate: Number(currentComp.basicRate),
+                    standardWorkDaysPerMonth: currentComp.standardWorkDaysPerMonth
+                      ? Number(currentComp.standardWorkDaysPerMonth)
+                      : null,
+                    allowances: currentComp.allowances.map((a) => ({
+                      label: a.label,
+                      amount: Number(a.amount),
+                      isTaxable: a.isTaxable,
+                      payingCompanyId: a.payingCompanyId,
+                    })),
+                  }
+                : undefined
+            }
+          />
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -329,7 +357,11 @@ export default async function EmployeeDetailPage({
                     {c.allowances.length === 0
                       ? "—"
                       : c.allowances
-                          .map((a) => `${a.label} (₱${Number(a.amount).toLocaleString()}${a.isTaxable ? "" : ", non-taxable"})`)
+                          .map((a) => {
+                            const payingCo = (a as any).payingCompany?.legalName;
+                            const coStr = payingCo ? ` • Paid by ${payingCo}` : "";
+                            return `${a.label} (₱${Number(a.amount).toLocaleString()}${a.isTaxable ? "" : ", non-taxable"}${coStr})`;
+                          })
                           .join(", ")}
                   </TableCell>
                 </TableRow>

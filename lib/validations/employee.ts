@@ -19,6 +19,7 @@ export const allowanceSchema = z.object({
   label: z.string().min(1, "Required"),
   amount: z.coerce.number().nonnegative("Must be 0 or greater"),
   isTaxable: z.boolean().default(true),
+  payingCompanyId: z.string().optional().nullable(),
 });
 export type AllowanceFormValues = z.input<typeof allowanceSchema>;
 export type AllowanceInput = z.output<typeof allowanceSchema>;
@@ -87,10 +88,13 @@ export const separationCategoryValues = [
 // PATCH /api/employees/[id] — every field is optional since the route is used
 // for several distinct partial updates (clearance toggle, separation, profile
 // edits), not a single form submission.
+export const updateTypeValues = ["BASIC", "ALLOWANCE", "BOTH"] as const;
+
 export const compensationRecordSchema = z.object({
+  updateType: z.enum(updateTypeValues).default("BOTH"),
   effectiveFrom: z.string().min(1, "Required"),
-  payBasis: z.enum(payBasisValues),
-  basicRate: z.coerce.number().positive("Must be greater than 0"),
+  payBasis: z.enum(payBasisValues).optional(),
+  basicRate: optionalCoercedNumber(z.coerce.number().positive()),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
   allowances: z.array(allowanceSchema).default([]),
 });

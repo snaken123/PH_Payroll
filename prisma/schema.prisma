@@ -113,6 +113,7 @@ model Company {
   contractorPayments ContractorPayment[]
   finalPayRuns       FinalPayRun[]
   bankAccounts       CompanyBankAccount[]
+  allowancesPaid     AllowanceLine[]      @relation("AllowancePayingCompany")
 
   @@index([status])
 }
@@ -346,10 +347,19 @@ model AllowanceLine {
   isTaxable            Boolean            @default(true)
   isDeMinimis          Boolean            @default(false)
   deMinimisCategory    DeMinimisCategory?
+  payingCompanyId      String?
 
   compensationRecord CompensationRecord @relation(fields: [compensationRecordId], references: [id], onDelete: Cascade)
+  payingCompany      Company?           @relation("AllowancePayingCompany", fields: [payingCompanyId], references: [id], onDelete: SetNull)
 
   @@index([compensationRecordId])
+  @@index([payingCompanyId])
+}
+
+model AllowanceType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
 }
 
 // ==================== Statutory Rate Configuration ====================

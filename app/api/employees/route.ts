@@ -92,12 +92,23 @@ export async function POST(request: Request) {
                   label: a.label,
                   amount: a.amount,
                   isTaxable: a.isTaxable,
+                  payingCompanyId: a.payingCompanyId || null,
                 })),
               },
             },
           },
         },
       });
+
+      for (const a of data.allowances) {
+        if (a.label) {
+          await tx.allowanceType.upsert({
+            where: { name: a.label },
+            update: {},
+            create: { name: a.label },
+          });
+        }
+      }
 
       // Grant the current year's balance for every leave type the company
       // has configured (SIL + any custom types) — not prorated by hire date

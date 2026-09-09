@@ -6,9 +6,6 @@ import { compensationRecordSchema } from "@/lib/validations/employee";
 
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
-// Creates a new effective-dated compensation record and closes the
-// previously-open one. Compensation is never overwritten in place so that
-// past payroll runs always reflect the rate actually in effect at the time.
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
@@ -19,7 +16,17 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const { id: employeeId } = await context.params;
 
-  const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    include: {
+      compensationRecords: {
+        where: { effectiveTo: null },
+        orderBy: { effectiveFrom: "desc" },
+        include: { allowances: true },
+        take: 1,
+      },
+    },
+  });
   if (!employee) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
@@ -35,6 +42,46 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
   const data = parsed.data;
   const effectiveFrom = new Date(data.effectiveFrom);
+  const currentRecord = employee.compensationRecords[0];
+
+  const updateType = data.updateType || "BOTH";
+
+  // Determine pay basis & rate: fallback to active record if updating allowances only
+  const payBasis = (updateType === "ALLOWANCE" && currentRecord) ? currentRecord.payBasis : (data.payBasis ?? currentRecord?.payBasis ?? "MONTHLY_RATE");
+  const basicRate = (updateType === "ALLOWANCE" && currentRecord) ? currentRecord.basicRate : (data.basicRate ?? currentRecord?.basicRate ?? 0);
+  const standardWorkDaysPerMonth = (updateType === "ALLOWANCE" && currentRecord)
+    ? currentRecord.standardWorkDaysPerMonth
+    : (data.standardWorkDaysPerMonth ?? currentRecord?.standardWorkDaysPerMonth ?? null);
+
+  // Determine allowances: fallback to active allowances if updating basic rate only
+  let allowancesToCreate: Array<{ label: string; amount: number | string; isTaxable: boolean; payingCompanyId?: string | null }> = [];
+
+  if (updateType === "BASIC" && currentRecord) {
+    allowancesToCreate = currentRecord.allowances.map((a) => ({
+      label: a.label,
+      amount: a.amount.toString(),
+      isTaxable: a.isTaxable,
+      payingCompanyId: a.payingCompanyId,
+    }));
+  } else {
+    allowancesToCreate = data.allowances.map((a) => ({
+      label: a.label,
+      amount: a.amount,
+      isTaxable: a.isTaxable,
+      payingCompanyId: a.payingCompanyId || null,
+    }));
+  }
+
+  // Persist any new custom allowance type names
+  for (const a of allowancesToCreate) {
+    if (a.label) {
+      await prisma.allowanceType.upsert({
+        where: { name: a.label },
+        update: {},
+        create: { name: a.label },
+      });
+    }
+  }
 
   const record = await prisma.$transaction(async (tx) => {
     await tx.compensationRecord.updateMany({
@@ -46,16 +93,24 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       data: {
         employeeId,
         effectiveFrom,
-        payBasis: data.payBasis,
-        basicRate: data.basicRate,
-        standardWorkDaysPerMonth: data.standardWorkDaysPerMonth ?? null,
+        payBasis,
+        basicRate,
+        standardWorkDaysPerMonth,
         createdByUserId: ctx.userId,
         allowances: {
-          create: data.allowances.map((a) => ({
+          create: allowancesToCreate.map((a) => ({
             label: a.label,
             amount: a.amount,
             isTaxable: a.isTaxable,
+            payingCompanyId: a.payingCompanyId || null,
           })),
+        },
+      },
+      include: {
+        allowances: {
+          include: {
+            payingCompany: { select: { id: true, legalName: true, tradeName: true } },
+          },
         },
       },
     });
