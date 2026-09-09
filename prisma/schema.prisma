@@ -251,6 +251,7 @@ model Employee {
   isIncludedInAlphalist  Boolean            @default(true)
   rank                   String?
   scheduleType           String?
+  photoUrl               String?
 
   // Individual statutory deduction flags & manual override fields
   isDeductSss              Boolean                @default(true)

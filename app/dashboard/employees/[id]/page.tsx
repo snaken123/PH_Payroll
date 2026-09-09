@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { AddCompensationDialog } from "@/components/employees/add-compensation-dialog";
 import { EditEmployeeProfileDialog } from "@/components/employees/edit-employee-profile-dialog";
+import { EmployeePhotoDialog } from "@/components/employees/employee-photo-dialog";
 import { CreateLoanDialog } from "@/components/loans/create-loan-dialog";
 import { CancelLoanButton } from "@/components/loans/cancel-loan-button";
 import { LoanApprovalActions } from "@/components/loans/loan-approval-actions";
@@ -27,6 +28,7 @@ import {
   AlertTriangleIcon,
   ArrowLeftIcon,
   DownloadIcon,
+  CameraIcon,
 } from "lucide-react";
 
 export default async function EmployeeDetailPage({
@@ -108,6 +110,16 @@ export default async function EmployeeDetailPage({
         actions={
           <>
             <StatusBadge status={employee.employmentStatus} />
+            <EmployeePhotoDialog
+              employeeId={employee.id}
+              employeeName={`${employee.firstName} ${employee.lastName}`}
+              currentPhotoUrl={employee.photoUrl}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+                  <CameraIcon className="size-3.5 text-blue-600" /> Photo / Camera
+                </Button>
+              }
+            />
             <EditEmployeeProfileDialog
               employeeId={employee.id}
               defaultValues={{
@@ -171,6 +183,49 @@ export default async function EmployeeDetailPage({
 
       {/* Information Cards Grid */}
       <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <CameraIcon className="size-4 text-blue-600" /> Employee Photo &amp; Identification
+              </CardTitle>
+              <CardDescription className="text-xs">Official employee badge photo for HR records and biometric identification.</CardDescription>
+            </div>
+            <EmployeePhotoDialog
+              employeeId={employee.id}
+              employeeName={`${employee.firstName} ${employee.lastName}`}
+              currentPhotoUrl={employee.photoUrl}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+                  <CameraIcon className="size-3.5 text-blue-600" /> Upload / Take Photo
+                </Button>
+              }
+            />
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative size-28 rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-sm">
+                {employee.photoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={employee.photoUrl} alt={`${employee.firstName} ${employee.lastName}`} className="size-full object-cover" />
+                ) : (
+                  <UserIcon className="size-14 text-slate-400" />
+                )}
+              </div>
+              <div className="space-y-1 text-center sm:text-left">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {employee.lastName}, {employee.firstName} {employee.middleName ?? ""}
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Employee ID: {employee.employeeNumber}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {employee.photoUrl ? "Official photo on file." : "No photo uploaded yet. Click Upload / Take Photo to add an image."}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
