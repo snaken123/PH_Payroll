@@ -15,6 +15,7 @@ import {
   payBasisValues,
   rankValues,
   scheduleTypeValues,
+  paymentMethodValues,
 } from "@/lib/validations/employee";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -328,6 +329,48 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
             <Label htmlFor="dateHired">Date hired</Label>
             <Input id="dateHired" type="date" {...register("dateHired")} />
             {errors.dateHired && <p className="text-sm text-destructive">{errors.dateHired.message}</p>}
+          </div>
+
+          <div className="space-y-4 sm:col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Payroll Bank Account</Label>
+              <p className="text-[11px] text-slate-500">Employee direct deposit bank account details for payroll disbursements.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="create_paymentMethod">Payment Method</Label>
+                <Controller
+                  control={control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <Select value={field.value ?? "BANK_TRANSFER"} onValueChange={field.onChange}>
+                      <SelectTrigger id="create_paymentMethod">
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethodValues.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {v.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="create_bankName">Bank Name</Label>
+                <Input id="create_bankName" placeholder="e.g. BDO Unibank, BPI, Metrobank" {...register("bankName")} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="create_bankAccountNumber">Account Number</Label>
+                <Input id="create_bankAccountNumber" placeholder="e.g. 1234-5678-9012" {...register("bankAccountNumber")} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="create_bankBranch">Bank Branch</Label>
+                <Input id="create_bankBranch" placeholder="e.g. Makati Avenue Branch" {...register("bankBranch")} />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1">

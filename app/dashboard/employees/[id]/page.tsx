@@ -139,6 +139,10 @@ export default async function EmployeeDetailPage({
                 sssNumber: employee.sssNumber ?? "",
                 philhealthNumber: employee.philhealthNumber ?? "",
                 pagibigNumber: employee.pagibigNumber ?? "",
+                bankName: employee.bankName ?? "",
+                bankAccountNumber: employee.bankAccountNumber ?? "",
+                bankBranch: employee.bankBranch ?? "",
+                paymentMethod: employee.paymentMethod,
               }}
             />
             <DeleteEmployeeDialog
@@ -313,6 +317,34 @@ export default async function EmployeeDetailPage({
                   {employee.isDeductPagibig ? (employee.pagibigDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.pagibigCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
                 </span>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <BanknoteIcon className="size-4 text-blue-600" /> Payroll Bank Account
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            <div className="space-y-1">
+              <span className="text-slate-500 font-medium block">Payment Method</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 inline-block">
+                {employee.paymentMethod.replaceAll("_", " ")}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-slate-500 font-medium block">Bank Name</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankName || "—"}</span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-slate-500 font-medium block">Account Number</span>
+              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.bankAccountNumber || "—"}</span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-slate-500 font-medium block">Bank Branch</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankBranch || "—"}</span>
             </div>
           </CardContent>
         </Card>

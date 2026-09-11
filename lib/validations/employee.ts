@@ -15,6 +15,8 @@ export const payBasisValues = ["MONTHLY_RATE", "DAILY_RATE", "HOURLY_RATE"] as c
 
 export const statutoryDeductionModeValues = ["TABLE", "MANUAL"] as const;
 
+export const paymentMethodValues = ["BANK_TRANSFER", "CASH", "CHECK"] as const;
+
 export const rankValues = [
   "FD",
   "AM1",
@@ -76,6 +78,10 @@ export const createEmployeeSchema = z.object({
   positionTitle: z.string().min(1, "Required"),
   rank: z.string().optional().nullable(),
   scheduleType: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAccountNumber: z.string().optional().nullable(),
+  bankBranch: z.string().optional().nullable(),
+  paymentMethod: z.enum(paymentMethodValues).optional().default("BANK_TRANSFER"),
   payBasis: z.enum(payBasisValues),
   basicRate: z.coerce.number().positive("Must be greater than 0"),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
@@ -159,6 +165,10 @@ export const updateEmployeeSchema = z.object({
   departmentName: z.string().optional(),
   rank: z.string().optional().nullable(),
   scheduleType: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAccountNumber: z.string().optional().nullable(),
+  bankBranch: z.string().optional().nullable(),
+  paymentMethod: z.enum(paymentMethodValues).optional(),
   photoUrl: z.string().optional().nullable(),
   employmentStatus: z.enum(employmentStatusValues).optional(),
   isManagerialExempt: z.boolean().optional(),
@@ -185,6 +195,10 @@ export const editEmployeeProfileSchema = z.object({
   departmentName: z.string().optional(),
   rank: z.string().optional().nullable(),
   scheduleType: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAccountNumber: z.string().optional().nullable(),
+  bankBranch: z.string().optional().nullable(),
+  paymentMethod: z.enum(paymentMethodValues).optional().default("BANK_TRANSFER"),
   photoUrl: z.string().optional().nullable(),
   tin: z.string().optional(),
   sssNumber: z.string().optional(),
