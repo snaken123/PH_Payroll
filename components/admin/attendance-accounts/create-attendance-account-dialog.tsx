@@ -122,7 +122,7 @@ export function CreateAttendanceAccountDialog({ companies }: { companies: Compan
 
           <div className="space-y-1">
             <Label className="text-xs font-semibold">Assigned Company Scope</Label>
-            <Select value={companyId} onValueChange={setCompanyId}>
+            <Select value={companyId} onValueChange={(val) => setCompanyId(val ?? "")}>
               <SelectTrigger className="bg-slate-950 border-slate-800 text-xs h-9">
                 <SelectValue placeholder="Select company">
                   {(val: string) => companies.find((c) => c.id === val)?.legalName ?? "Select company"}

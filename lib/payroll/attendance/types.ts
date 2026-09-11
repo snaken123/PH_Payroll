@@ -1,7 +1,18 @@
 import type { Decimal } from "decimal.js";
 import type { HolidayType } from "../types";
 
-export type TimesheetStatus = "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE" | "HOLIDAY" | "REST_DAY";
+export type TimesheetStatus =
+  | "PRESENT"
+  | "ABSENT"
+  | "HALF_DAY"
+  | "LEAVE"
+  | "HOLIDAY"
+  | "REST_DAY"
+  | "LATE_UNDERTIME"
+  | "WFH"
+  | "NO_WORK"
+  | "SICK_LEAVE"
+  | "VACATION_LEAVE";
 
 /**
  * One day's hours-level facts, mirroring the TimesheetEntry Prisma model.
