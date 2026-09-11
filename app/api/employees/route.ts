@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   const employees = await prisma.employee.findMany({
-    where: withCompanyScope(ctx.companyId),
+    where: withCompanyScope(ctx.companyId, { isDeleted: false }),
     include: {
       branch: { select: { name: true } },
       compensationRecords: {

@@ -57,6 +57,7 @@ export async function computeAndPersistPayrollRun({
   const employees = await prisma.employee.findMany({
     where: {
       companyId,
+      isDeleted: false,
       employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
     },
     include: {

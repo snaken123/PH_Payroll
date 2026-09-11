@@ -239,3 +239,8 @@ export type BulkEmployeeRow = z.output<typeof bulkEmployeeRowSchema>;
 export const bulkUpdateEmployeesSchema = z.object({
   rows: z.array(bulkEmployeeRowSchema).min(1),
 });
+
+export const deleteEmployeeSchema = z.object({
+  reason: z.string().trim().min(3, "Please provide a valid deletion reason (at least 3 characters)"),
+});
+export type DeleteEmployeeInput = z.infer<typeof deleteEmployeeSchema>;

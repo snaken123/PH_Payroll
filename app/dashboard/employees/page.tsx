@@ -2,8 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { CreateEmployeeDialog } from "@/components/employees/create-employee-dialog";
+import { DeleteEmployeeDialog } from "@/components/employees/delete-employee-dialog";
+import { DeletionAuditDialog } from "@/components/employees/deletion-audit-dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Pager } from "@/components/ui/pager";
 import { SearchForm } from "@/components/ui/search-form";
@@ -12,7 +14,7 @@ import { parsePageParam, paginationMeta } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, ArrowRightIcon, Edit3Icon } from "lucide-react";
+import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, ArrowRightIcon, Edit3Icon, Trash2Icon } from "lucide-react";
 
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
@@ -28,18 +30,21 @@ export default async function EmployeesPage({
 
   const where = withCompanyScope(
     ctx.companyId,
-    search
-      ? {
-          OR: [
-            { firstName: { contains: search, mode: "insensitive" as const } },
-            { lastName: { contains: search, mode: "insensitive" as const } },
-            { employeeNumber: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {}
+    {
+      isDeleted: false,
+      ...(search
+        ? {
+            OR: [
+              { firstName: { contains: search, mode: "insensitive" as const } },
+              { lastName: { contains: search, mode: "insensitive" as const } },
+              { employeeNumber: { contains: search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    }
   );
 
-  const totalCount = await prisma.employee.count({ where: withCompanyScope(ctx.companyId) });
+  const totalCount = await prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) });
   const { skip, take, totalPages } = paginationMeta(page, await prisma.employee.count({ where }));
 
   const [employees, branches, regularCount, probationaryCount] = await Promise.all([
@@ -59,10 +64,10 @@ export default async function EmployeesPage({
       orderBy: { isHeadOffice: "desc" },
     }),
     prisma.employee.count({
-      where: withCompanyScope(ctx.companyId, { employmentStatus: EmploymentStatus.REGULAR }),
+      where: withCompanyScope(ctx.companyId, { employmentStatus: EmploymentStatus.REGULAR, isDeleted: false }),
     }),
     prisma.employee.count({
-      where: withCompanyScope(ctx.companyId, { employmentStatus: EmploymentStatus.PROBATIONARY }),
+      where: withCompanyScope(ctx.companyId, { employmentStatus: EmploymentStatus.PROBATIONARY, isDeleted: false }),
     }),
   ]);
 
@@ -74,6 +79,7 @@ export default async function EmployeesPage({
         description="Manage your organization's employee directory, compensation records, and employment statuses."
         actions={
           <>
+            <DeletionAuditDialog />
             <Link
               href="/dashboard/employees/bulk-edit"
               className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 text-xs font-semibold")}
@@ -178,12 +184,29 @@ export default async function EmployeesPage({
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Link
-                            href={`/dashboard/employees/${e.id}`}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            View <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
-                          </Link>
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/dashboard/employees/${e.id}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              View <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                            <DeleteEmployeeDialog
+                              employeeId={e.id}
+                              employeeName={`${e.firstName} ${e.lastName}`}
+                              employeeNumber={e.employeeNumber}
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title="Delete employee profile"
+                                >
+                                  <Trash2Icon className="size-3.5" />
+                                </Button>
+                              }
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

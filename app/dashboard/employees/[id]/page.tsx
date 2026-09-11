@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { AddCompensationDialog } from "@/components/employees/add-compensation-dialog";
 import { EditEmployeeProfileDialog } from "@/components/employees/edit-employee-profile-dialog";
+import { DeleteEmployeeDialog } from "@/components/employees/delete-employee-dialog";
 import { EmployeePhotoDialog } from "@/components/employees/employee-photo-dialog";
 import { CreateLoanDialog } from "@/components/loans/create-loan-dialog";
 import { CancelLoanButton } from "@/components/loans/cancel-loan-button";
@@ -139,6 +140,12 @@ export default async function EmployeeDetailPage({
                 philhealthNumber: employee.philhealthNumber ?? "",
                 pagibigNumber: employee.pagibigNumber ?? "",
               }}
+            />
+            <DeleteEmployeeDialog
+              employeeId={employee.id}
+              employeeName={`${employee.firstName} ${employee.lastName}`}
+              employeeNumber={employee.employeeNumber}
+              redirectOnSuccess={true}
             />
           </>
         }

@@ -114,6 +114,8 @@ model Company {
   finalPayRuns       FinalPayRun[]
   bankAccounts       CompanyBankAccount[]
   allowancesPaid     AllowanceLine[]      @relation("AllowancePayingCompany")
+  attendanceAccounts AttendanceAccount[]
+  employeeDeletionAudits EmployeeDeletionAudit[]
 
   @@index([status])
 }
@@ -268,6 +270,10 @@ model Employee {
   pagibigDeductionMode     StatutoryDeductionMode @default(TABLE)
   pagibigCustomAmountEe    Decimal?               @db.Decimal(14, 2)
   pagibigCustomAmountEr    Decimal?               @db.Decimal(14, 2)
+  isDeleted                Boolean                @default(false)
+  deletedAt                DateTime?
+  deletedByUserId          String?
+  deletionReason           String?
   createdAt                DateTime               @default(now())
   updatedAt              DateTime           @updatedAt
 
@@ -284,7 +290,28 @@ model Employee {
 
   @@unique([companyId, employeeNumber])
   @@index([companyId])
+  @@index([companyId, isDeleted])
   @@index([branchId])
+}
+
+model EmployeeDeletionAudit {
+  id                String   @id @default(cuid())
+  companyId         String
+  employeeId        String
+  employeeNumber    String
+  employeeName      String
+  positionTitle     String
+  departmentName    String?
+  deletedByUserId   String
+  deletedByUserName String
+  reason            String
+  hasPayrollHistory Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([employeeId])
 }
 
 enum SeparationCategory {
@@ -526,6 +553,26 @@ enum TimesheetStatus {
   LEAVE
   HOLIDAY
   REST_DAY
+  LATE_UNDERTIME
+  WFH
+  NO_WORK
+  SICK_LEAVE
+  VACATION_LEAVE
+}
+
+model AttendanceAccount {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  companyId    String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 enum TimesheetSource {
