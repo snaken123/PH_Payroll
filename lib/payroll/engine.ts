@@ -19,6 +19,7 @@ import type {
 export interface AllowanceInput {
   label: string;
   amount: Decimal.Value;
+  frequency?: "DAILY" | "MONTHLY" | null;
   isTaxable: boolean;
   isDeMinimis?: boolean;
   deMinimisCategory?: string | null;
@@ -220,7 +221,20 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   let nonTaxableAllowances = zero;
 
   for (const allowance of input.allowances) {
-    const amount = new Decimal(allowance.amount);
+    let amount = new Decimal(allowance.amount);
+
+    if (allowance.frequency === "DAILY") {
+      const workedDays = input.timesheets.filter(
+        (t) => t.status !== "ABSENT"
+      ).length;
+      if (workedDays > 0) {
+        amount = amount.times(workedDays);
+      } else if (input.timesheets.length === 0) {
+        const defaultCutoffDays = new Decimal(input.standardWorkDaysPerMonth || 22).div(2);
+        amount = amount.times(defaultCutoffDays);
+      }
+    }
+
     let nonTaxableAmount = zero;
 
     if (!allowance.isTaxable) {

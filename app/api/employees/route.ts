@@ -93,6 +93,7 @@ export async function POST(request: Request) {
                 create: data.allowances.map((a) => ({
                   label: a.label,
                   amount: a.amount,
+                  frequency: a.frequency || "MONTHLY",
                   isTaxable: a.isTaxable,
                   payingCompanyId: a.payingCompanyId || null,
                 })),

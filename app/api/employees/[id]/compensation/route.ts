@@ -54,12 +54,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     : (data.standardWorkDaysPerMonth ?? currentRecord?.standardWorkDaysPerMonth ?? null);
 
   // Determine allowances: fallback to active allowances if updating basic rate only
-  let allowancesToCreate: Array<{ label: string; amount: number | string; isTaxable: boolean; payingCompanyId?: string | null }> = [];
+  let allowancesToCreate: Array<{ label: string; amount: number | string; frequency?: "MONTHLY" | "DAILY"; isTaxable: boolean; payingCompanyId?: string | null }> = [];
 
   if (updateType === "BASIC" && currentRecord) {
     allowancesToCreate = currentRecord.allowances.map((a) => ({
       label: a.label,
       amount: a.amount.toString(),
+      frequency: a.frequency,
       isTaxable: a.isTaxable,
       payingCompanyId: a.payingCompanyId,
     }));
@@ -67,6 +68,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     allowancesToCreate = data.allowances.map((a) => ({
       label: a.label,
       amount: a.amount,
+      frequency: a.frequency || "MONTHLY",
       isTaxable: a.isTaxable,
       payingCompanyId: a.payingCompanyId || null,
     }));
@@ -101,6 +103,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           create: allowancesToCreate.map((a) => ({
             label: a.label,
             amount: a.amount,
+            frequency: a.frequency || "MONTHLY",
             isTaxable: a.isTaxable,
             payingCompanyId: a.payingCompanyId || null,
           })),

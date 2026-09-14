@@ -466,6 +466,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                   appendAllowance({
                     label: allowanceTypes[0] || "Transportation",
                     amount: 0,
+                    frequency: "MONTHLY",
                     isTaxable: true,
                     payingCompanyId: "",
                   })
@@ -488,48 +489,36 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                   key={field.id}
                   className="p-3 rounded-md border border-slate-200/80 dark:border-slate-800 bg-background space-y-2.5 shadow-2xs"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor={`create_allowances.${index}.label`}>Label Choice</Label>
                       <Controller
                         control={control}
                         name={`allowances.${index}.label` as const}
-                        render={({ field: labelField }) => {
-                          const selectVal = isCustom ? "OTHER" : labelField.value;
-                          return (
-                            <Select
-                              value={selectVal || "OTHER"}
-                              onValueChange={(val) => {
-                                if (val === "OTHER") {
-                                  labelField.onChange("OTHER");
-                                  if (!customLabels[index] && labelField.value !== "OTHER") {
-                                    setCustomLabels((prev) => {
-                                      const next = { ...prev };
-                                      next[index] = labelField.value || "";
-                                      return next;
-                                    });
-                                  }
-                                } else {
-                                  labelField.onChange(val);
-                                }
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select allowance">
-                                  {(value: string) => (value === "OTHER" ? "Other (Custom...)" : value)}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {allowanceTypes.map((type) => (
-                                  <SelectItem key={type} value={type}>
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="OTHER">Other (Type new allowance...)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          );
-                        }}
+                        render={({ field: labelField }) => (
+                          <Select
+                            value={isCustom ? "OTHER" : labelField.value}
+                            onValueChange={(val) => {
+                              if (val === "OTHER") {
+                                labelField.onChange("OTHER");
+                              } else {
+                                labelField.onChange(val);
+                              }
+                            }}
+                          >
+                            <SelectTrigger id={`create_allowances.${index}.label`}>
+                              <SelectValue placeholder="Select allowance" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allowanceTypes.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {type}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="OTHER">Other (Custom...)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       />
                     </div>
 
@@ -538,20 +527,19 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                       <Controller
                         control={control}
                         name={`allowances.${index}.payingCompanyId` as const}
-                        render={({ field: compField }) => (
-                          <Select value={compField.value ?? ""} onValueChange={compField.onChange}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Current Company (Default)">
-                                {(value: string) =>
-                                  companies.find((c) => c.id === value)?.legalName ?? "Current Company (Default)"
-                                }
-                              </SelectValue>
+                        render={({ field: companyField }) => (
+                          <Select
+                            value={companyField.value ?? ""}
+                            onValueChange={(val) => companyField.onChange(val || null)}
+                          >
+                            <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
+                              <SelectValue placeholder="Current Company (Default)" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="">Current Company (Default)</SelectItem>
                               {companies.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
-                                  {c.legalName} ({c.companyCode})
+                                  {c.legalName}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -566,15 +554,11 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                       <Label htmlFor={`create_allowances.${index}.customLabel`}>Custom Allowance Name</Label>
                       <Input
                         id={`create_allowances.${index}.customLabel`}
-                        placeholder="e.g. Internet / Equipment Allowance"
-                        value={customLabels[index] ?? (currentLabel === "OTHER" ? "" : currentLabel)}
+                        placeholder="e.g. Miscellaneous"
+                        value={customLabels[index] ?? (field.label === "OTHER" ? "" : field.label)}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setCustomLabels((prev) => {
-                            const next = { ...prev };
-                            next[index] = val;
-                            return next;
-                          });
+                          setCustomLabels((prev) => ({ ...prev, [index]: val }));
                           setValue(`allowances.${index}.label` as const, "OTHER");
                         }}
                       />
@@ -582,13 +566,32 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                   )}
 
                   <div className="flex items-center gap-3 pt-1">
-                    <div className="w-32 space-y-1">
+                    <div className="w-28 space-y-1">
                       <Label htmlFor={`create_allowances.${index}.amount`}>Amount (₱)</Label>
                       <Input
                         id={`create_allowances.${index}.amount`}
                         type="number"
                         step="0.01"
                         {...register(`allowances.${index}.amount` as const)}
+                      />
+                    </div>
+
+                    <div className="w-28 space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.frequency`}>Frequency</Label>
+                      <Controller
+                        control={control}
+                        name={`allowances.${index}.frequency` as const}
+                        render={({ field: freqField }) => (
+                          <Select value={freqField.value ?? "MONTHLY"} onValueChange={freqField.onChange}>
+                            <SelectTrigger id={`create_allowances.${index}.frequency`}>
+                              <SelectValue placeholder="Frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MONTHLY">Monthly</SelectItem>
+                              <SelectItem value="DAILY">Daily</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       />
                     </div>
 

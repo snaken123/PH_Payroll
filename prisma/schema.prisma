@@ -371,11 +371,17 @@ model CompensationRecord {
   @@index([employeeId, effectiveFrom])
 }
 
+enum AllowanceFrequency {
+  DAILY
+  MONTHLY
+}
+
 model AllowanceLine {
   id                   String             @id @default(cuid())
   compensationRecordId String
   label                String
   amount               Decimal            @db.Decimal(14, 4)
+  frequency            AllowanceFrequency @default(MONTHLY)
   isTaxable            Boolean            @default(true)
   isDeMinimis          Boolean            @default(false)
   deMinimisCategory    DeMinimisCategory?

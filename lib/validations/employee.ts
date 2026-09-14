@@ -39,9 +39,12 @@ export const scheduleTypeValues = [
   "Regular",
 ] as const;
 
+export const allowanceFrequencyValues = ["MONTHLY", "DAILY"] as const;
+
 export const allowanceSchema = z.object({
   label: z.string().min(1, "Required"),
   amount: z.coerce.number().nonnegative("Must be 0 or greater"),
+  frequency: z.enum(["MONTHLY", "DAILY"]).default("MONTHLY"),
   isTaxable: z.boolean().default(true),
   payingCompanyId: z.string().optional().nullable(),
 });

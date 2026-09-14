@@ -429,6 +429,7 @@ export default async function EmployeeDetailPage({
                     allowances: currentComp.allowances.map((a) => ({
                       label: a.label,
                       amount: Number(a.amount),
+                      frequency: a.frequency,
                       isTaxable: a.isTaxable,
                       payingCompanyId: a.payingCompanyId,
                     })),
@@ -464,7 +465,8 @@ export default async function EmployeeDetailPage({
                           .map((a) => {
                             const payingCo = (a as any).payingCompany?.legalName;
                             const coStr = payingCo ? ` • Paid by ${payingCo}` : "";
-                            return `${a.label} (₱${Number(a.amount).toLocaleString()}${a.isTaxable ? "" : ", non-taxable"}${coStr})`;
+                            const freqStr = a.frequency === "DAILY" ? "/day" : "/mo";
+                            return `${a.label} (₱${Number(a.amount).toLocaleString()}${freqStr}${a.isTaxable ? "" : ", non-taxable"}${coStr})`;
                           })
                           .join(", ")}
                   </TableCell>

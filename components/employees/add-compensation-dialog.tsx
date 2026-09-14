@@ -56,6 +56,7 @@ interface CurrentCompProp {
   allowances?: Array<{
     label: string;
     amount: number | string;
+    frequency?: "MONTHLY" | "DAILY";
     isTaxable: boolean;
     payingCompanyId?: string | null;
   }>;
@@ -120,6 +121,7 @@ export function AddCompensationDialog({
         ? currentCompensation.allowances.map((a) => ({
             label: a.label,
             amount: Number(a.amount),
+            frequency: a.frequency ?? "MONTHLY",
             isTaxable: a.isTaxable,
             payingCompanyId: a.payingCompanyId ?? "",
           }))
@@ -291,6 +293,7 @@ export function AddCompensationDialog({
                     appendAllowance({
                       label: allowanceTypes[0] || "Transportation",
                       amount: 0,
+                      frequency: "MONTHLY",
                       isTaxable: true,
                       payingCompanyId: "",
                     })
@@ -417,6 +420,25 @@ export function AddCompensationDialog({
                           type="number"
                           step="0.01"
                           {...register(`allowances.${index}.amount` as const)}
+                        />
+                      </div>
+
+                      <div className="w-28 space-y-1">
+                        <Label htmlFor={`allowances.${index}.frequency`}>Frequency</Label>
+                        <Controller
+                          control={control}
+                          name={`allowances.${index}.frequency` as const}
+                          render={({ field: freqField }) => (
+                            <Select value={freqField.value ?? "MONTHLY"} onValueChange={freqField.onChange}>
+                              <SelectTrigger id={`allowances.${index}.frequency`}>
+                                <SelectValue placeholder="Frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="MONTHLY">Monthly</SelectItem>
+                                <SelectItem value="DAILY">Daily</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         />
                       </div>
 

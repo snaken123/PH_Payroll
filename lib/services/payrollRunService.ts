@@ -189,6 +189,7 @@ export async function computeAndPersistPayrollRun({
         return {
           label: a.label,
           amount: a.amount.toString(),
+          frequency: a.frequency,
           isTaxable: a.isTaxable,
           isDeMinimis: a.isDeMinimis,
           deMinimisCategory: a.deMinimisCategory,
