@@ -8,6 +8,7 @@ export interface ActiveLoanInput {
   installmentAmount: Decimal.Value;
   remainingBalance: Decimal.Value;
   deductionFrequency: LoanDeductionFrequency;
+  hasNoExpiration?: boolean;
 }
 
 export interface LoanDeductionResult {
@@ -15,22 +16,13 @@ export interface LoanDeductionResult {
   description: string;
   amountDeducted: Decimal;
   balanceAfter: Decimal;
+  hasNoExpiration?: boolean;
 }
 
 /**
  * Deducts each active loan's installment in order, never exceeding that
- * loan's own remaining balance (so the final installment is a partial
- * payoff, not an overpayment) and never exceeding `availableForDeductions`
- * in total (gross pay minus statutory deductions) — net pay must never go
- * negative. Loans are processed in the order given; if funds run out,
- * later loans in the list are simply skipped this cutoff rather than
- * partially deducted, so partial deductions only ever happen at a loan's
- * own payoff boundary.
- *
- * `isMonthlyDeductionCutoff` reuses the same "second cutoff of the month"
- * signal the payroll engine already computes for SSS/PhilHealth/Pag-IBIG
- * (isStatutoryDeductionCutoff) — a MONTHLY-frequency loan only deducts on
- * that cutoff; EVERY_CUTOFF loans are unaffected by this flag.
+ * loan's own remaining balance (unless hasNoExpiration is true) and never
+ * exceeding `availableForDeductions` in total.
  */
 export function computeLoanDeductions(
   loans: ActiveLoanInput[],
@@ -45,17 +37,25 @@ export function computeLoanDeductions(
     if (loan.deductionFrequency === "MONTHLY" && !isMonthlyDeductionCutoff) continue;
 
     const balance = new Decimal(loan.remainingBalance);
-    if (balance.lte(0)) continue;
+    const hasNoExpiration = !!loan.hasNoExpiration;
 
-    const installment = Decimal.min(loan.installmentAmount, balance);
+    if (!hasNoExpiration && balance.lte(0)) continue;
+
+    const installment = hasNoExpiration
+      ? new Decimal(loan.installmentAmount)
+      : Decimal.min(loan.installmentAmount, balance);
+
     const deduction = Decimal.min(installment, remaining);
     if (deduction.lte(0)) continue;
+
+    const balanceAfter = hasNoExpiration ? new Decimal(0) : balance.minus(deduction);
 
     results.push({
       loanId: loan.id,
       description: loan.description,
       amountDeducted: deduction,
-      balanceAfter: balance.minus(deduction),
+      balanceAfter,
+      hasNoExpiration,
     });
     remaining = remaining.minus(deduction);
   }

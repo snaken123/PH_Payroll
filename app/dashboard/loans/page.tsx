@@ -103,10 +103,12 @@ export default async function CompanyLoansPage() {
                     </TableCell>
                     <TableCell className="text-xs font-medium text-slate-800 dark:text-slate-200">{loan.name}</TableCell>
                     <TableCell className="text-xs text-slate-600 dark:text-slate-400">{loan.category.replaceAll("_", " ")}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">₱{Number(loan.principal).toLocaleString("en-US", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">
+                      {loan.hasNoExpiration ? "Ongoing" : `₱${Number(loan.principal).toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                    </TableCell>
                     <TableCell className="text-right font-mono text-xs font-semibold">₱{Number(loan.installmentAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                      ₱{Number(loan.remainingBalance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      {loan.hasNoExpiration ? "Ongoing" : `₱${Number(loan.remainingBalance).toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                     </TableCell>
                     <TableCell className="text-xs text-slate-600 dark:text-slate-300">{loan.deductionFrequency.replaceAll("_", " ")}</TableCell>
                     <TableCell>

@@ -15,12 +15,13 @@ export const createLoanSchema = z.object({
   employeeId: z.string().min(1),
   category: z.enum(loanCategoryValues),
   name: z.string().min(1, "Required"),
-  principal: z.coerce.number().positive("Must be greater than 0"),
+  principal: optionalCoercedNumber(z.coerce.number().min(0)).default(0),
   termMonths: optionalCoercedNumber(z.coerce.number().int().positive()),
   installmentAmount: z.coerce.number().positive("Must be greater than 0"),
   deductionFrequency: z.enum(loanDeductionFrequencyValues).default("EVERY_CUTOFF"),
   startDate: z.string().min(1, "Required"),
   referenceNumber: z.string().optional(),
+  hasNoExpiration: z.boolean().default(false),
 });
 export type CreateLoanFormValues = z.input<typeof createLoanSchema>;
 export type CreateLoanInput = z.output<typeof createLoanSchema>;

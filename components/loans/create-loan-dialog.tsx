@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -49,6 +50,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
   });
 
   const category = watch("category");
+  const hasNoExpiration = watch("hasNoExpiration");
 
   async function onSubmit(values: CreateLoanInput) {
     setSubmitting(true);
@@ -69,7 +71,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
     }
 
     toast.success(values.category === "CASH_ADVANCE" ? "Cash advance request submitted for approval" : "Loan added");
-    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF" });
+    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF", hasNoExpiration: false });
     setOpen(false);
     router.refresh();
   }
@@ -111,14 +113,35 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
           </div>
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="e.g. SSS Salary Loan" {...register("name")} />
+            <Input id="name" placeholder="e.g. SSS Salary Loan, Uniform Fee" {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="principal">Principal (₱)</Label>
-            <Input id="principal" type="number" step="0.01" {...register("principal")} />
-            {errors.principal && <p className="text-sm text-destructive">{errors.principal.message}</p>}
+
+          <div className="flex items-center gap-2 py-1">
+            <Controller
+              control={control}
+              name="hasNoExpiration"
+              render={({ field }) => (
+                <Checkbox
+                  id="hasNoExpiration"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <Label htmlFor="hasNoExpiration" className="text-xs font-semibold cursor-pointer">
+              No expiration (ongoing recurring deduction)
+            </Label>
           </div>
+
+          {!hasNoExpiration && (
+            <div className="space-y-1">
+              <Label htmlFor="principal">Principal (₱)</Label>
+              <Input id="principal" type="number" step="0.01" {...register("principal")} />
+              {errors.principal && <p className="text-sm text-destructive">{errors.principal.message}</p>}
+            </div>
+          )}
+
           <div className="space-y-1">
             <Label htmlFor="installmentAmount">Installment per cutoff (₱)</Label>
             <Input id="installmentAmount" type="number" step="0.01" {...register("installmentAmount")} />
@@ -147,10 +170,12 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
               )}
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="termMonths">Term (months, optional)</Label>
-            <Input id="termMonths" type="number" {...register("termMonths")} />
-          </div>
+          {!hasNoExpiration && (
+            <div className="space-y-1">
+              <Label htmlFor="termMonths">Term (months, optional)</Label>
+              <Input id="termMonths" type="number" {...register("termMonths")} />
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="startDate">Start date</Label>
             <Input id="startDate" type="date" {...register("startDate")} />

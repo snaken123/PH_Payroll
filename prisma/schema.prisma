@@ -839,6 +839,7 @@ model Loan {
   deductionFrequency LoanDeductionFrequency @default(EVERY_CUTOFF)
   startDate          DateTime
   referenceNumber    String?
+  hasNoExpiration    Boolean                @default(false)
   status             LoanStatus             @default(ACTIVE)
   // Only meaningful for CASH_ADVANCE loans that went through PENDING_APPROVAL.
   approvedByUserId   String?

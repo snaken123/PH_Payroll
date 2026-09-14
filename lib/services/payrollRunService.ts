@@ -210,6 +210,7 @@ export async function computeAndPersistPayrollRun({
         installmentAmount: l.installmentAmount.toString(),
         remainingBalance: l.remainingBalance.toString(),
         deductionFrequency: l.deductionFrequency,
+        hasNoExpiration: l.hasNoExpiration,
       }));
 
       const result = computePayroll({
@@ -369,8 +370,8 @@ export async function computeAndPersistPayrollRun({
             tx.loan.update({
               where: { id: ld.loanId },
               data: {
-                remainingBalance: ld.balanceAfter.toFixed(2),
-                status: ld.balanceAfter.lte(0) ? LoanStatus.COMPLETED : LoanStatus.ACTIVE,
+                remainingBalance: ld.hasNoExpiration ? "0.00" : ld.balanceAfter.toFixed(2),
+                status: !ld.hasNoExpiration && ld.balanceAfter.lte(0) ? LoanStatus.COMPLETED : LoanStatus.ACTIVE,
               },
             })
           )
