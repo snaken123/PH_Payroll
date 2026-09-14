@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { useForm, Controller, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon, XIcon } from "lucide-react";
 import {
@@ -158,6 +158,16 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
     router.refresh();
   }
 
+  function onInvalid(formErrors: FieldErrors<CreateEmployeeFormValues>) {
+    const errorKeys = Object.keys(formErrors);
+    if (errorKeys.length > 0) {
+      const firstKey = errorKeys[0];
+      const errObj = formErrors[firstKey as keyof typeof formErrors] as { message?: string } | undefined;
+      const formattedName = firstKey.replace(/([A-Z])/g, " $1").toLowerCase();
+      toast.error(`Cannot save employee: Please check "${formattedName}" (${errObj?.message ?? "Required field"})`);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button />}>New employee</DialogTrigger>
@@ -168,7 +178,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
             Creates the employee record and their initial compensation.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label>Branch</Label>
             <Controller
@@ -243,6 +253,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                 </Select>
               )}
             />
+            {errors.sex && <p className="text-sm text-destructive">{errors.sex.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -265,6 +276,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                 </Select>
               )}
             />
+            {errors.civilStatus && <p className="text-sm text-destructive">{errors.civilStatus.message}</p>}
           </div>
 
           <div className="space-y-1">
