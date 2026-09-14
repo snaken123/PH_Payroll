@@ -34,6 +34,7 @@ import {
   MonitorIcon,
   Trash2Icon,
   StarIcon,
+  ClockIcon,
 } from "lucide-react";
 
 interface CompanyData {
@@ -56,6 +57,13 @@ interface CompanyData {
   payDateOffsetDays: number;
   standardWorkDaysPerMonth: number;
   statutoryDeductionTiming?: "FIRST_HALF" | "SECOND_HALF" | "SPLIT";
+  attendanceStandardTimeIn?: string;
+  attendanceStandardTimeOut?: string;
+  attendanceLunchBreakMinutes?: number;
+  attendanceLateGracePeriodMinutes?: number;
+  attendanceOtGracePeriodMinutes?: number;
+  attendanceFlexi1WindowStart?: string;
+  attendanceFlexi1WindowEnd?: string;
 }
 
 interface BankAccountData {
@@ -125,6 +133,13 @@ export function SettingsClient({
     payDateOffsetDays: company.payDateOffsetDays,
     standardWorkDaysPerMonth: company.standardWorkDaysPerMonth ?? 22,
     statutoryDeductionTiming: company.statutoryDeductionTiming ?? "SECOND_HALF",
+    attendanceStandardTimeIn: company.attendanceStandardTimeIn ?? "08:00",
+    attendanceStandardTimeOut: company.attendanceStandardTimeOut ?? "17:00",
+    attendanceLunchBreakMinutes: company.attendanceLunchBreakMinutes ?? 60,
+    attendanceLateGracePeriodMinutes: company.attendanceLateGracePeriodMinutes ?? 15,
+    attendanceOtGracePeriodMinutes: company.attendanceOtGracePeriodMinutes ?? 15,
+    attendanceFlexi1WindowStart: company.attendanceFlexi1WindowStart ?? "07:00",
+    attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd ?? "10:00",
   });
 
   // Add Company Form State
@@ -292,6 +307,9 @@ export function SettingsClient({
       <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/60 rounded-xl">
         <TabsTrigger value="pay-period" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <CalendarDaysIcon className="size-3.5" /> Pay Period Rules
+        </TabsTrigger>
+        <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs py-2 px-3">
+          <ClockIcon className="size-3.5" /> Attendance Shift Rules
         </TabsTrigger>
         <TabsTrigger value="banks" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <LandmarkIcon className="size-3.5" /> Payroll Banks
@@ -481,6 +499,121 @@ export function SettingsClient({
           <CardFooter>
             <Button onClick={handleSaveSettings} disabled={submitting}>
               {submitting ? "Saving..." : "Save Pay Period Rules"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </TabsContent>
+
+      {/* Attendance & Shift Rules Tab */}
+      <TabsContent value="attendance" className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance &amp; Shift Schedule Rules</CardTitle>
+            <CardDescription>
+              Configure company-wide shift parameters, grace periods, and flexi windows for {company.legalName}. These parameters drive automated time, late, undertime, and overtime calculations on timesheets.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4 rounded-lg border p-4">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <ClockIcon className="size-4 text-primary" /> Regular Schedule Shift Rules
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Rules for employees on Regular schedule (e.g. Standard 8-hour shift + 1-hour lunch break).
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceStandardTimeIn" className="text-xs">Standard Shift Time-In</Label>
+                  <Input
+                    id="attendanceStandardTimeIn"
+                    type="time"
+                    value={formData.attendanceStandardTimeIn}
+                    onChange={(e) => setFormData({ ...formData, attendanceStandardTimeIn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceStandardTimeOut" className="text-xs">Standard Shift Time-Out</Label>
+                  <Input
+                    id="attendanceStandardTimeOut"
+                    type="time"
+                    value={formData.attendanceStandardTimeOut}
+                    onChange={(e) => setFormData({ ...formData, attendanceStandardTimeOut: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceLateGracePeriodMinutes" className="text-xs">Late Grace Period (Minutes)</Label>
+                  <Input
+                    id="attendanceLateGracePeriodMinutes"
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={formData.attendanceLateGracePeriodMinutes}
+                    onChange={(e) => setFormData({ ...formData, attendanceLateGracePeriodMinutes: Number(e.target.value) })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">If time-in $\le$ grace period, 0 late. If exceeded, full late time is deducted from shift start.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceOtGracePeriodMinutes" className="text-xs">Overtime Grace Period (Minutes)</Label>
+                  <Input
+                    id="attendanceOtGracePeriodMinutes"
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={formData.attendanceOtGracePeriodMinutes}
+                    onChange={(e) => setFormData({ ...formData, attendanceOtGracePeriodMinutes: Number(e.target.value) })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Overtime starts when employee stays past shift end by more than this grace period.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <ClockIcon className="size-4 text-primary" /> Flexi1 Schedule Rules
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Flexible schedule requiring 9 hours total span (8 work hours + 1 hour lunch). Flexi1 employees do not receive overtime.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceFlexi1WindowStart" className="text-xs">Flexi1 Login Window Start</Label>
+                  <Input
+                    id="attendanceFlexi1WindowStart"
+                    type="time"
+                    value={formData.attendanceFlexi1WindowStart}
+                    onChange={(e) => setFormData({ ...formData, attendanceFlexi1WindowStart: e.target.value })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Earliest time the 9-hour work timer can start.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="attendanceFlexi1WindowEnd" className="text-xs">Flexi1 Login Window End</Label>
+                  <Input
+                    id="attendanceFlexi1WindowEnd"
+                    type="time"
+                    value={formData.attendanceFlexi1WindowEnd}
+                    onChange={(e) => setFormData({ ...formData, attendanceFlexi1WindowEnd: e.target.value })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Latest allowed login time before late minutes begin accumulating.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-w-xs">
+              <Label htmlFor="attendanceLunchBreakMinutes" className="text-xs">Default Lunch Break (Minutes)</Label>
+              <Input
+                id="attendanceLunchBreakMinutes"
+                type="number"
+                min={0}
+                max={480}
+                value={formData.attendanceLunchBreakMinutes}
+                onChange={(e) => setFormData({ ...formData, attendanceLunchBreakMinutes: Number(e.target.value) })}
+              />
+              <p className="text-[11px] text-muted-foreground">Default break deducted for standard shifts (default 60 mins / 1.0 hr).</p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSaveSettings} disabled={submitting}>
+              {submitting ? "Saving..." : "Save Attendance Rules"}
             </Button>
           </CardFooter>
         </Card>

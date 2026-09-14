@@ -25,12 +25,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PencilIcon } from "lucide-react";
 import { timesheetStatusValues, holidayTypeValues } from "@/lib/validations/attendance";
+import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
 
 interface EmployeeOption {
   id: string;
   employeeNumber: string;
   firstName: string;
   lastName: string;
+  scheduleType?: string | null;
 }
 
 interface TimesheetEntryDTO {
@@ -153,6 +155,7 @@ export function AttendanceGrid() {
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [entries, setEntries] = useState<TimesheetEntryDTO[]>([]);
   const [holidays, setHolidays] = useState<HolidayDTO[]>([]);
+  const [config, setConfig] = useState<CompanyAttendanceConfig | undefined>(undefined);
   const [cells, setCells] = useState<Record<string, CellState>>({});
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -176,6 +179,7 @@ export function AttendanceGrid() {
     setEmployees(body.employees);
     setEntries(body.timesheets);
     setHolidays(body.holidays);
+    setConfig(body.config);
   }, [start, end]);
 
   useEffect(() => {
@@ -228,7 +232,32 @@ export function AttendanceGrid() {
   }, [employees, search]);
 
   function updateCell(employeeId: string, date: string, patch: Partial<CellState>) {
-    setCells((prev) => ({ ...prev, [cellKey(employeeId, date)]: { ...prev[cellKey(employeeId, date)], ...patch } }));
+    setCells((prev) => {
+      const key = cellKey(employeeId, date);
+      const current = prev[key];
+      if (!current) return prev;
+
+      let nextCell = { ...current, ...patch };
+
+      if (patch.timeIn !== undefined || patch.timeOut !== undefined) {
+        const emp = employees.find((e) => e.id === employeeId);
+        const calc = calculateTimesheetHours({
+          scheduleType: emp?.scheduleType,
+          timeIn: nextCell.timeIn,
+          timeOut: nextCell.timeOut,
+          config,
+        });
+        nextCell = {
+          ...nextCell,
+          regularHours: calc.regularHours,
+          overtimeHours: calc.overtimeHours,
+          lateMinutes: calc.lateMinutes,
+          undertimeMinutes: calc.undertimeMinutes,
+        };
+      }
+
+      return { ...prev, [key]: nextCell };
+    });
   }
 
   function toggleEmployee(employeeId: string) {

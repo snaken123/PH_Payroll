@@ -19,6 +19,13 @@ export const updateCompanySettingsSchema = z.object({
   payDateOffsetDays: z.number().int().min(0).max(30).default(5),
   standardWorkDaysPerMonth: z.number().min(1).max(31).default(22),
   statutoryDeductionTiming: z.nativeEnum(StatutoryDeductionTiming).default(StatutoryDeductionTiming.SECOND_HALF),
+  attendanceStandardTimeIn: z.string().default("08:00"),
+  attendanceStandardTimeOut: z.string().default("17:00"),
+  attendanceLunchBreakMinutes: z.number().int().min(0).max(480).default(60),
+  attendanceLateGracePeriodMinutes: z.number().int().min(0).max(120).default(15),
+  attendanceOtGracePeriodMinutes: z.number().int().min(0).max(120).default(15),
+  attendanceFlexi1WindowStart: z.string().default("07:00"),
+  attendanceFlexi1WindowEnd: z.string().default("10:00"),
 });
 
 export type UpdateCompanySettingsInput = z.infer<typeof updateCompanySettingsSchema>;

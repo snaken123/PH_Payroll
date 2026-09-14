@@ -29,12 +29,12 @@ export async function GET(request: Request) {
   const startDate = new Date(start);
   const endDate = new Date(end);
 
-  const [employees, timesheets, holidays] = await Promise.all([
+  const [employees, timesheets, holidays, company] = await Promise.all([
     prisma.employee.findMany({
       where: withCompanyScope(ctx.companyId, {
         employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
       }),
-      select: { id: true, employeeNumber: true, firstName: true, lastName: true },
+      select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
       orderBy: { employeeNumber: "asc" },
     }),
     prisma.timesheetEntry.findMany({
@@ -46,7 +46,19 @@ export async function GET(request: Request) {
     prisma.companyHoliday.findMany({
       where: withCompanyScope(ctx.companyId, { date: { gte: startDate, lte: endDate } }),
     }),
+    prisma.company.findUnique({
+      where: { id: ctx.companyId },
+      select: {
+        attendanceStandardTimeIn: true,
+        attendanceStandardTimeOut: true,
+        attendanceLunchBreakMinutes: true,
+        attendanceLateGracePeriodMinutes: true,
+        attendanceOtGracePeriodMinutes: true,
+        attendanceFlexi1WindowStart: true,
+        attendanceFlexi1WindowEnd: true,
+      },
+    }),
   ]);
 
-  return NextResponse.json({ employees, timesheets, holidays });
+  return NextResponse.json({ employees, timesheets, holidays, config: company });
 }

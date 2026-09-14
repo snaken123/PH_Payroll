@@ -96,6 +96,14 @@ model Company {
   payDateOffsetDays        Int                      @default(5)
   standardWorkDaysPerMonth Float                    @default(22.0)
   statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
+  // Attendance & Shift Rules Configuration
+  attendanceStandardTimeIn         String                   @default("08:00")
+  attendanceStandardTimeOut        String                   @default("17:00")
+  attendanceLunchBreakMinutes      Int                      @default(60)
+  attendanceLateGracePeriodMinutes Int                      @default(15)
+  attendanceOtGracePeriodMinutes   Int                      @default(15)
+  attendanceFlexi1WindowStart      String                   @default("07:00")
+  attendanceFlexi1WindowEnd        String                   @default("10:00")
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
 

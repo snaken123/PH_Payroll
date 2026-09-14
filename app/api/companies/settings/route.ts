@@ -63,6 +63,13 @@ export async function PATCH(request: Request) {
         payDateOffsetDays: data.payDateOffsetDays,
         standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
         statutoryDeductionTiming: data.statutoryDeductionTiming,
+        attendanceStandardTimeIn: data.attendanceStandardTimeIn,
+        attendanceStandardTimeOut: data.attendanceStandardTimeOut,
+        attendanceLunchBreakMinutes: data.attendanceLunchBreakMinutes,
+        attendanceLateGracePeriodMinutes: data.attendanceLateGracePeriodMinutes,
+        attendanceOtGracePeriodMinutes: data.attendanceOtGracePeriodMinutes,
+        attendanceFlexi1WindowStart: data.attendanceFlexi1WindowStart,
+        attendanceFlexi1WindowEnd: data.attendanceFlexi1WindowEnd,
       },
     });
 
