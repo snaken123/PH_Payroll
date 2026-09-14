@@ -11,7 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ShieldAlertIcon, LockIcon, MailIcon, EyeIcon, EyeOffIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
+import {
+  ShieldAlertIcon,
+  LockIcon,
+  MailIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  ClockIcon,
+  UserCheckIcon,
+  Building2Icon,
+} from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -19,6 +30,7 @@ function LoginForm() {
   const authError = searchParams.get("error");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState<"ADMIN" | "ATTENDANCE">("ADMIN");
 
   const {
     register,
@@ -29,7 +41,7 @@ function LoginForm() {
 
   useEffect(() => {
     if (authError === "CredentialsSignin") {
-      toast.error("Invalid email or password");
+      toast.error("Invalid email, username, or password");
     } else if (authError) {
       toast.error("Authentication failed. Please verify your credentials.");
     }
@@ -45,7 +57,7 @@ function LoginForm() {
 
     if (result?.error) {
       setSubmitting(false);
-      toast.error("Invalid email or password. Please try again.");
+      toast.error("Invalid credentials. Please verify your username/email and password.");
       return;
     }
 
@@ -57,40 +69,81 @@ function LoginForm() {
         : "";
 
     if (!targetUrl || targetUrl === "/") {
-      targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
+      if (loginMode === "ATTENDANCE") {
+        targetUrl = "/dashboard/attendance";
+      } else {
+        targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
+      }
     }
 
     // Force full window replacement to target route
     window.location.replace(targetUrl);
   }
 
-  function prefillCredentials(email: string) {
-    setValue("email", email);
+  function prefillCredentials(identifier: string, mode: "ADMIN" | "ATTENDANCE" = "ADMIN") {
+    setLoginMode(mode);
+    setValue("email", identifier);
     setValue("password", "ChangeMe123!");
-    toast.info(`Prefilled credentials for ${email}`);
+    toast.info(`Prefilled credentials for ${identifier}`);
   }
 
   return (
     <Card className="border-slate-800 bg-slate-900/90 shadow-2xl backdrop-blur-xl rounded-2xl">
-      <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-lg font-bold text-slate-100">Sign in to your workspace</CardTitle>
-        <CardDescription className="text-xs text-slate-400">
-          Enter your credentials to access company payroll administration.
-        </CardDescription>
+      <CardHeader className="space-y-3 pb-3">
+        {/* Login Mode Tab Switcher */}
+        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => setLoginMode("ADMIN")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+              loginMode === "ADMIN"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <Building2Icon className="size-3.5" /> Workspace Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setLoginMode("ATTENDANCE")}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+              loginMode === "ATTENDANCE"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <ClockIcon className="size-3.5" /> Attendance Staff
+          </button>
+        </div>
+
+        <div>
+          <CardTitle className="text-lg font-bold text-slate-100">
+            {loginMode === "ADMIN" ? "Sign in to your workspace" : "Attendance Staff Kiosk Portal"}
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-400">
+            {loginMode === "ADMIN"
+              ? "Enter your credentials to access company payroll administration."
+              : "Sign in with your attendance operator username to manage time records."}
+          </CardDescription>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold text-slate-300">
-              Email Address
+              {loginMode === "ADMIN" ? "Email Address" : "Attendance Portal Username"}
             </Label>
             <div className="relative">
-              <MailIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+              {loginMode === "ADMIN" ? (
+                <MailIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+              ) : (
+                <UserCheckIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+              )}
               <Input
                 id="email"
-                type="email"
-                placeholder="name@company.com"
-                autoComplete="email"
+                type="text"
+                placeholder={loginMode === "ADMIN" ? "name@company.com" : "e.g. staff_manila"}
+                autoComplete={loginMode === "ADMIN" ? "email" : "username"}
                 className="pl-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500 focus:ring-blue-500/20"
                 {...register("email")}
               />
@@ -128,7 +181,11 @@ function LoginForm() {
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs h-9 shadow-md shadow-blue-600/20 transition-all"
             disabled={submitting}
           >
-            {submitting ? "Signing in..." : "Sign in to Dashboard"}
+            {submitting
+              ? "Signing in..."
+              : loginMode === "ADMIN"
+              ? "Sign in to Dashboard"
+              : "Sign in to Attendance Portal"}
           </Button>
         </form>
 
@@ -140,7 +197,7 @@ function LoginForm() {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => prefillCredentials("owner@demo-co.local")}
+              onClick={() => prefillCredentials("owner@demo-co.local", "ADMIN")}
               className="flex flex-col items-start p-2 rounded-lg border border-slate-800 bg-slate-950/60 hover:bg-slate-800/80 transition-colors text-left group"
             >
               <span className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors">
@@ -150,7 +207,7 @@ function LoginForm() {
             </button>
             <button
               type="button"
-              onClick={() => prefillCredentials("admin@ph-payroll.local")}
+              onClick={() => prefillCredentials("admin@ph-payroll.local", "ADMIN")}
               className="flex flex-col items-start p-2 rounded-lg border border-slate-800 bg-slate-950/60 hover:bg-slate-800/80 transition-colors text-left group"
             >
               <span className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors">

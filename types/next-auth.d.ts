@@ -11,6 +11,7 @@ declare module "next-auth" {
       platformRole: PlatformRole;
       companyId: string | null;
       companyRole: CompanyRole | null;
+      isAttendanceStaff?: boolean;
     };
   }
 
@@ -18,6 +19,8 @@ declare module "next-auth" {
     id: string;
     email: string;
     name?: string | null;
+    isAttendanceStaff?: boolean;
+    companyId?: string | null;
   }
 }
 
@@ -27,5 +30,6 @@ declare module "next-auth/jwt" {
     platformRole?: PlatformRole;
     companyId?: string | null;
     companyRole?: CompanyRole | null;
+    isAttendanceStaff?: boolean;
   }
 }

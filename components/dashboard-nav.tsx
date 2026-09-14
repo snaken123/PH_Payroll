@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboardIcon,
   UsersIcon,
@@ -50,10 +51,21 @@ export const NAV_GROUPS = [
 
 export function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const session = useSession();
+  const isAttendanceStaff = session?.data?.user?.isAttendanceStaff;
+
+  const visibleGroups = isAttendanceStaff
+    ? [
+        {
+          title: "ATTENDANCE PORTAL",
+          items: [{ href: "/dashboard/attendance", label: "Attendance & Time Records", icon: ClockIcon }],
+        },
+      ]
+    : NAV_GROUPS;
 
   return (
     <div className="space-y-6">
-      {NAV_GROUPS.map((group) => (
+      {visibleGroups.map((group) => (
         <div key={group.title} className="space-y-1.5">
           <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400/90 dark:text-slate-500">
             {group.title}

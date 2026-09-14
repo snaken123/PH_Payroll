@@ -21,17 +21,39 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+        const identifier = credentials.email.trim();
 
+        // 1. Try standard User lookup by email
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: identifier },
         });
 
-        if (!user || !user.password) return null;
+        if (user && user.password) {
+          const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+          if (passwordMatch) {
+            return { id: user.id, email: user.email, name: user.name };
+          }
+        }
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
-        if (!passwordMatch) return null;
+        // 2. Try AttendanceAccount lookup by username
+        const attendanceAccount = await prisma.attendanceAccount.findFirst({
+          where: { username: identifier, isActive: true },
+        });
 
-        return { id: user.id, email: user.email, name: user.name };
+        if (attendanceAccount && attendanceAccount.passwordHash) {
+          const passwordMatch = await bcrypt.compare(credentials.password, attendanceAccount.passwordHash);
+          if (passwordMatch) {
+            return {
+              id: attendanceAccount.id,
+              email: `${attendanceAccount.username}@attendance.local`,
+              name: attendanceAccount.name,
+              isAttendanceStaff: true,
+              companyId: attendanceAccount.companyId,
+            };
+          }
+        }
+
+        return null;
       },
     }),
   ],
@@ -57,6 +79,16 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        if (user.isAttendanceStaff) {
+          token.isAttendanceStaff = true;
+          token.companyId = user.companyId ?? null;
+          token.companyRole = null;
+        }
+      }
+
+      if (token.isAttendanceStaff) {
+        token.platformRole = PlatformRole.STANDARD;
+        return token;
       }
 
       // Allow the client to switch active company via useSession().update({ companyId })
@@ -112,6 +144,7 @@ export const authOptions: NextAuthOptions = {
         session.user.platformRole = token.platformRole as PlatformRole;
         session.user.companyId = (token.companyId as string | null) ?? null;
         session.user.companyRole = (token.companyRole as CompanyRole | null) ?? null;
+        session.user.isAttendanceStaff = (token.isAttendanceStaff as boolean | undefined) ?? false;
       }
       return session;
     },
