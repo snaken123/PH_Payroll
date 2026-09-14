@@ -425,7 +425,7 @@ export function AttendanceGrid() {
                     </div>
                   </TableHead>
                   {dates.map((date) => (
-                    <TableHead key={date} className="w-28 whitespace-nowrap">
+                    <TableHead key={date} className="w-36 min-w-[144px] whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Checkbox
                           checked={selectedDates.has(date)}
@@ -458,7 +458,7 @@ export function AttendanceGrid() {
                       if (!c) return <TableCell key={date} />;
                       return (
                         <TableCell key={date} className="p-1 align-top">
-                          <div className="flex w-24 flex-col gap-1">
+                          <div className="flex w-32 flex-col gap-1">
                             <Select value={c.status} onValueChange={(v) => v && updateCell(emp.id, date, { status: v })}>
                               <SelectTrigger className="h-7 px-1.5 text-xs">
                                 <SelectValue />
@@ -473,7 +473,7 @@ export function AttendanceGrid() {
                             </Select>
                             <div className="flex items-center gap-1">
                               <Input
-                                className="h-7 px-1 text-xs"
+                                className="h-7 w-14 px-1 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 type="number"
                                 step="0.25"
                                 title="Regular hours"
@@ -481,7 +481,7 @@ export function AttendanceGrid() {
                                 onChange={(e) => updateCell(emp.id, date, { regularHours: Number(e.target.value) })}
                               />
                               <Input
-                                className="h-7 px-1 text-xs"
+                                className="h-7 w-14 px-1 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 type="number"
                                 step="0.25"
                                 title="Overtime hours"
