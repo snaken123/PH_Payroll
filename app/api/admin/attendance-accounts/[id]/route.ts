@@ -24,8 +24,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (typeof body?.name === "string" && body.name.trim()) {
     data.name = body.name.trim();
   }
-  if (typeof body?.companyId === "string" && body.companyId) {
-    data.companyId = body.companyId;
+
+  let companyIdsToSet: string[] | null = null;
+  if (Array.isArray(body?.companyIds)) {
+    companyIdsToSet = body.companyIds.filter((id: unknown) => typeof id === "string" && id.trim());
+  } else if (typeof body?.companyId === "string" && body.companyId) {
+    companyIdsToSet = [body.companyId];
+  }
+
+  if (companyIdsToSet && companyIdsToSet.length > 0) {
+    data.companyId = companyIdsToSet[0];
   }
   if (typeof body?.isActive === "boolean") {
     data.isActive = body.isActive;
@@ -38,6 +46,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const account = await prisma.attendanceAccount.update({
       where: { id },
       data,
+    });
+
+    if (companyIdsToSet && companyIdsToSet.length > 0) {
+      await prisma.attendanceAccountCompany.deleteMany({
+        where: { attendanceAccountId: id },
+      });
+      await prisma.attendanceAccountCompany.createMany({
+        data: companyIdsToSet.map((cId) => ({
+          attendanceAccountId: id,
+          companyId: cId,
+        })),
+      });
+    }
+
+    const updatedAccount = await prisma.attendanceAccount.findUnique({
+      where: { id },
       include: {
         company: {
           select: {
@@ -46,10 +70,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             companyCode: true,
           },
         },
+        companies: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                legalName: true,
+                companyCode: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json({ account });
+    return NextResponse.json({ account: updatedAccount });
   } catch {
     return NextResponse.json({ error: "Failed to update attendance account" }, { status: 400 });
   }

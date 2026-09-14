@@ -88,6 +88,24 @@ export const authOptions: NextAuthOptions = {
 
       if (token.isAttendanceStaff) {
         token.platformRole = PlatformRole.STANDARD;
+        if (trigger === "update" && session?.companyId && token.id) {
+          try {
+            const acc = await prisma.attendanceAccount.findFirst({
+              where: {
+                id: token.id as string,
+                OR: [
+                  { companyId: session.companyId },
+                  { companies: { some: { companyId: session.companyId } } },
+                ],
+              },
+            });
+            if (acc) {
+              token.companyId = session.companyId;
+            }
+          } catch (error) {
+            console.error("Error switching attendance company:", error);
+          }
+        }
         return token;
       }
 

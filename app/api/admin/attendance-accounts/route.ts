@@ -20,6 +20,17 @@ export async function GET() {
           companyCode: true,
         },
       },
+      companies: {
+        include: {
+          company: {
+            select: {
+              id: true,
+              legalName: true,
+              companyCode: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -37,11 +48,16 @@ export async function POST(request: Request) {
   const username = typeof body?.username === "string" ? body.username.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const companyId = typeof body?.companyId === "string" ? body.companyId : "";
 
-  if (!username || !password || !name || !companyId) {
+  const rawCompanyIds: string[] = Array.isArray(body?.companyIds)
+    ? body.companyIds.filter((id: unknown) => typeof id === "string" && id.trim())
+    : typeof body?.companyId === "string" && body.companyId
+    ? [body.companyId]
+    : [];
+
+  if (!username || !password || !name || rawCompanyIds.length === 0) {
     return NextResponse.json(
-      { error: "Username, password, name, and assigned company are required." },
+      { error: "Username, password, name, and at least one assigned company are required." },
       { status: 400 }
     );
   }
@@ -55,14 +71,18 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+  const primaryCompanyId = rawCompanyIds[0];
 
   const account = await prisma.attendanceAccount.create({
     data: {
       username,
       passwordHash,
       name,
-      companyId,
+      companyId: primaryCompanyId,
       isActive: true,
+      companies: {
+        create: rawCompanyIds.map((cId) => ({ companyId: cId })),
+      },
     },
     include: {
       company: {
@@ -72,8 +92,20 @@ export async function POST(request: Request) {
           companyCode: true,
         },
       },
+      companies: {
+        include: {
+          company: {
+            select: {
+              id: true,
+              legalName: true,
+              companyCode: true,
+            },
+          },
+        },
+      },
     },
   });
 
   return NextResponse.json({ account }, { status: 201 });
 }
+

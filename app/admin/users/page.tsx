@@ -42,7 +42,12 @@ export default async function AdminUsersPage() {
         companyId: true,
         isActive: true,
         createdAt: true,
-        company: { select: { legalName: true } },
+        company: { select: { id: true, legalName: true } },
+        companies: {
+          select: {
+            company: { select: { id: true, legalName: true } },
+          },
+        },
       },
     }),
   ]);
@@ -195,7 +200,7 @@ export default async function AdminUsersPage() {
                 <TableRow className="bg-slate-900/90 border-slate-800">
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Staff Name</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Portal Username</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Company</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Companies</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Account Status</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Created Date</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Actions</TableHead>
@@ -206,7 +211,26 @@ export default async function AdminUsersPage() {
                   <TableRow key={account.id} className="border-slate-800 hover:bg-slate-800/50">
                     <TableCell className="font-bold text-xs text-slate-100">{account.name}</TableCell>
                     <TableCell className="font-mono text-xs text-emerald-400">{account.username}</TableCell>
-                    <TableCell className="text-xs text-slate-300">{account.company.legalName}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {account.companies.length > 0 ? (
+                          account.companies.map((c) => (
+                            <span
+                              key={c.company.id}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-medium"
+                            >
+                              <Building2Icon className="size-3 text-emerald-400" />
+                              {c.company.legalName}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-medium">
+                            <Building2Icon className="size-3 text-emerald-400" />
+                            {account.company.legalName}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {account.isActive ? (
                         <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
