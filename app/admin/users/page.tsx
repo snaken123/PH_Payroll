@@ -6,10 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
-import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon } from "lucide-react";
+import { CreateAttendanceAccountDialog } from "@/components/admin/attendance-accounts/create-attendance-account-dialog";
+import { EditAttendanceAccountDialog } from "@/components/admin/attendance-accounts/edit-attendance-account-dialog";
+import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, ClockIcon } from "lucide-react";
 
 export default async function AdminUsersPage() {
-  const [users, companies] = await Promise.all([
+  const [users, companies, attendanceAccounts] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -31,6 +33,18 @@ export default async function AdminUsersPage() {
       orderBy: { legalName: "asc" },
       select: { id: true, legalName: true },
     }),
+    prisma.attendanceAccount.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        companyId: true,
+        isActive: true,
+        createdAt: true,
+        company: { select: { legalName: true } },
+      },
+    }),
   ]);
 
   const superAdminCount = users.filter((u) => u.platformRole === "SUPER_ADMIN").length;
@@ -39,13 +53,18 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Credentials &amp; Access Control"
-        description="Platform user directory — edit login usernames, update passwords, and manage super-admin access privileges."
-        actions={<CreateUserDialog companies={companies} />}
+        title="User Credentials & Access Control"
+        description="Platform user directory & Attendance Staff credentials — edit login usernames, update passwords, and manage access privileges."
+        actions={
+          <div className="flex items-center gap-2">
+            <CreateAttendanceAccountDialog companies={companies} />
+            <CreateUserDialog companies={companies} />
+          </div>
+        }
       />
 
       {/* Metric Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <MetricCard
           title="Total User Accounts"
           value={users.length}
@@ -63,6 +82,12 @@ export default async function AdminUsersPage() {
           value={standardCount}
           subtitle="Tenant level accounts"
           icon={UserCheckIcon}
+        />
+        <MetricCard
+          title="Attendance Staff Accounts"
+          value={attendanceAccounts.length}
+          subtitle="Attendance-only portal logins"
+          icon={ClockIcon}
         />
       </div>
 
@@ -139,6 +164,78 @@ export default async function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Attendance Staff Accounts Table */}
+      <Card className="border-slate-800 bg-slate-900 shadow-xs">
+        <CardHeader className="p-4 border-b border-slate-800 bg-slate-900/80 rounded-t-xl flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClockIcon className="size-4 text-emerald-400" />
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+                Attendance Staff Accounts
+              </CardTitle>
+              <p className="text-[11px] text-slate-400">
+                Standalone logins locked strictly to Attendance &amp; Time Records portal
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400 font-mono">{attendanceAccounts.length} staff accounts</span>
+            <CreateAttendanceAccountDialog companies={companies} />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {attendanceAccounts.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              No attendance staff accounts created yet. Click <span className="font-semibold text-slate-200">New Attendance Account</span> above to add one.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-900/90 border-slate-800">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Staff Name</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Portal Username</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Company</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Account Status</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Created Date</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attendanceAccounts.map((account) => (
+                  <TableRow key={account.id} className="border-slate-800 hover:bg-slate-800/50">
+                    <TableCell className="font-bold text-xs text-slate-100">{account.name}</TableCell>
+                    <TableCell className="font-mono text-xs text-emerald-400">{account.username}</TableCell>
+                    <TableCell className="text-xs text-slate-300">{account.company.legalName}</TableCell>
+                    <TableCell>
+                      {account.isActive ? (
+                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-rose-950/60 border-rose-500/50 text-rose-400">
+                          Inactive
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-400">
+                      {new Date(account.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <EditAttendanceAccountDialog account={account} companies={companies} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
