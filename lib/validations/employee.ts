@@ -26,6 +26,8 @@ export const rankValues = [
   "CL4",
   "PROB",
   "Retainer",
+  "S1",
+  "S2",
   "VS",
 ] as const;
 
