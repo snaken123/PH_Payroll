@@ -48,11 +48,11 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
   const flexiWindowStartStr = config?.attendanceFlexi1WindowStart || "07:00";
   const flexiWindowEndStr = config?.attendanceFlexi1WindowEnd || "10:00";
 
-  const inMins = parseMinutes(timeIn);
-  const outMins = parseMinutes(timeOut);
+  const rawInMins = parseMinutes(timeIn);
+  const rawOutMins = parseMinutes(timeOut);
 
-  // Default output if time-in and time-out are not specified
-  if (inMins === null || outMins === null) {
+  // Default output if neither time-in nor time-out is specified
+  if (rawInMins === null && rawOutMins === null) {
     return {
       regularHours: 8.0,
       overtimeHours: 0,
@@ -68,6 +68,8 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     const windowStartMins = parseMinutes(flexiWindowStartStr) ?? 420; // 07:00
     const windowEndMins = parseMinutes(flexiWindowEndStr) ?? 600;     // 10:00
 
+    const inMins = rawInMins ?? windowStartMins;
+
     let effectiveStartMins: number;
     let lateMinutes = 0;
 
@@ -82,6 +84,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes = inMins - windowEndMins;
     }
 
+    const outMins = rawOutMins ?? (effectiveStartMins + 540); // default to 9h span
     const elapsedMins = outMins - effectiveStartMins;
     const workedMins = elapsedMins - lunchBreakMinutes;
     const requiredWorkMins = 480; // 8.0 hours
@@ -106,6 +109,9 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
   if (normalizedSchedule === "REGULAR") {
     const stdInMins = parseMinutes(stdTimeInStr) ?? 480;   // 08:00
     const stdOutMins = parseMinutes(stdTimeOutStr) ?? 1020; // 17:00
+
+    const inMins = rawInMins ?? stdInMins;
+    const outMins = rawOutMins ?? stdOutMins;
 
     // Late Minutes
     let lateMinutes = 0;
@@ -139,6 +145,8 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
   }
 
   // Fallback for Field, On-Call, Flexi2 or unspecified custom schedules
+  const inMins = rawInMins ?? 480;
+  const outMins = rawOutMins ?? (inMins + 540);
   const totalWorkedMins = Math.max(0, outMins - inMins - lunchBreakMinutes);
   const workedHours = totalWorkedMins / 60;
   const regularHours = Math.min(8.0, roundToQuarter(workedHours));

@@ -88,6 +88,17 @@ describe("calculateTimesheetHours", () => {
       expect(res.overtimeHours).toBe(1.5); // 1.5 hours past 17:00
       expect(res.regularHours).toBe(8.0);
     });
+
+    it("should calculate late minutes and reduce regular hours when time-in is 09:46 even if time-out is omitted", () => {
+      const res = calculateTimesheetHours({
+        scheduleType: "Regular",
+        timeIn: "09:46",
+        config: defaultConfig,
+      });
+
+      expect(res.lateMinutes).toBe(106); // 09:46 - 08:00 = 106 mins
+      expect(res.regularHours).toBe(6.23); // 8.0 - (106 / 60) = 6.23 hours
+    });
   });
 
   describe("Flexi1 Schedule", () => {
