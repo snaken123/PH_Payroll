@@ -357,8 +357,8 @@ export function SettingsClient({
                       ...prev,
                       payScheduleStyle: val,
                       cutoff1StartDay: 26,
-                      cutoff1EndDay: 9,
-                      cutoff2StartDay: 10,
+                      cutoff1EndDay: 10,
+                      cutoff2StartDay: 11,
                       cutoff2EndDay: 25,
                     }));
                   } else {
@@ -374,7 +374,7 @@ export function SettingsClient({
                     Standard Semi-Monthly (1st–15th &amp; 16th–End)
                   </SelectItem>
                   <SelectItem value="MIDMONTH_10_25">
-                    Mid-Month Cycle (10th–25th &amp; 26th–9th)
+                    Mid-Month Cycle (11th–25th &amp; 26th–10th)
                   </SelectItem>
                   <SelectItem value="CUSTOM">Custom Day Ranges</SelectItem>
                 </SelectContent>

@@ -74,16 +74,16 @@ export function CreateRunDialog() {
       }
     } else if (selectedPreset === "MIDMONTH_10_25") {
       if (periodType === "FIRST_HALF") {
-        // 26th of previous month to 9th of current month
+        // 26th of previous month to 10th of current month
         const start = new Date(Date.UTC(year, month - 1, 26));
-        const end = new Date(Date.UTC(year, month, 9));
+        const end = new Date(Date.UTC(year, month, 10));
         const pay = new Date(Date.UTC(year, month, 15));
         setValue("cutoffStart", start.toISOString().split("T")[0]);
         setValue("cutoffEnd", end.toISOString().split("T")[0]);
         setValue("payDate", pay.toISOString().split("T")[0]);
       } else {
-        // 10th of current month to 25th of current month
-        const start = new Date(Date.UTC(year, month, 10));
+        // 11th of current month to 25th of current month
+        const start = new Date(Date.UTC(year, month, 11));
         const end = new Date(Date.UTC(year, month, 25));
         const lastDay = new Date(Date.UTC(year, month + 1, 0)).getDate();
         const pay = new Date(Date.UTC(year, month, Math.min(30, lastDay)));
@@ -138,7 +138,7 @@ export function CreateRunDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="STANDARD_1_15">Standard (1st–15th &amp; 16th–End)</SelectItem>
-                <SelectItem value="MIDMONTH_10_25">Mid-Month Cycle (10th–25th &amp; 26th–9th)</SelectItem>
+                <SelectItem value="MIDMONTH_10_25">Mid-Month Cycle (11th–25th &amp; 26th–10th)</SelectItem>
                 <SelectItem value="CUSTOM">Custom Date Range</SelectItem>
               </SelectContent>
             </Select>
