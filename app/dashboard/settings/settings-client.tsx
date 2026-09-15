@@ -114,6 +114,8 @@ export function SettingsClient({
     isDefault: false,
   });
 
+  const [confirmWorkDaysDialogOpen, setConfirmWorkDaysDialogOpen] = useState(false);
+
   // Company Pay Period & Details Form State
   const [formData, setFormData] = useState({
     legalName: company.legalName,
@@ -156,13 +158,26 @@ export function SettingsClient({
     ownerPassword: "ChangeMe123!",
   });
 
-  async function handleSaveSettings() {
+  async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent) {
+    const override = typeof applyToEmployeesOverride === "boolean" ? applyToEmployeesOverride : undefined;
+    const hasWorkDaysChanged = formData.standardWorkDaysPerMonth !== company.standardWorkDaysPerMonth;
+
+    if (hasWorkDaysChanged && override === undefined) {
+      setConfirmWorkDaysDialogOpen(true);
+      return;
+    }
+
+    const applyToEmployees = override ?? false;
     setSubmitting(true);
+    setConfirmWorkDaysDialogOpen(false);
     try {
       const res = await fetch("/api/companies/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          applyWorkDaysToEmployees: applyToEmployees,
+        }),
       });
 
       if (!res.ok) {
@@ -170,7 +185,12 @@ export function SettingsClient({
         throw new Error(body.error?.formErrors?.join(", ") ?? body.error ?? "Failed to update settings");
       }
 
-      toast.success("Company settings updated successfully");
+      const body = await res.json();
+      if (applyToEmployees && body.updatedEmployeeCount) {
+        toast.success(`Company settings updated and applied to ${body.updatedEmployeeCount} employee compensation records`);
+      } else {
+        toast.success("Company settings updated successfully");
+      }
       router.refresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "An error occurred");
@@ -303,7 +323,8 @@ export function SettingsClient({
   }
 
   return (
-    <Tabs defaultValue="pay-period" className="space-y-6">
+    <>
+      <Tabs defaultValue="pay-period" className="space-y-6">
       <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/60 rounded-xl">
         <TabsTrigger value="pay-period" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <CalendarDaysIcon className="size-3.5" /> Pay Period Rules
@@ -497,7 +518,7 @@ export function SettingsClient({
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSaveSettings} disabled={submitting}>
+            <Button onClick={() => handleSaveSettings()} disabled={submitting}>
               {submitting ? "Saving..." : "Save Pay Period Rules"}
             </Button>
           </CardFooter>
@@ -1088,5 +1109,27 @@ export function SettingsClient({
         </Card>
       </TabsContent>
     </Tabs>
+
+    <Dialog open={confirmWorkDaysDialogOpen} onOpenChange={setConfirmWorkDaysDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Apply Standard Work Days to Employees?</DialogTitle>
+          <DialogDescription>
+            You changed the standard work days per month from <strong>{company.standardWorkDaysPerMonth}</strong> to <strong>{formData.standardWorkDaysPerMonth}</strong> days.
+            <br /><br />
+            Would you like to apply this new standard work days value to all active employee compensation records?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => handleSaveSettings(false)} disabled={submitting}>
+            Update Company Only
+          </Button>
+          <Button onClick={() => handleSaveSettings(true)} disabled={submitting}>
+            {submitting ? "Saving..." : "Apply to All Employees & Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

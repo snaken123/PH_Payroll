@@ -43,37 +43,55 @@ export async function PATCH(request: Request) {
   const data = parsed.data;
 
   try {
-    const updatedCompany = await prisma.company.update({
-      where: { id: ctx.companyId },
-      data: {
-        legalName: data.legalName,
-        tradeName: data.tradeName,
-        tin: data.tin,
-        rdoCode: data.rdoCode,
-        sssEmployerNumber: data.sssEmployerNumber,
-        philhealthEmployerNumber: data.philhealthEmployerNumber,
-        pagibigEmployerId: data.pagibigEmployerId,
-        registeredAddress: data.registeredAddress,
-        region: data.region,
-        payScheduleStyle: data.payScheduleStyle,
-        cutoff1StartDay: data.cutoff1StartDay,
-        cutoff1EndDay: data.cutoff1EndDay,
-        cutoff2StartDay: data.cutoff2StartDay,
-        cutoff2EndDay: data.cutoff2EndDay,
-        payDateOffsetDays: data.payDateOffsetDays,
-        standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
-        statutoryDeductionTiming: data.statutoryDeductionTiming,
-        attendanceStandardTimeIn: data.attendanceStandardTimeIn,
-        attendanceStandardTimeOut: data.attendanceStandardTimeOut,
-        attendanceLunchBreakMinutes: data.attendanceLunchBreakMinutes,
-        attendanceLateGracePeriodMinutes: data.attendanceLateGracePeriodMinutes,
-        attendanceOtGracePeriodMinutes: data.attendanceOtGracePeriodMinutes,
-        attendanceFlexi1WindowStart: data.attendanceFlexi1WindowStart,
-        attendanceFlexi1WindowEnd: data.attendanceFlexi1WindowEnd,
-      },
+    let updatedEmployeeCount = 0;
+    const updatedCompany = await prisma.$transaction(async (tx) => {
+      const comp = await tx.company.update({
+        where: { id: ctx.companyId },
+        data: {
+          legalName: data.legalName,
+          tradeName: data.tradeName,
+          tin: data.tin,
+          rdoCode: data.rdoCode,
+          sssEmployerNumber: data.sssEmployerNumber,
+          philhealthEmployerNumber: data.philhealthEmployerNumber,
+          pagibigEmployerId: data.pagibigEmployerId,
+          registeredAddress: data.registeredAddress,
+          region: data.region,
+          payScheduleStyle: data.payScheduleStyle,
+          cutoff1StartDay: data.cutoff1StartDay,
+          cutoff1EndDay: data.cutoff1EndDay,
+          cutoff2StartDay: data.cutoff2StartDay,
+          cutoff2EndDay: data.cutoff2EndDay,
+          payDateOffsetDays: data.payDateOffsetDays,
+          standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
+          statutoryDeductionTiming: data.statutoryDeductionTiming,
+          attendanceStandardTimeIn: data.attendanceStandardTimeIn,
+          attendanceStandardTimeOut: data.attendanceStandardTimeOut,
+          attendanceLunchBreakMinutes: data.attendanceLunchBreakMinutes,
+          attendanceLateGracePeriodMinutes: data.attendanceLateGracePeriodMinutes,
+          attendanceOtGracePeriodMinutes: data.attendanceOtGracePeriodMinutes,
+          attendanceFlexi1WindowStart: data.attendanceFlexi1WindowStart,
+          attendanceFlexi1WindowEnd: data.attendanceFlexi1WindowEnd,
+        },
+      });
+
+      if (data.applyWorkDaysToEmployees) {
+        const res = await tx.compensationRecord.updateMany({
+          where: {
+            employee: { companyId: ctx.companyId, isDeleted: false },
+            effectiveTo: null,
+          },
+          data: {
+            standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
+          },
+        });
+        updatedEmployeeCount = res.count;
+      }
+
+      return comp;
     });
 
-    return NextResponse.json({ company: updatedCompany });
+    return NextResponse.json({ company: updatedCompany, updatedEmployeeCount });
   } catch (error) {
     console.error("Failed to update company settings:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

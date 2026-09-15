@@ -26,6 +26,7 @@ export const updateCompanySettingsSchema = z.object({
   attendanceOtGracePeriodMinutes: z.number().int().min(0).max(120).default(15),
   attendanceFlexi1WindowStart: z.string().default("07:00"),
   attendanceFlexi1WindowEnd: z.string().default("10:00"),
+  applyWorkDaysToEmployees: z.boolean().optional().default(false),
 });
 
 export type UpdateCompanySettingsInput = z.infer<typeof updateCompanySettingsSchema>;

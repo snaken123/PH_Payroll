@@ -51,7 +51,7 @@ export async function computeAndPersistPayrollRun({
     );
   }
 
-  const companyWorkDays = (company?.standardWorkDaysPerMonth ?? 22).toString();
+  const companyWorkDays = (company?.standardWorkDaysPerMonth ?? 26).toString();
   const deMinimisCeilingMap = new Map(deMinimisCeilings.map((c) => [c.category, c]));
 
   const employees = await prisma.employee.findMany({
