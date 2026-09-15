@@ -23,7 +23,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PencilIcon } from "lucide-react";
+import { PencilIcon, MoreVerticalIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { timesheetStatusValues, holidayTypeValues } from "@/lib/validations/attendance";
 import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
 
@@ -164,6 +170,10 @@ export function AttendanceGrid() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingCell, setEditingCell] = useState<{ employeeId: string; date: string } | null>(null);
+  const [adHocHolidayDate, setAdHocHolidayDate] = useState<string | null>(null);
+  const [adHocHolidayName, setAdHocHolidayName] = useState("");
+  const [adHocHolidayType, setAdHocHolidayType] = useState<"SPECIAL_NON_WORKING" | "REGULAR_HOLIDAY">("SPECIAL_NON_WORKING");
+  const [savingAdHoc, setSavingAdHoc] = useState(false);
 
   const dates = useMemo(() => enumerateDates(start, end), [start, end]);
 
@@ -239,6 +249,12 @@ export function AttendanceGrid() {
 
       let nextCell = { ...current, ...patch };
 
+      if (patch.status === "HOLIDAY" && !nextCell.holidayType) {
+        nextCell.holidayType = "REGULAR_HOLIDAY";
+      } else if (patch.status && patch.status !== "HOLIDAY" && patch.holidayType === undefined) {
+        nextCell.holidayType = "";
+      }
+
       if (patch.timeIn !== undefined || patch.timeOut !== undefined) {
         const emp = employees.find((e) => e.id === employeeId);
         const calc = calculateTimesheetHours({
@@ -306,6 +322,53 @@ export function AttendanceGrid() {
       }
       return next;
     });
+  }
+
+  function applyToColumn(date: string, patch: Partial<CellState>) {
+    setCells((prev) => {
+      const next = { ...prev };
+      for (const emp of filteredEmployees) {
+        const key = cellKey(emp.id, date);
+        if (next[key]) next[key] = { ...next[key], ...patch };
+      }
+      return next;
+    });
+  }
+
+  async function handleSaveAdHocHoliday() {
+    if (!adHocHolidayDate || !adHocHolidayName.trim()) {
+      toast.error("Please provide a holiday name");
+      return;
+    }
+    setSavingAdHoc(true);
+    const res = await fetch("/api/holidays", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: adHocHolidayDate,
+        name: adHocHolidayName.trim(),
+        holidayType: adHocHolidayType,
+      }),
+    });
+    setSavingAdHoc(false);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      toast.error(err?.error ?? "Failed to save holiday");
+      return;
+    }
+
+    applyToColumn(adHocHolidayDate, {
+      status: "HOLIDAY",
+      holidayType: adHocHolidayType,
+      scheduledHours: 8,
+      regularHours: 0,
+      isRestDay: false,
+    });
+
+    toast.success(`Saved "${adHocHolidayName}" to Company Holidays and applied to ${adHocHolidayDate}`);
+    setAdHocHolidayDate(null);
+    setAdHocHolidayName("");
+    load();
   }
 
   function resetTargetToDefault() {
@@ -455,13 +518,106 @@ export function AttendanceGrid() {
                   </TableHead>
                   {dates.map((date) => (
                     <TableHead key={date} className="w-36 min-w-[144px] whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <Checkbox
-                          checked={selectedDates.has(date)}
-                          onCheckedChange={() => toggleDate(date)}
-                          aria-label={`Select column ${date}`}
-                        />
-                        {date.slice(5)}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1">
+                          <Checkbox
+                            checked={selectedDates.has(date)}
+                            onCheckedChange={() => toggleDate(date)}
+                            aria-label={`Select column ${date}`}
+                          />
+                          <span className="text-xs font-semibold">{date.slice(5)}</span>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="ghost" size="icon-xs" title={`Actions for ${date}`}>
+                                <MoreVerticalIcon className="size-3.5 text-muted-foreground" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                applyToColumn(date, {
+                                  status: "HOLIDAY",
+                                  holidayType: "SPECIAL_NON_WORKING",
+                                  scheduledHours: 8,
+                                  regularHours: 0,
+                                  isRestDay: false,
+                                })
+                              }
+                            >
+                              Set as Special Holiday
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                applyToColumn(date, {
+                                  status: "HOLIDAY",
+                                  holidayType: "REGULAR_HOLIDAY",
+                                  scheduledHours: 8,
+                                  regularHours: 0,
+                                  isRestDay: false,
+                                })
+                              }
+                            >
+                              Set as Regular Holiday
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setAdHocHolidayDate(date);
+                                setAdHocHolidayName("Ad-hoc Special Holiday");
+                                setAdHocHolidayType("SPECIAL_NON_WORKING");
+                              }}
+                            >
+                              Save to Company Calendar & Apply...
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                applyToColumn(date, {
+                                  status: "PRESENT",
+                                  scheduledHours: 8,
+                                  regularHours: 8,
+                                  overtimeHours: 0,
+                                  lateMinutes: 0,
+                                  undertimeMinutes: 0,
+                                  isRestDay: false,
+                                  holidayType: "",
+                                })
+                              }
+                            >
+                              Set as Present
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                applyToColumn(date, {
+                                  status: "ABSENT",
+                                  scheduledHours: 8,
+                                  regularHours: 0,
+                                  overtimeHours: 0,
+                                  lateMinutes: 0,
+                                  undertimeMinutes: 0,
+                                  isRestDay: false,
+                                  holidayType: "",
+                                })
+                              }
+                            >
+                              Set as Absent
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                applyToColumn(date, {
+                                  status: "REST_DAY",
+                                  scheduledHours: 0,
+                                  regularHours: 0,
+                                  isRestDay: true,
+                                  holidayType: "",
+                                })
+                              }
+                            >
+                              Set as Rest Day
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableHead>
                   ))}
@@ -632,6 +788,51 @@ export function AttendanceGrid() {
           )}
           <DialogFooter>
             <Button onClick={() => setEditingCell(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!adHocHolidayDate} onOpenChange={(open) => !open && setAdHocHolidayDate(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Register Company Holiday — {adHocHolidayDate}</DialogTitle>
+            <DialogDescription>
+              Save this ad-hoc date into the company holiday calendar. It will automatically apply to all employees.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="adHocName">Holiday name</Label>
+              <Input
+                id="adHocName"
+                value={adHocHolidayName}
+                onChange={(e) => setAdHocHolidayName(e.target.value)}
+                placeholder="e.g. Special Non-Working Day, Typhoon Suspension..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="adHocType">Holiday type</Label>
+              <Select
+                value={adHocHolidayType}
+                onValueChange={(v) => setAdHocHolidayType(v as "SPECIAL_NON_WORKING" | "REGULAR_HOLIDAY")}
+              >
+                <SelectTrigger id="adHocType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SPECIAL_NON_WORKING">Special Non-Working Holiday</SelectItem>
+                  <SelectItem value="REGULAR_HOLIDAY">Regular Holiday</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdHocHolidayDate(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAdHocHoliday} disabled={savingAdHoc}>
+              {savingAdHoc ? "Saving..." : "Save & Apply to Grid"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
