@@ -6,6 +6,7 @@ export interface TenantContext {
   companyId: string;
   companyRole: CompanyRole | null;
   platformRole: PlatformRole;
+  isAttendanceStaff: boolean;
 }
 
 /**
@@ -25,13 +26,21 @@ export async function getTenantContext(): Promise<TenantContext> {
     companyId: session.user.companyId,
     companyRole: session.user.companyRole,
     platformRole: session.user.platformRole,
+    isAttendanceStaff: !!session.user.isAttendanceStaff,
   };
 }
 
 /** Tenant context + company-role check in one call, for API route handlers. */
-export async function requireTenantRole(allowedRoles: CompanyRole[]): Promise<TenantContext> {
+export async function requireTenantRole(
+  allowedRoles: CompanyRole[],
+  options?: { allowAttendanceStaff?: boolean }
+): Promise<TenantContext> {
   const ctx = await getTenantContext();
   if (ctx.platformRole === PlatformRole.SUPER_ADMIN) return ctx;
+  if (ctx.isAttendanceStaff) {
+    if (options?.allowAttendanceStaff) return ctx;
+    throw new Error("Forbidden");
+  }
   if (!ctx.companyRole || !allowedRoles.includes(ctx.companyRole)) {
     throw new Error("Forbidden");
   }
