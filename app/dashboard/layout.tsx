@@ -47,13 +47,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
           {/* Company Switcher */}
           <div className="pt-1">
-            <CompanySwitcher />
+            <CompanySwitcher initialCompanyId={session.user.companyId} initialCompanyName={company?.legalName} />
           </div>
         </div>
 
         {/* Navigation List */}
         <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-          <DashboardNav />
+          <DashboardNav isAttendanceStaff={session.user.isAttendanceStaff} />
         </div>
 
         {/* User Identity & System Footer */}
@@ -97,7 +97,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </SheetTitle>
                 </SheetHeader>
                 <div className="py-4">
-                  <DashboardNav />
+                  <DashboardNav isAttendanceStaff={session.user.isAttendanceStaff} />
                 </div>
               </SheetContent>
             </Sheet>
@@ -108,7 +108,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
 
           <div className="flex items-center gap-2">
-            <CompanySwitcher />
+            <CompanySwitcher initialCompanyId={session.user.companyId} initialCompanyName={company?.legalName} />
             <ThemeToggle />
           </div>
         </header>

@@ -15,7 +15,12 @@ interface CompanyOption {
   legalName: string;
 }
 
-export function CompanySwitcher() {
+interface CompanySwitcherProps {
+  initialCompanyId?: string | null;
+  initialCompanyName?: string | null;
+}
+
+export function CompanySwitcher({ initialCompanyId, initialCompanyName }: CompanySwitcherProps = {}) {
   const { data: session, update } = useSession();
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [switching, setSwitching] = useState(false);
@@ -27,7 +32,9 @@ export function CompanySwitcher() {
       .catch(() => setCompanies([]));
   }, []);
 
-  const activeCompany = companies.find((c) => c.id === session?.user.companyId);
+  const currentCompanyId = session?.user.companyId ?? initialCompanyId;
+  const activeCompany = companies.find((c) => c.id === currentCompanyId);
+  const displayName = activeCompany?.legalName ?? initialCompanyName ?? "Select company";
 
   // If only 1 company or no extra companies available, show styled company badge
   if (companies.length <= 1) {
@@ -35,14 +42,14 @@ export function CompanySwitcher() {
       <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground">
         <Building2Icon className="size-3.5 text-primary" />
         <span className="truncate max-w-[160px]">
-          {activeCompany?.legalName ?? "My Company"}
+          {displayName}
         </span>
       </div>
     );
   }
 
   async function switchCompany(companyId: string | null) {
-    if (!companyId || companyId === session?.user.companyId) return;
+    if (!companyId || companyId === currentCompanyId) return;
     setSwitching(true);
     try {
       await update({ companyId });
@@ -54,7 +61,7 @@ export function CompanySwitcher() {
 
   return (
     <Select
-      value={session?.user.companyId ?? undefined}
+      value={currentCompanyId ?? undefined}
       onValueChange={switchCompany}
       disabled={switching}
     >
@@ -62,7 +69,7 @@ export function CompanySwitcher() {
         <div className="flex items-center gap-1.5 min-w-0">
           <Building2Icon className="size-3.5 text-primary shrink-0" />
           <span className="truncate">
-            {activeCompany?.legalName ?? "Select company"}
+            {displayName}
           </span>
         </div>
       </SelectTrigger>

@@ -49,10 +49,18 @@ export const NAV_GROUPS = [
   },
 ] as const;
 
-export function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {
+export interface DashboardNavProps {
+  onNavigate?: () => void;
+  isAttendanceStaff?: boolean;
+}
+
+export function DashboardNav({ onNavigate, isAttendanceStaff: isAttendanceStaffProp }: DashboardNavProps) {
   const pathname = usePathname();
   const session = useSession();
-  const isAttendanceStaff = session?.data?.user?.isAttendanceStaff;
+  const isAttendanceStaff =
+    isAttendanceStaffProp !== undefined
+      ? isAttendanceStaffProp
+      : session?.data?.user?.isAttendanceStaff ?? false;
 
   const visibleGroups = isAttendanceStaff
     ? [
