@@ -20,6 +20,17 @@ export async function proxy(req: NextRequest) {
   }
 
   const isSuperAdmin = token.platformRole === "SUPER_ADMIN";
+  const isAttendanceStaff = !!token.isAttendanceStaff;
+
+  // Attendance Staff accounts are restricted strictly to the Attendance portal.
+  if (isAttendanceStaff) {
+    if (pathname.startsWith("/dashboard") && pathname !== "/dashboard/attendance") {
+      return NextResponse.redirect(new URL("/dashboard/attendance", req.url));
+    }
+    if (pathname.startsWith("/admin")) {
+      return NextResponse.redirect(new URL("/dashboard/attendance", req.url));
+    }
+  }
 
   // Platform admin routes (statutory rate config, tenant onboarding).
   if (pathname.startsWith("/admin") && !isSuperAdmin) {
@@ -28,7 +39,7 @@ export async function proxy(req: NextRequest) {
 
   // Company dashboard requires either an active company membership or
   // platform super-admin access.
-  if (pathname.startsWith("/dashboard") && !token.companyId && !isSuperAdmin) {
+  if (pathname.startsWith("/dashboard") && !token.companyId && !isSuperAdmin && !isAttendanceStaff) {
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 
