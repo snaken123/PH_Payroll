@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,6 +158,8 @@ function defaultRange() {
 }
 
 export function AttendanceGrid() {
+  const { data: session } = useSession();
+  const companyId = session?.user?.companyId;
   const [{ start, end }, setRange] = useState(defaultRange());
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [entries, setEntries] = useState<TimesheetEntryDTO[]>([]);
@@ -190,7 +193,7 @@ export function AttendanceGrid() {
     setEntries(body.timesheets);
     setHolidays(body.holidays);
     setConfig(body.config);
-  }, [start, end]);
+  }, [start, end, companyId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

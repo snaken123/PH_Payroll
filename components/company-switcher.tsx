@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -18,7 +17,6 @@ interface CompanyOption {
 
 export function CompanySwitcher() {
   const { data: session, update } = useSession();
-  const router = useRouter();
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [switching, setSwitching] = useState(false);
 
@@ -44,12 +42,14 @@ export function CompanySwitcher() {
   }
 
   async function switchCompany(companyId: string | null) {
-    if (!companyId) return;
+    if (!companyId || companyId === session?.user.companyId) return;
     setSwitching(true);
-    await update({ companyId });
-    router.push("/dashboard");
-    router.refresh();
-    setSwitching(false);
+    try {
+      await update({ companyId });
+      window.location.reload();
+    } catch {
+      setSwitching(false);
+    }
   }
 
   return (

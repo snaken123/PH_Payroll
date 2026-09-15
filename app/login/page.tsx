@@ -28,6 +28,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const authError = searchParams.get("error");
+  const reason = searchParams.get("reason");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<"ADMIN" | "ATTENDANCE">("ADMIN");
@@ -40,12 +41,14 @@ function LoginForm() {
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
   useEffect(() => {
-    if (authError === "CredentialsSignin") {
+    if (reason === "idle") {
+      toast.info("Your session expired due to 30 minutes of inactivity. Please sign in again.");
+    } else if (authError === "CredentialsSignin") {
       toast.error("Invalid email, username, or password");
     } else if (authError) {
       toast.error("Authentication failed. Please verify your credentials.");
     }
-  }, [authError]);
+  }, [authError, reason]);
 
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
