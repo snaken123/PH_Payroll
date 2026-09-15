@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 import type { PayBasis } from "./types";
 
-const DEFAULT_WORK_DAYS_PER_MONTH = 22;
+const DEFAULT_WORK_DAYS_PER_MONTH = 26;
 
 /**
  * SSS/PhilHealth/Pag-IBIG contribution bases are inherently monthly

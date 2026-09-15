@@ -10,8 +10,8 @@ describe("estimateMonthlyEquivalentCompensation", () => {
     expect(estimateMonthlyEquivalentCompensation("DAILY_RATE", 800, 22).toNumber()).toBe(17600);
   });
 
-  it("falls back to a 22-day assumption when no divisor is configured", () => {
-    expect(estimateMonthlyEquivalentCompensation("DAILY_RATE", 800).toNumber()).toBe(17600);
+  it("falls back to a 26-day assumption when no divisor is configured", () => {
+    expect(estimateMonthlyEquivalentCompensation("DAILY_RATE", 800).toNumber()).toBe(20800);
   });
 
   it("multiplies hourly rate by 8 hours and the work-days divisor", () => {

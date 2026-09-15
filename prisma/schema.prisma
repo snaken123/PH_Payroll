@@ -94,7 +94,7 @@ model Company {
   cutoff2StartDay          Int                      @default(16)
   cutoff2EndDay            Int                      @default(0)
   payDateOffsetDays        Int                      @default(5)
-  standardWorkDaysPerMonth Float                    @default(22.0)
+  standardWorkDaysPerMonth Float                    @default(26.0)
   statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("08:00")

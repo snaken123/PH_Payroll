@@ -14,7 +14,7 @@ describe("estimateDailyRateEquivalent", () => {
     expect(estimateDailyRateEquivalent("MONTHLY_RATE", 22000, 22).toNumber()).toBe(1000);
   });
 
-  it("falls back to a 22-day assumption when no divisor is configured", () => {
-    expect(estimateDailyRateEquivalent("MONTHLY_RATE", 22000).toNumber()).toBe(1000);
+  it("falls back to a 26-day assumption when no divisor is configured", () => {
+    expect(estimateDailyRateEquivalent("MONTHLY_RATE", 26000).toNumber()).toBe(1000);
   });
 });

@@ -17,7 +17,7 @@ export const updateCompanySettingsSchema = z.object({
   cutoff2StartDay: z.number().int().min(1).max(31).default(16),
   cutoff2EndDay: z.number().int().min(0).max(31).default(0),
   payDateOffsetDays: z.number().int().min(0).max(30).default(5),
-  standardWorkDaysPerMonth: z.number().min(1).max(31).default(22),
+  standardWorkDaysPerMonth: z.number().min(1).max(31).default(26),
   statutoryDeductionTiming: z.nativeEnum(StatutoryDeductionTiming).default(StatutoryDeductionTiming.SECOND_HALF),
   attendanceStandardTimeIn: z.string().default("08:00"),
   attendanceStandardTimeOut: z.string().default("17:00"),

@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 import type { PayBasis } from "./types";
 
-const DEFAULT_WORK_DAYS_PER_MONTH = 22;
+const DEFAULT_WORK_DAYS_PER_MONTH = 26;
 
 /**
  * Used for minimum-wage advisory comparisons (see MinimumWageRate) — NOT
