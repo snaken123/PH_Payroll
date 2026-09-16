@@ -34,6 +34,7 @@ import {
   type EditEmployeeProfileInput,
 } from "@/lib/validations/employee";
 import { toast } from "sonner";
+import { PencilIcon } from "lucide-react";
 
 export function EditEmployeeProfileDialog({
   employeeId,
@@ -71,18 +72,22 @@ export function EditEmployeeProfileDialog({
       return;
     }
 
-    toast.success("Employee profile updated");
+    toast.success("Employee 201 File updated");
     setOpen(false);
     router.refresh();
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit profile</DialogTrigger>
+      <DialogTrigger render={
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+          <PencilIcon className="size-3.5 text-blue-600" /> Update 201 File
+        </Button>
+      } />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit employee profile</DialogTitle>
-          <DialogDescription>Update personal details and government ID numbers.</DialogDescription>
+          <DialogTitle>Update Employee 201 File</DialogTitle>
+          <DialogDescription>Update personal contact details, emergency contact person, government IDs, and bank account parameters.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
@@ -223,6 +228,57 @@ export function EditEmployeeProfileDialog({
           <div className="space-y-1">
             <Label htmlFor="pagibigNumber">Pag-IBIG number</Label>
             <Input id="pagibigNumber" {...register("pagibigNumber")} />
+          </div>
+
+          <div className="space-y-4 sm:col-span-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">201 Contact &amp; Residential Information</Label>
+              <p className="text-[11px] text-slate-500">Personal contact numbers, email address, and home addresses for HR 201 file records.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="personalEmail">Personal Email</Label>
+                <Input id="personalEmail" type="email" placeholder="name@example.com" {...register("personalEmail")} />
+                {errors.personalEmail && <p className="text-sm text-destructive">{errors.personalEmail.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="mobileNumber">Mobile Number</Label>
+                <Input id="mobileNumber" placeholder="0917-123-4567" {...register("mobileNumber")} />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="currentAddress">Current Residential Address</Label>
+                <Input id="currentAddress" placeholder="Street, Barangay, City, Province" {...register("currentAddress")} />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="permanentAddress">Permanent Address</Label>
+                <Input id="permanentAddress" placeholder="Home/Provincial Address" {...register("permanentAddress")} />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 sm:col-span-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Emergency Contact Person</Label>
+              <p className="text-[11px] text-slate-500">Next of kin or emergency contact details for workplace emergency protocols.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="emergencyContactName">Contact Person Name</Label>
+                <Input id="emergencyContactName" placeholder="Full Name" {...register("emergencyContactName")} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                <Input id="emergencyContactRelationship" placeholder="Spouse, Parent, Sibling, Child" {...register("emergencyContactRelationship")} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="emergencyContactNumber">Contact Number</Label>
+                <Input id="emergencyContactNumber" placeholder="0917-000-0000" {...register("emergencyContactNumber")} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="emergencyContactAddress">Contact Address</Label>
+                <Input id="emergencyContactAddress" placeholder="City / Province" {...register("emergencyContactAddress")} />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4 sm:col-span-2 pt-4 border-t border-slate-100 dark:border-slate-800">

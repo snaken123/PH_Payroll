@@ -20,6 +20,7 @@ import { WageSector } from "@/lib/generated/prisma/enums";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MetricCard } from "@/components/ui/metric-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   UserIcon,
   BriefcaseIcon,
@@ -30,6 +31,11 @@ import {
   ArrowLeftIcon,
   DownloadIcon,
   CameraIcon,
+  PhoneIcon,
+  MailIcon,
+  MapPinIcon,
+  ContactIcon,
+  LandmarkIcon,
 } from "lucide-react";
 
 export default async function EmployeeDetailPage({
@@ -131,6 +137,14 @@ export default async function EmployeeDetailPage({
                 birthDate: employee.birthDate.toISOString().slice(0, 10),
                 sex: employee.sex,
                 civilStatus: employee.civilStatus,
+                personalEmail: employee.personalEmail ?? "",
+                mobileNumber: employee.mobileNumber ?? "",
+                currentAddress: employee.currentAddress ?? "",
+                permanentAddress: employee.permanentAddress ?? "",
+                emergencyContactName: employee.emergencyContactName ?? "",
+                emergencyContactRelationship: employee.emergencyContactRelationship ?? "",
+                emergencyContactNumber: employee.emergencyContactNumber ?? "",
+                emergencyContactAddress: employee.emergencyContactAddress ?? "",
                 positionTitle: employee.positionTitle,
                 departmentName: employee.departmentName ?? "",
                 rank: employee.rank ?? "",
@@ -192,8 +206,71 @@ export default async function EmployeeDetailPage({
         />
       </div>
 
-      {/* Information Cards Grid */}
       <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <UserIcon className="size-4 text-blue-600" /> Personal &amp; Contact Dossier (201 File)
+            </CardTitle>
+            <CardDescription className="text-xs">Personal profile, contact numbers, residential addresses, and emergency next-of-kin details.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 grid gap-6 md:grid-cols-2 text-xs">
+            <div className="space-y-2.5">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Birth Date</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.birthDate.toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Sex</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.sex}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Civil Status</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.civilStatus}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Personal Email</span>
+                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.personalEmail || "—"}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500 font-medium">Mobile Number</span>
+                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.mobileNumber || "—"}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="space-y-0.5 py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium block">Current Residential Address</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block">{employee.currentAddress || "—"}</span>
+              </div>
+              <div className="space-y-0.5 py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium block">Permanent Address</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block">{employee.permanentAddress || "—"}</span>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/40 space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                  <ContactIcon className="size-3.5" /> Emergency Contact Person
+                </span>
+                <div className="text-xs space-y-0.5">
+                  <p className="font-bold text-slate-900 dark:text-slate-100">
+                    {employee.emergencyContactName || "No emergency contact specified"}
+                    {employee.emergencyContactRelationship ? ` (${employee.emergencyContactRelationship})` : ""}
+                  </p>
+                  {employee.emergencyContactNumber && (
+                    <p className="text-slate-600 dark:text-slate-400 font-mono">
+                      Phone: {employee.emergencyContactNumber}
+                    </p>
+                  )}
+                  {employee.emergencyContactAddress && (
+                    <p className="text-slate-500">
+                      Address: {employee.emergencyContactAddress}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>

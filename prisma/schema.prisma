@@ -226,6 +226,14 @@ model Employee {
   birthDate              DateTime
   sex                    Sex
   civilStatus            CivilStatus
+  personalEmail          String?
+  mobileNumber           String?
+  currentAddress         String?
+  permanentAddress       String?
+  emergencyContactName   String?
+  emergencyContactRelationship String?
+  emergencyContactNumber String?
+  emergencyContactAddress String?
   tin                    String?
   sssNumber              String?
   philhealthNumber       String?

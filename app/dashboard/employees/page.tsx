@@ -14,7 +14,7 @@ import { parsePageParam, paginationMeta } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, ArrowRightIcon, Edit3Icon, Trash2Icon } from "lucide-react";
+import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, ArrowRightIcon, Edit3Icon, Trash2Icon, FileTextIcon } from "lucide-react";
 
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
@@ -187,9 +187,9 @@ export default async function EmployeesPage({
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/dashboard/employees/${e.id}`}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 text-xs font-semibold transition-colors"
                             >
-                              View <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+                              <FileTextIcon className="size-3" /> 201 File
                             </Link>
                             <DeleteEmployeeDialog
                               employeeId={e.id}
