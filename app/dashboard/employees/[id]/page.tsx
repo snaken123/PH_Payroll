@@ -14,6 +14,7 @@ import { CancelLoanButton } from "@/components/loans/cancel-loan-button";
 import { LoanApprovalActions } from "@/components/loans/loan-approval-actions";
 import { MarkSeparatedDialog } from "@/components/employees/mark-separated-dialog";
 import { ClearanceToggle, ComputeFinalPayButton } from "@/components/employees/separation-panel";
+import { EmployeeDocumentsCard } from "@/components/employees/employee-documents-card";
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
 import type { PayBasis } from "@/lib/payroll/types";
 import { WageSector } from "@/lib/generated/prisma/enums";
@@ -62,6 +63,10 @@ export default async function EmployeeDetailPage({
       },
       loans: { orderBy: { startDate: "desc" } },
       finalPayRuns: { orderBy: { finalPayNumber: "desc" } },
+      documents: {
+        where: { isDeleted: false },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -97,6 +102,21 @@ export default async function EmployeeDetailPage({
       }
     }
   }
+
+  const serializedDocuments = employee.documents.map((doc) => ({
+    id: doc.id,
+    employeeId: doc.employeeId,
+    title: doc.title,
+    category: doc.category,
+    description: doc.description,
+    fileUrl: doc.fileUrl,
+    fileName: doc.fileName,
+    fileSize: doc.fileSize,
+    mimeType: doc.mimeType,
+    uploadedByName: doc.uploadedByName,
+    documentDate: doc.documentDate ? doc.documentDate.toISOString() : null,
+    createdAt: doc.createdAt.toISOString(),
+  }));
 
   return (
     <div className="space-y-6">
@@ -426,6 +446,13 @@ export default async function EmployeeDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* 201 Digital Document Vault & Records */}
+      <EmployeeDocumentsCard
+        employeeId={employee.id}
+        employeeName={`${employee.firstName} ${employee.lastName}`}
+        initialDocuments={serializedDocuments}
+      />
 
       {/* Separation & Final Pay Panel */}
       <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">

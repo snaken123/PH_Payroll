@@ -126,6 +126,7 @@ model Company {
   attendanceAccounts AttendanceAccount[]
   allowedAttendanceAccounts AttendanceAccountCompany[]
   employeeDeletionAudits EmployeeDeletionAudit[]
+  documents              EmployeeDocument[]
 
   @@index([status])
 }
@@ -306,11 +307,48 @@ model Employee {
   leaveBalances       LeaveBalance[]
   leaveRequests       LeaveRequest[]
   finalPayRuns        FinalPayRun[]
+  documents           EmployeeDocument[]
 
   @@unique([companyId, employeeNumber])
   @@index([companyId])
   @@index([companyId, isDeleted])
   @@index([branchId])
+}
+
+enum EmployeeDocumentCategory {
+  ATTENDANCE_MEMO
+  WAIVER
+  COACHING_PERFORMANCE
+  LEGAL_CONTRACT
+  MEDICAL_CLEARANCE
+  GOVERNMENT_IDENT
+  OTHER
+}
+
+model EmployeeDocument {
+  id             String                   @id @default(cuid())
+  employeeId     String
+  companyId      String
+  title          String
+  category       EmployeeDocumentCategory @default(OTHER)
+  description    String?
+  fileUrl        String                   @db.Text
+  fileName       String
+  fileSize       Int
+  mimeType       String                   @default("application/pdf")
+  uploadedById   String?
+  uploadedByName String?
+  documentDate   DateTime?
+  isDeleted      Boolean                  @default(false)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, isDeleted])
+  @@index([companyId, isDeleted])
+  @@index([category])
 }
 
 model EmployeeDeletionAudit {
