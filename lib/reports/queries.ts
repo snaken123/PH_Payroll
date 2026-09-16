@@ -84,8 +84,8 @@ export async function getPayslipReportData(
   if (!payslip || payslip.companyId !== companyId) {
     throw new ReportNotAvailableError("Payslip not found");
   }
-  if (payslip.payrollRun.status !== "POSTED") {
-    throw new ReportNotAvailableError("Payslip is only available once its payroll run is posted");
+  if (payslip.payrollRun.status !== "POSTED" && payslip.payrollRun.status !== "APPROVED") {
+    throw new ReportNotAvailableError("Payslip is only available once its payroll run is approved or posted");
   }
 
   return {

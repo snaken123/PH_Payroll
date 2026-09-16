@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CreateRunDialog } from "@/components/payroll/create-run-dialog";
+import { SendEmailPayslipsDialog } from "@/components/payroll/send-email-payslips-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -55,6 +56,7 @@ export default async function DashboardPage() {
         description={`Philippine semi-monthly payroll & statutory compliance system. Active tenant: ${company.companyCode} · ${formattedDate}`}
         actions={
           <>
+            <SendEmailPayslipsDialog />
             <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold" render={<Link href="/dashboard/employees" />}>
               <UsersIcon className="size-3.5 text-slate-500" />
               Employee Directory
