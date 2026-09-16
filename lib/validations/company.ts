@@ -19,6 +19,7 @@ export const updateCompanySettingsSchema = z.object({
   payDateOffsetDays: z.number().int().min(0).max(30).default(5),
   standardWorkDaysPerMonth: z.number().min(1).max(31).default(26),
   statutoryDeductionTiming: z.nativeEnum(StatutoryDeductionTiming).default(StatutoryDeductionTiming.SECOND_HALF),
+  includeOtherCompanyAllowancesInContributions: z.boolean().optional().default(false),
   attendanceStandardTimeIn: z.string().default("08:00"),
   attendanceStandardTimeOut: z.string().default("17:00"),
   attendanceLunchBreakMinutes: z.number().int().min(0).max(480).default(60),

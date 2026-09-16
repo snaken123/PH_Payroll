@@ -195,14 +195,18 @@ export async function computeAndPersistPayrollRun({
           deMinimisCategory: a.deMinimisCategory,
           deMinimisCeilingAmount: ceiling ? ceiling.ceilingAmount.toString() : null,
           deMinimisFrequency: ceiling ? ceiling.frequency : null,
+          payingCompanyId: a.payingCompanyId ?? null,
         };
       });
 
-      const monthlyEquivalentCompensation = estimateMonthlyEquivalentCompensation(
-        comp.payBasis as PayBasis,
-        comp.basicRate.toString(),
-        comp.standardWorkDaysPerMonth?.toString() || companyWorkDays
-      );
+      const monthlyEquivalentCompensation = estimateMonthlyEquivalentCompensation({
+        payBasis: comp.payBasis as PayBasis,
+        basicRate: comp.basicRate.toString(),
+        standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString() || companyWorkDays,
+        allowances,
+        currentCompanyId: companyId,
+        includeOtherCompanyAllowancesInContributions: company?.includeOtherCompanyAllowancesInContributions ?? false,
+      });
 
       const activeLoans: ActiveLoanInput[] = emp.loans.map((l) => ({
         id: l.id,

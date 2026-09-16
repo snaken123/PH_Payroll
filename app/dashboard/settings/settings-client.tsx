@@ -57,6 +57,7 @@ interface CompanyData {
   payDateOffsetDays: number;
   standardWorkDaysPerMonth: number;
   statutoryDeductionTiming?: "FIRST_HALF" | "SECOND_HALF" | "SPLIT";
+  includeOtherCompanyAllowancesInContributions?: boolean;
   attendanceStandardTimeIn?: string;
   attendanceStandardTimeOut?: string;
   attendanceLunchBreakMinutes?: number;
@@ -135,6 +136,7 @@ export function SettingsClient({
     payDateOffsetDays: company.payDateOffsetDays,
     standardWorkDaysPerMonth: company.standardWorkDaysPerMonth ?? 22,
     statutoryDeductionTiming: company.statutoryDeductionTiming ?? "SECOND_HALF",
+    includeOtherCompanyAllowancesInContributions: company.includeOtherCompanyAllowancesInContributions ?? false,
     attendanceStandardTimeIn: company.attendanceStandardTimeIn ?? "08:00",
     attendanceStandardTimeOut: company.attendanceStandardTimeOut ?? "17:00",
     attendanceLunchBreakMinutes: company.attendanceLunchBreakMinutes ?? 60,
@@ -514,6 +516,27 @@ export function SettingsClient({
                 <p className="text-[11px] text-muted-foreground">
                   Controls when SSS, PhilHealth, and Pag-IBIG contributions are deducted during semi-monthly payroll runs.
                 </p>
+              </div>
+
+              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+                <div className="space-y-0.5 max-w-md">
+                  <Label htmlFor="includeOtherCompanyAllowancesInContributions" className="text-xs font-semibold cursor-pointer">
+                    Include allowances paid by other companies in statutory contribution computations
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    When unselected (default), allowances paid by a different company will be excluded when calculating SSS, Pag-IBIG, and PhilHealth contribution bases for {company.legalName}.
+                  </p>
+                </div>
+                <Switch
+                  id="includeOtherCompanyAllowancesInContributions"
+                  checked={formData.includeOtherCompanyAllowancesInContributions}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      includeOtherCompanyAllowancesInContributions: checked,
+                    }))
+                  }
+                />
               </div>
             </div>
           </CardContent>

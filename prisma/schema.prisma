@@ -96,6 +96,7 @@ model Company {
   payDateOffsetDays        Int                      @default(5)
   standardWorkDaysPerMonth Float                    @default(26.0)
   statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
+  includeOtherCompanyAllowancesInContributions Boolean @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("08:00")
   attendanceStandardTimeOut        String                   @default("17:00")

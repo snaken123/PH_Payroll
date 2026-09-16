@@ -65,6 +65,7 @@ export async function PATCH(request: Request) {
           payDateOffsetDays: data.payDateOffsetDays,
           standardWorkDaysPerMonth: data.standardWorkDaysPerMonth,
           statutoryDeductionTiming: data.statutoryDeductionTiming,
+          includeOtherCompanyAllowancesInContributions: data.includeOtherCompanyAllowancesInContributions,
           attendanceStandardTimeIn: data.attendanceStandardTimeIn,
           attendanceStandardTimeOut: data.attendanceStandardTimeOut,
           attendanceLunchBreakMinutes: data.attendanceLunchBreakMinutes,

@@ -25,6 +25,7 @@ export interface AllowanceInput {
   deMinimisCategory?: string | null;
   deMinimisCeilingAmount?: Decimal.Value | null;
   deMinimisFrequency?: "MONTHLY" | "ANNUAL" | null;
+  payingCompanyId?: string | null;
 }
 
 export type LineItemCategory =
