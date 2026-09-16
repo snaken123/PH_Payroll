@@ -224,6 +224,7 @@ export async function computeAndPersistPayrollRun({
         isManagerialExempt: emp.isManagerialExempt,
         timesheets,
         allowances,
+        currentCompanyId: companyId,
         isSemiMonthly: periodType === PeriodType.FIRST_HALF || periodType === PeriodType.SECOND_HALF,
         isStatutoryDeductionCutoff,
         statutoryDeductionScale,

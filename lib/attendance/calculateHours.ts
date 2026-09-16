@@ -1,6 +1,6 @@
 export interface CompanyAttendanceConfig {
-  attendanceStandardTimeIn?: string;         // e.g. "08:00"
-  attendanceStandardTimeOut?: string;        // e.g. "17:00"
+  attendanceStandardTimeIn?: string;         // e.g. "09:30"
+  attendanceStandardTimeOut?: string;        // e.g. "18:30"
   attendanceLunchBreakMinutes?: number;      // e.g. 60
   attendanceLateGracePeriodMinutes?: number; // e.g. 15
   attendanceOtGracePeriodMinutes?: number;   // e.g. 15
@@ -40,8 +40,8 @@ function roundToQuarter(num: number): number {
 export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHoursResult {
   const { scheduleType, timeIn, timeOut, customBreakMinutes, config } = input;
 
-  const stdTimeInStr = config?.attendanceStandardTimeIn || "08:00";
-  const stdTimeOutStr = config?.attendanceStandardTimeOut || "17:00";
+  const stdTimeInStr = config?.attendanceStandardTimeIn || "09:30";
+  const stdTimeOutStr = config?.attendanceStandardTimeOut || "18:30";
   const lunchBreakMinutes = customBreakMinutes ?? config?.attendanceLunchBreakMinutes ?? 60;
   const lateGraceMinutes = config?.attendanceLateGracePeriodMinutes ?? 15;
   const otGraceMinutes = config?.attendanceOtGracePeriodMinutes ?? 15;

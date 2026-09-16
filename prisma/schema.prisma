@@ -98,8 +98,8 @@ model Company {
   statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
   includeOtherCompanyAllowancesInContributions Boolean @default(false)
   // Attendance & Shift Rules Configuration
-  attendanceStandardTimeIn         String                   @default("08:00")
-  attendanceStandardTimeOut        String                   @default("17:00")
+  attendanceStandardTimeIn         String                   @default("09:30")
+  attendanceStandardTimeOut        String                   @default("18:30")
   attendanceLunchBreakMinutes      Int                      @default(60)
   attendanceLateGracePeriodMinutes Int                      @default(15)
   attendanceOtGracePeriodMinutes   Int                      @default(15)

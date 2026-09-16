@@ -64,6 +64,7 @@ export interface PayrollEngineInput {
   isManagerialExempt: boolean;
   timesheets: TimesheetFact[];
   allowances: AllowanceInput[];
+  currentCompanyId?: string | null;
   /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to true. */
   isSemiMonthly?: boolean;
   /** Optional scale factor for statutory deductions (e.g. 0.5 when company timing is set to SPLIT across cutoffs). Defaults to 1. */
@@ -238,8 +239,14 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
 
     let nonTaxableAmount = zero;
 
-    if (!allowance.isTaxable) {
-      if (allowance.isDeMinimis && allowance.deMinimisCeilingAmount) {
+    const isOtherCompany = !!(
+      allowance.payingCompanyId &&
+      input.currentCompanyId &&
+      allowance.payingCompanyId !== input.currentCompanyId
+    );
+
+    if (isOtherCompany || !allowance.isTaxable) {
+      if (!isOtherCompany && allowance.isDeMinimis && allowance.deMinimisCeilingAmount) {
         const ceiling = new Decimal(allowance.deMinimisCeilingAmount);
         let cutoffCeiling = ceiling;
         if (allowance.deMinimisFrequency === "ANNUAL") {
