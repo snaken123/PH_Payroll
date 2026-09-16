@@ -113,7 +113,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
           </div>
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="e.g. SSS Salary Loan, Uniform Fee" {...register("name")} />
+            <Input id="name" autoComplete="off" placeholder="e.g. SSS Salary Loan, Uniform Fee" {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
@@ -183,7 +183,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
           </div>
           <div className="space-y-1">
             <Label htmlFor="referenceNumber">Reference number (optional)</Label>
-            <Input id="referenceNumber" {...register("referenceNumber")} />
+            <Input id="referenceNumber" autoComplete="off" {...register("referenceNumber")} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
