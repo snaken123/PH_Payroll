@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -20,8 +21,28 @@ interface CompanySwitcherProps {
   initialCompanyName?: string | null;
 }
 
+export function getTargetUrlOnCompanySwitch(pathname: string): string {
+  if (pathname.startsWith("/dashboard/employees/")) {
+    if (pathname === "/dashboard/employees/bulk-edit") {
+      return pathname;
+    }
+    return "/dashboard/employees";
+  }
+
+  if (pathname.startsWith("/dashboard/contractors/")) {
+    return "/dashboard/contractors";
+  }
+
+  if (pathname.startsWith("/dashboard/payroll/")) {
+    return "/dashboard/payroll";
+  }
+
+  return pathname;
+}
+
 export function CompanySwitcher({ initialCompanyId, initialCompanyName }: CompanySwitcherProps = {}) {
   const { data: session, update } = useSession();
+  const pathname = usePathname();
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [switching, setSwitching] = useState(false);
 
@@ -53,7 +74,12 @@ export function CompanySwitcher({ initialCompanyId, initialCompanyName }: Compan
     setSwitching(true);
     try {
       await update({ companyId });
-      window.location.reload();
+      const targetUrl = getTargetUrlOnCompanySwitch(pathname || "/dashboard");
+      if (targetUrl === pathname) {
+        window.location.reload();
+      } else {
+        window.location.href = targetUrl;
+      }
     } catch {
       setSwitching(false);
     }
