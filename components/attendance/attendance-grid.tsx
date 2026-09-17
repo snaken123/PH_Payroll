@@ -155,9 +155,14 @@ function defaultRange() {
   return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
+import { hasPermission } from "@/lib/permissions";
+
 export function AttendanceGrid() {
   const { data: session } = useSession();
   const companyId = session?.user?.companyId;
+  const userPermissions = session?.user?.permissions ?? [];
+  const platformRole = session?.user?.platformRole;
+  const canUseGlobalActions = hasPermission(userPermissions, "attendance.global_actions", platformRole);
   const [{ start, end }, setRange] = useState(defaultRange());
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [entries, setEntries] = useState<TimesheetEntryDTO[]>([]);
@@ -465,34 +470,36 @@ export function AttendanceGrid() {
         </Button>
       </div>
 
-      <div className="rounded-lg border p-4">
-        <p className="mb-3 text-sm font-medium">Global actions</p>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "PRESENT", scheduledHours: 8, regularHours: 8, overtimeHours: 0, lateMinutes: 0, undertimeMinutes: 0, isRestDay: false, holidayType: "" })}>
-            Mark present
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "ABSENT", scheduledHours: 8, regularHours: 0, overtimeHours: 0, lateMinutes: 0, undertimeMinutes: 0, isRestDay: false, holidayType: "" })}>
-            Mark absent
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "HOLIDAY", holidayType: "SPECIAL_NON_WORKING", scheduledHours: 8, regularHours: 0, isRestDay: false })}>
-            Apply special holiday
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "HOLIDAY", holidayType: "REGULAR_HOLIDAY", scheduledHours: 8, regularHours: 0, isRestDay: false })}>
-            Apply regular holiday
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "REST_DAY", scheduledHours: 0, regularHours: 0, isRestDay: true, holidayType: "" })}>
-            Apply rest day
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={resetTargetToDefault}>
-            Reset to default
-          </Button>
+      {canUseGlobalActions && (
+        <div className="rounded-lg border p-4">
+          <p className="mb-3 text-sm font-medium">Global actions</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "PRESENT", scheduledHours: 8, regularHours: 8, overtimeHours: 0, lateMinutes: 0, undertimeMinutes: 0, isRestDay: false, holidayType: "" })}>
+              Mark present
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "ABSENT", scheduledHours: 8, regularHours: 0, overtimeHours: 0, lateMinutes: 0, undertimeMinutes: 0, isRestDay: false, holidayType: "" })}>
+              Mark absent
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "HOLIDAY", holidayType: "SPECIAL_NON_WORKING", scheduledHours: 8, regularHours: 0, isRestDay: false })}>
+              Apply special holiday
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "HOLIDAY", holidayType: "REGULAR_HOLIDAY", scheduledHours: 8, regularHours: 0, isRestDay: false })}>
+              Apply regular holiday
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "REST_DAY", scheduledHours: 0, regularHours: 0, isRestDay: true, holidayType: "" })}>
+              Apply rest day
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={resetTargetToDefault}>
+              Reset to default
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Check employee rows and/or date columns to target them specifically — actions apply to every visible
+            cell if nothing is checked, to a whole employee&apos;s row if only they&apos;re checked, to a whole
+            date&apos;s column if only that date is checked, or to the intersection if both are checked.
+          </p>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Check employee rows and/or date columns to target them specifically — actions apply to every visible
-          cell if nothing is checked, to a whole employee&apos;s row if only they&apos;re checked, to a whole
-          date&apos;s column if only that date is checked, or to the intersection if both are checked.
-        </p>
-      </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>

@@ -70,6 +70,11 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
         label: "Edit & Override Timesheets",
         description: "Modify daily time punches, approve overtime, and generate cutoff defaults",
       },
+      {
+        key: "attendance.global_actions",
+        label: "Execute Bulk / Global Actions in Attendance Grid",
+        description: "Access mass batch actions (Mark Present, Mark Absent, Apply Holiday, Rest Day, Reset) across grid rows & columns",
+      },
     ],
   },
   {
@@ -180,13 +185,14 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
       "employee.manage",
       "attendance.view",
       "attendance.manage",
+      "attendance.global_actions",
       "leave.view",
       "leave.manage",
     ],
   },
   ATTENDANCE_ONLY: {
     label: "Attendance & Timekeeper Only",
-    permissions: ["overview.view", "attendance.view", "attendance.manage", "employee.view_info"],
+    permissions: ["overview.view", "attendance.view", "attendance.manage", "attendance.global_actions", "employee.view_info"],
   },
   PAYROLL_PROCESSOR: {
     label: "Payroll & Tax Processor",
