@@ -14,19 +14,21 @@ import { parsePageParam, paginationMeta } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, ArrowRightIcon, Edit3Icon, Trash2Icon, FileTextIcon } from "lucide-react";
-
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, Edit3Icon, Trash2Icon, FileTextIcon } from "lucide-react";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; sort?: string; order?: "asc" | "desc" }>;
 }) {
   const ctx = await getTenantContext();
-  const { page: pageParam, q } = await searchParams;
+  const resolvedSearchParams = await searchParams;
+  const { page: pageParam, q, sort, order } = resolvedSearchParams;
   const page = parsePageParam(pageParam);
   const search = q?.trim() || undefined;
+  const sortOrder = order === "desc" ? "desc" : "asc";
 
   const where = withCompanyScope(
     ctx.companyId,
@@ -44,19 +46,31 @@ export default async function EmployeesPage({
     }
   );
 
-  const totalCount = await prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) });
-  const { skip, take, totalPages } = paginationMeta(page, await prisma.employee.count({ where }));
+  let prismaOrderBy: any = { createdAt: "desc" };
+  if (sort === "employeeNumber") {
+    prismaOrderBy = { employeeNumber: sortOrder };
+  } else if (sort === "name") {
+    prismaOrderBy = [{ lastName: sortOrder }, { firstName: sortOrder }];
+  } else if (sort === "branch") {
+    prismaOrderBy = { branch: { name: sortOrder } };
+  } else if (sort === "type") {
+    prismaOrderBy = { employeeType: sortOrder };
+  } else if (sort === "status") {
+    prismaOrderBy = { employmentStatus: sortOrder };
+  }
 
-  const [employees, branches, regularCount, probationaryCount] = await Promise.all([
+  const filteredCount = await prisma.employee.count({ where });
+  const totalCount = await prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) });
+  const { skip, take, totalPages } = paginationMeta(page, filteredCount);
+
+  const [rawEmployees, branches, regularCount, probationaryCount] = await Promise.all([
     prisma.employee.findMany({
       where,
       include: {
         branch: { select: { name: true } },
         compensationRecords: { where: { effectiveTo: null }, take: 1 },
       },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take,
+      ...(sort !== "basicRate" ? { orderBy: prismaOrderBy, skip, take } : {}),
     }),
     prisma.companyBranch.findMany({
       where: withCompanyScope(ctx.companyId),
@@ -70,6 +84,16 @@ export default async function EmployeesPage({
       where: withCompanyScope(ctx.companyId, { employmentStatus: EmploymentStatus.PROBATIONARY, isDeleted: false }),
     }),
   ]);
+
+  let employees = rawEmployees;
+  if (sort === "basicRate") {
+    employees = [...rawEmployees].sort((a, b) => {
+      const rateA = Number(a.compensationRecords[0]?.basicRate ?? 0);
+      const rateB = Number(b.compensationRecords[0]?.basicRate ?? 0);
+      return sortOrder === "asc" ? rateA - rateB : rateB - rateA;
+    });
+    employees = employees.slice(skip, skip + take);
+  }
 
   return (
     <div className="space-y-6">
@@ -130,7 +154,12 @@ export default async function EmployeesPage({
             </p>
           </div>
           <div className="w-full sm:w-auto">
-            <SearchForm action="/dashboard/employees" placeholder="Search name or employee #…" defaultValue={search} />
+            <SearchForm
+              action="/dashboard/employees"
+              placeholder="Search name or employee #…"
+              defaultValue={search}
+              hiddenParams={{ sort, order }}
+            />
           </div>
         </div>
 
@@ -144,13 +173,70 @@ export default async function EmployeesPage({
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50/80 dark:bg-slate-900/80 hover:bg-slate-50/80">
-                    <TableHead className="w-[120px] text-xs font-bold uppercase tracking-wider text-slate-500">Employee #</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employee Name</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Branch</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Basis / Type</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
-                    <TableHead className="w-[80px] text-right text-xs font-bold uppercase tracking-wider text-slate-500">Action</TableHead>
+                    <TableHead className="w-[150px]">
+                      <SortableHeader
+                        label="Employee #"
+                        sortKey="employeeNumber"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label="Employee Name"
+                        sortKey="name"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label="Branch"
+                        sortKey="branch"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label="Pay Basis / Type"
+                        sortKey="type"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label="Status"
+                        sortKey="status"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                      />
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <SortableHeader
+                        label="Basic Rate"
+                        sortKey="basicRate"
+                        currentSort={sort}
+                        currentOrder={sortOrder}
+                        basePath="/dashboard/employees"
+                        query={{ q: search }}
+                        align="right"
+                      />
+                    </TableHead>
+                    <TableHead className="w-[80px] text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Action
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,7 +304,7 @@ export default async function EmployeesPage({
         </CardContent>
 
         <div className="p-4 border-t border-slate-200/80 dark:border-slate-800">
-          <Pager page={page} totalPages={totalPages} basePath="/dashboard/employees" query={{ q: search }} />
+          <Pager page={page} totalPages={totalPages} basePath="/dashboard/employees" query={{ q: search, sort, order: sortOrder }} />
         </div>
       </Card>
     </div>
