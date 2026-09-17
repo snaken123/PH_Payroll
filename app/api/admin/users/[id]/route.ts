@@ -24,7 +24,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, password, name, platformRole } = parsed.data;
+  const { email, password, name, platformRole, memberships } = parsed.data;
 
   // Check email uniqueness if changing
   if (email && email !== existing.email) {
@@ -43,6 +43,32 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     updateData.password = await bcrypt.hash(password, 10);
   }
 
+  const effectivePlatformRole = platformRole ?? existing.platformRole;
+
+  if (memberships !== undefined) {
+    if (effectivePlatformRole === "SUPER_ADMIN") {
+      await prisma.companyMembership.deleteMany({ where: { userId: id } });
+    } else {
+      await prisma.$transaction([
+        prisma.companyMembership.deleteMany({ where: { userId: id } }),
+        ...(memberships.length > 0
+          ? [
+              prisma.companyMembership.createMany({
+                data: memberships.map((m) => ({
+                  userId: id,
+                  companyId: m.companyId,
+                  role: m.role || "HR_STAFF",
+                  permissions: m.permissions || [],
+                })),
+              }),
+            ]
+          : []),
+      ]);
+    }
+  } else if (platformRole === "SUPER_ADMIN") {
+    await prisma.companyMembership.deleteMany({ where: { userId: id } });
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
@@ -52,6 +78,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       name: true,
       platformRole: true,
       updatedAt: true,
+      memberships: {
+        select: {
+          id: true,
+          companyId: true,
+          role: true,
+          permissions: true,
+          company: { select: { id: true, legalName: true, companyCode: true } },
+        },
+      },
     },
   });
 

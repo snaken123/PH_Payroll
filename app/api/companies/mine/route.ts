@@ -12,29 +12,6 @@ export async function GET() {
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (session.user.isAttendanceStaff) {
-    const account = await prisma.attendanceAccount.findUnique({
-      where: { id: session.user.id },
-      select: {
-        companyId: true,
-        company: { select: { id: true, legalName: true } },
-        companies: { select: { company: { select: { id: true, legalName: true } } } },
-      },
-    });
-
-    if (!account) return NextResponse.json({ companies: [] });
-
-    const companyMap = new Map<string, { id: string; legalName: string; role: null }>();
-    if (account.company) {
-      companyMap.set(account.company.id, { id: account.company.id, legalName: account.company.legalName, role: null });
-    }
-    for (const item of account.companies) {
-      companyMap.set(item.company.id, { id: item.company.id, legalName: item.company.legalName, role: null });
-    }
-
-    return NextResponse.json({ companies: Array.from(companyMap.values()) });
-  }
-
   if (session.user.platformRole === PlatformRole.SUPER_ADMIN) {
     const companies = await prisma.company.findMany({
       select: { id: true, legalName: true },

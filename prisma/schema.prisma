@@ -46,12 +46,13 @@ model User {
 // One user can belong to multiple companies (e.g. an outsourced bookkeeper
 // running payroll for several client companies), each with its own role.
 model CompanyMembership {
-  id        String      @id @default(cuid())
-  userId    String
-  companyId String
-  role      CompanyRole
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
+  id          String      @id @default(cuid())
+  userId      String
+  companyId   String
+  role        CompanyRole
+  permissions Json?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -123,8 +124,6 @@ model Company {
   finalPayRuns       FinalPayRun[]
   bankAccounts       CompanyBankAccount[]
   allowancesPaid     AllowanceLine[]      @relation("AllowancePayingCompany")
-  attendanceAccounts AttendanceAccount[]
-  allowedAttendanceAccounts AttendanceAccountCompany[]
   employeeDeletionAudits EmployeeDeletionAudit[]
   documents              EmployeeDocument[]
 
@@ -621,36 +620,6 @@ enum TimesheetStatus {
   NO_WORK
   SICK_LEAVE
   VACATION_LEAVE
-}
-
-model AttendanceAccount {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String
-  name         String
-  companyId    String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  company   Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companies AttendanceAccountCompany[]
-
-  @@index([companyId])
-}
-
-model AttendanceAccountCompany {
-  id                  String            @id @default(cuid())
-  attendanceAccountId String
-  companyId           String
-  createdAt           DateTime          @default(now())
-
-  attendanceAccount   AttendanceAccount @relation(fields: [attendanceAccountId], references: [id], onDelete: Cascade)
-  company             Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([attendanceAccountId, companyId])
-  @@index([companyId])
-  @@index([attendanceAccountId])
 }
 
 enum TimesheetSource {

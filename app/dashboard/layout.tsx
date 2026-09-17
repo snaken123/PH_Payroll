@@ -55,7 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Navigation List */}
         <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-          <DashboardNav isAttendanceStaff={session.user.isAttendanceStaff} />
+          <DashboardNav />
         </div>
 
         {/* User Identity & System Footer */}
@@ -129,7 +129,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </SheetTitle>
                 </SheetHeader>
                 <div className="py-4 space-y-4">
-                  <DashboardNav isAttendanceStaff={session.user.isAttendanceStaff} />
+                  <DashboardNav />
                   {isSuperAdmin && (
                     <Link
                       href="/admin"

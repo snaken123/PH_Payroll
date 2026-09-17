@@ -6,12 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
-import { CreateAttendanceAccountDialog } from "@/components/admin/attendance-accounts/create-attendance-account-dialog";
-import { EditAttendanceAccountDialog } from "@/components/admin/attendance-accounts/edit-attendance-account-dialog";
-import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, ClockIcon } from "lucide-react";
+import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, LockIcon } from "lucide-react";
 
 export default async function AdminUsersPage() {
-  const [users, companies, attendanceAccounts] = await Promise.all([
+  const [users, companies] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -23,76 +21,66 @@ export default async function AdminUsersPage() {
         memberships: {
           select: {
             id: true,
+            companyId: true,
             role: true,
-            company: { select: { id: true, legalName: true } },
+            permissions: true,
+            company: { select: { id: true, legalName: true, companyCode: true } },
           },
         },
       },
     }),
     prisma.company.findMany({
       orderBy: { legalName: "asc" },
-      select: { id: true, legalName: true },
-    }),
-    prisma.attendanceAccount.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        companyId: true,
-        isActive: true,
-        createdAt: true,
-        company: { select: { id: true, legalName: true } },
-        companies: {
-          select: {
-            company: { select: { id: true, legalName: true } },
-          },
-        },
-      },
+      select: { id: true, legalName: true, companyCode: true },
     }),
   ]);
 
   const superAdminCount = users.filter((u) => u.platformRole === "SUPER_ADMIN").length;
   const standardCount = users.filter((u) => u.platformRole === "STANDARD").length;
 
+  const formattedUsers = users.map((u) => ({
+    ...u,
+    memberships: u.memberships.map((m) => ({
+      ...m,
+      permissions: Array.isArray(m.permissions)
+        ? (m.permissions as string[])
+        : typeof m.permissions === "string"
+        ? (JSON.parse(m.permissions) as string[])
+        : [],
+    })),
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="User Credentials & Access Control"
-        description="Platform user directory & Attendance Staff credentials — edit login usernames, update passwords, and manage access privileges."
+        description="Super Admin central user directory — manage user credentials, platform roles, company assignments, and granular access trees."
         actions={
           <div className="flex items-center gap-2">
-            <CreateAttendanceAccountDialog companies={companies} />
             <CreateUserDialog companies={companies} />
           </div>
         }
       />
 
       {/* Metric Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           title="Total User Accounts"
           value={users.length}
-          subtitle="Registered platform accounts"
+          subtitle="Registered platform user accounts"
           icon={UsersIcon}
         />
         <MetricCard
-          title="Super Admin Users"
+          title="Platform Super Admins"
           value={superAdminCount}
-          subtitle="Full platform access privileges"
+          subtitle="Unrestricted access to all companies & settings"
           icon={ShieldAlertIcon}
         />
         <MetricCard
           title="Standard Users"
           value={standardCount}
-          subtitle="Tenant level accounts"
+          subtitle="Restricted to assigned companies & permissions"
           icon={UserCheckIcon}
-        />
-        <MetricCard
-          title="Attendance Staff Accounts"
-          value={attendanceAccounts.length}
-          subtitle="Attendance-only portal logins"
-          icon={ClockIcon}
         />
       </div>
 
@@ -114,39 +102,47 @@ export default async function AdminUsersPage() {
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">User Name</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Email / Username</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Platform Role</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Company Memberships</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Access Tree &amp; Companies</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Created Date</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {formattedUsers.map((user) => (
                   <TableRow key={user.id} className="border-slate-800 hover:bg-slate-800/50">
                     <TableCell className="font-bold text-xs text-slate-100">{user.name || "—"}</TableCell>
                     <TableCell className="font-mono text-xs text-slate-300">{user.email}</TableCell>
                     <TableCell>
                       {user.platformRole === "SUPER_ADMIN" ? (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-blue-950/60 border-blue-500/50 text-blue-400">
+                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-amber-950/60 border-amber-500/50 text-amber-400">
                           SUPER_ADMIN
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-slate-800/60 border-slate-700 text-slate-300">
+                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-blue-950/60 border-blue-500/50 text-blue-400">
                           STANDARD
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.memberships.length === 0 ? (
-                        <span className="text-xs text-slate-500 italic">No company linked</span>
+                      {user.platformRole === "SUPER_ADMIN" ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-amber-400/90 font-medium">
+                          <LockIcon className="size-3 text-amber-400" />
+                          Unrestricted (All Companies &amp; Modules)
+                        </span>
+                      ) : user.memberships.length === 0 ? (
+                        <span className="text-xs text-slate-500 italic">No companies assigned</span>
                       ) : (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1.5">
                           {user.memberships.map((m) => (
                             <span
                               key={m.id}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-medium"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700 text-[11px] text-slate-200"
                             >
                               <Building2Icon className="size-3 text-blue-400" />
-                              {m.company.legalName} ({m.role})
+                              <span className="font-semibold">{m.company.legalName}</span>
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-slate-700 text-slate-300">
+                                {m.permissions.length} perms
+                              </Badge>
                             </span>
                           ))}
                         </div>
@@ -160,97 +156,7 @@ export default async function AdminUsersPage() {
                       })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <EditUserDialog user={user} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Attendance Staff Accounts Table */}
-      <Card className="border-slate-800 bg-slate-900 shadow-xs">
-        <CardHeader className="p-4 border-b border-slate-800 bg-slate-900/80 rounded-t-xl flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClockIcon className="size-4 text-emerald-400" />
-            <div>
-              <CardTitle className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-                Attendance Staff Accounts
-              </CardTitle>
-              <p className="text-[11px] text-slate-400">
-                Standalone logins locked strictly to Attendance &amp; Time Records portal
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 font-mono">{attendanceAccounts.length} staff accounts</span>
-            <CreateAttendanceAccountDialog companies={companies} />
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {attendanceAccounts.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              No attendance staff accounts created yet. Click <span className="font-semibold text-slate-200">New Attendance Account</span> above to add one.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-900/90 border-slate-800">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Staff Name</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Portal Username</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Companies</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Account Status</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Created Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attendanceAccounts.map((account) => (
-                  <TableRow key={account.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="font-bold text-xs text-slate-100">{account.name}</TableCell>
-                    <TableCell className="font-mono text-xs text-emerald-400">{account.username}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {account.companies.length > 0 ? (
-                          account.companies.map((c) => (
-                            <span
-                              key={c.company.id}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-medium"
-                            >
-                              <Building2Icon className="size-3 text-emerald-400" />
-                              {c.company.legalName}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-medium">
-                            <Building2Icon className="size-3 text-emerald-400" />
-                            {account.company.legalName}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {account.isActive ? (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-rose-950/60 border-rose-500/50 text-rose-400">
-                          Inactive
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-400">
-                      {new Date(account.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <EditAttendanceAccountDialog account={account} companies={companies} />
+                      <EditUserDialog user={user} companies={companies} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -262,4 +168,3 @@ export default async function AdminUsersPage() {
     </div>
   );
 }
-

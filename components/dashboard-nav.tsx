@@ -19,25 +19,38 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hasPermission } from "@/lib/permissions";
 
-export const NAV_GROUPS = [
+export interface NavItemDef {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  permission?: string;
+}
+
+export interface NavGroupDef {
+  title: string;
+  items: NavItemDef[];
+}
+
+export const NAV_GROUPS: NavGroupDef[] = [
   {
     title: "OPERATIONS",
     items: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/employees", label: "Employees", icon: UsersIcon },
-      { href: "/dashboard/attendance", label: "Attendance", icon: ClockIcon },
-      { href: "/dashboard/holidays", label: "Holidays", icon: CalendarDaysIcon },
-      { href: "/dashboard/leave", label: "Leave", icon: PalmtreeIcon },
-      { href: "/dashboard/loans", label: "Loans", icon: BanknoteIcon },
+      { href: "/dashboard/employees", label: "Employees", icon: UsersIcon, permission: "employee.view_info" },
+      { href: "/dashboard/attendance", label: "Attendance", icon: ClockIcon, permission: "attendance.view" },
+      { href: "/dashboard/holidays", label: "Holidays", icon: CalendarDaysIcon, permission: "attendance.view" },
+      { href: "/dashboard/leave", label: "Leave", icon: PalmtreeIcon, permission: "leave.view" },
+      { href: "/dashboard/loans", label: "Loans", icon: BanknoteIcon, permission: "loans.view" },
     ],
   },
   {
     title: "PAYROLL & COMPLIANCE",
     items: [
-      { href: "/dashboard/payroll", label: "Payroll Runs", icon: WalletIcon },
-      { href: "/dashboard/reports", label: "Statutory Reports", icon: FileTextIcon },
-      { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon },
+      { href: "/dashboard/payroll", label: "Payroll Runs", icon: WalletIcon, permission: "payroll.compute" },
+      { href: "/dashboard/reports", label: "Statutory Reports", icon: FileTextIcon, permission: "reports.view" },
+      { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon, permission: "contractors.view" },
     ],
   },
   {
@@ -48,30 +61,27 @@ export const NAV_GROUPS = [
       { href: "/dashboard/help", label: "Help & Compliance", icon: BookOpenIcon },
     ],
   },
-] as const;
+];
 
 export interface DashboardNavProps {
   onNavigate?: () => void;
-  isAttendanceStaff?: boolean;
 }
 
-export function DashboardNav({ onNavigate, isAttendanceStaff: isAttendanceStaffProp }: DashboardNavProps) {
+export function DashboardNav({ onNavigate }: DashboardNavProps) {
   const pathname = usePathname();
   const session = useSession();
-  const isAttendanceStaff =
-    isAttendanceStaffProp !== undefined
-      ? isAttendanceStaffProp
-      : session?.data?.user?.isAttendanceStaff ?? false;
-  const isSuperAdmin = session?.data?.user?.platformRole === "SUPER_ADMIN";
 
-  const baseGroups = isAttendanceStaff
-    ? [
-        {
-          title: "ATTENDANCE PORTAL",
-          items: [{ href: "/dashboard/attendance", label: "Attendance & Time Records", icon: ClockIcon }],
-        },
-      ]
-    : NAV_GROUPS;
+  const userPermissions = session?.data?.user?.permissions ?? [];
+  const platformRole = session?.data?.user?.platformRole ?? "STANDARD";
+  const isSuperAdmin = platformRole === "SUPER_ADMIN";
+
+  const filteredGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (!item.permission) return true;
+      return hasPermission(userPermissions, item.permission, platformRole);
+    }),
+  })).filter((group) => group.items.length > 0);
 
   const visibleGroups = isSuperAdmin
     ? [
@@ -79,9 +89,9 @@ export function DashboardNav({ onNavigate, isAttendanceStaff: isAttendanceStaffP
           title: "PLATFORM ADMIN",
           items: [{ href: "/admin", label: "Super Admin Console", icon: ShieldAlertIcon }],
         },
-        ...baseGroups,
+        ...filteredGroups,
       ]
-    : baseGroups;
+    : filteredGroups;
 
   return (
     <div className="space-y-6">

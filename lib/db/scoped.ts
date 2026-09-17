@@ -1,20 +1,19 @@
 import { getAuthSession } from "@/lib/auth";
 import { CompanyRole, PlatformRole } from "@/lib/generated/prisma/enums";
+import { hasPermission } from "@/lib/permissions";
 
 export interface TenantContext {
   userId: string;
   companyId: string;
   companyRole: CompanyRole | null;
   platformRole: PlatformRole;
-  isAttendanceStaff: boolean;
+  isSuperAdmin: boolean;
+  permissions: string[];
 }
 
 /**
  * Resolves the authenticated user's active tenant context. Throws if there's
- * no session or no active company. Every tenant-scoped API route/server
- * action must call this first, before touching Prisma — this is the second
- * of three isolation layers (schema, query construction, route); it does not
- * replace per-route role checks.
+ * no session or no active company.
  */
 export async function getTenantContext(): Promise<TenantContext> {
   const session = await getAuthSession();
@@ -26,22 +25,29 @@ export async function getTenantContext(): Promise<TenantContext> {
     companyId: session.user.companyId,
     companyRole: session.user.companyRole,
     platformRole: session.user.platformRole,
-    isAttendanceStaff: !!session.user.isAttendanceStaff,
+    isSuperAdmin: session.user.platformRole === PlatformRole.SUPER_ADMIN,
+    permissions: session.user.permissions ?? [],
   };
 }
 
 /** Tenant context + company-role check in one call, for API route handlers. */
 export async function requireTenantRole(
   allowedRoles: CompanyRole[],
-  options?: { allowAttendanceStaff?: boolean }
+  _options?: unknown
 ): Promise<TenantContext> {
   const ctx = await getTenantContext();
-  if (ctx.platformRole === PlatformRole.SUPER_ADMIN) return ctx;
-  if (ctx.isAttendanceStaff) {
-    if (options?.allowAttendanceStaff) return ctx;
+  if (ctx.isSuperAdmin) return ctx;
+  if (!ctx.companyRole || !allowedRoles.includes(ctx.companyRole)) {
     throw new Error("Forbidden");
   }
-  if (!ctx.companyRole || !allowedRoles.includes(ctx.companyRole)) {
+  return ctx;
+}
+
+/** Tenant context + permission check. */
+export async function requirePermission(permissionKey: string): Promise<TenantContext> {
+  const ctx = await getTenantContext();
+  if (ctx.isSuperAdmin) return ctx;
+  if (!hasPermission(ctx.permissions, permissionKey)) {
     throw new Error("Forbidden");
   }
   return ctx;

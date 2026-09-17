@@ -21,8 +21,10 @@ export async function GET() {
       memberships: {
         select: {
           id: true,
+          companyId: true,
           role: true,
-          company: { select: { id: true, legalName: true } },
+          permissions: true,
+          company: { select: { id: true, legalName: true, companyCode: true } },
         },
       },
     },
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, password, name, platformRole, companyId, companyRole } = parsed.data;
+  const { email, password, name, platformRole, companyId, companyRole, memberships } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -53,18 +55,30 @@ export async function POST(request: Request) {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  let membershipsCreate: Array<{ companyId: string; role: any; permissions: any }> = [];
+  if (platformRole === "STANDARD") {
+    if (memberships && memberships.length > 0) {
+      membershipsCreate = memberships.map((m) => ({
+        companyId: m.companyId,
+        role: m.role || "HR_STAFF",
+        permissions: m.permissions || [],
+      }));
+    } else if (companyId && companyRole) {
+      membershipsCreate = [{ companyId, role: companyRole, permissions: [] }];
+    }
+  }
+
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       name,
       platformRole,
-      ...(companyId && companyRole
+      ...(membershipsCreate.length > 0
         ? {
             memberships: {
-              create: {
-                companyId,
-                role: companyRole,
+              createMany: {
+                data: membershipsCreate,
               },
             },
           }
@@ -76,6 +90,15 @@ export async function POST(request: Request) {
       name: true,
       platformRole: true,
       createdAt: true,
+      memberships: {
+        select: {
+          id: true,
+          companyId: true,
+          role: true,
+          permissions: true,
+          company: { select: { id: true, legalName: true, companyCode: true } },
+        },
+      },
     },
   });
 

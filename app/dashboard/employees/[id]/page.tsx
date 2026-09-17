@@ -118,6 +118,8 @@ export default async function EmployeeDetailPage({
     createdAt: doc.createdAt.toISOString(),
   }));
 
+  const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
+
   return (
     <div className="space-y-6">
       {/* Back Link */}
@@ -189,7 +191,7 @@ export default async function EmployeeDetailPage({
         }
       />
 
-      {minimumWageWarning && (
+      {minimumWageWarning && canViewCompensation && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
           <AlertTriangleIcon className="size-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
@@ -202,8 +204,8 @@ export default async function EmployeeDetailPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Current Basic Rate"
-          value={currentComp ? `₱${Number(currentComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
-          subtitle={currentComp ? `${currentComp.payBasis.replaceAll("_", " ")} Rate` : "No active comp"}
+          value={canViewCompensation ? (currentComp ? `₱${Number(currentComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—") : "••••••"}
+          subtitle={canViewCompensation ? (currentComp ? `${currentComp.payBasis.replaceAll("_", " ")} Rate` : "No active comp") : "Restricted Access"}
           icon={BanknoteIcon}
         />
         <MetricCard
@@ -520,64 +522,72 @@ export default async function EmployeeDetailPage({
             <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Compensation History</CardTitle>
             <CardDescription className="text-xs">Historical basic pay rates, effective dates, and allowances.</CardDescription>
           </div>
-          <AddCompensationDialog
-            employeeId={employee.id}
-            currentCompensation={
-              currentComp
-                ? {
-                    payBasis: currentComp.payBasis,
-                    basicRate: Number(currentComp.basicRate),
-                    standardWorkDaysPerMonth: currentComp.standardWorkDaysPerMonth
-                      ? Number(currentComp.standardWorkDaysPerMonth)
-                      : null,
-                    allowances: currentComp.allowances.map((a) => ({
-                      label: a.label,
-                      amount: Number(a.amount),
-                      frequency: a.frequency,
-                      isTaxable: a.isTaxable,
-                      payingCompanyId: a.payingCompanyId,
-                    })),
-                  }
-                : undefined
-            }
-          />
+          {canViewCompensation && (
+            <AddCompensationDialog
+              employeeId={employee.id}
+              currentCompensation={
+                currentComp
+                  ? {
+                      payBasis: currentComp.payBasis,
+                      basicRate: Number(currentComp.basicRate),
+                      standardWorkDaysPerMonth: currentComp.standardWorkDaysPerMonth
+                        ? Number(currentComp.standardWorkDaysPerMonth)
+                        : null,
+                      allowances: currentComp.allowances.map((a) => ({
+                        label: a.label,
+                        amount: Number(a.amount),
+                        frequency: a.frequency,
+                        isTaxable: a.isTaxable,
+                        payingCompanyId: a.payingCompanyId,
+                      })),
+                    }
+                  : undefined
+              }
+            />
+          )}
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Basis</TableHead>
-                <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Allowances</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employee.compensationRecords.map((c) => (
-                <TableRow key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                  <TableCell className="text-xs font-medium">{c.effectiveFrom.toLocaleDateString()}</TableCell>
-                  <TableCell className="text-xs font-medium">{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current Active"}</TableCell>
-                  <TableCell className="text-xs font-semibold">{c.payBasis.replaceAll("_", " ")}</TableCell>
-                  <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
-                    ₱{Number(c.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-xs text-slate-600 dark:text-slate-400">
-                    {c.allowances.length === 0
-                      ? "—"
-                      : c.allowances
-                          .map((a) => {
-                            const payingCo = (a as any).payingCompany?.legalName;
-                            const coStr = payingCo ? ` • Paid by ${payingCo}` : "";
-                            const freqStr = a.frequency === "DAILY" ? "/day" : "/mo";
-                            return `${a.label} (₱${Number(a.amount).toLocaleString()}${freqStr}${a.isTaxable ? "" : ", non-taxable"}${coStr})`;
-                          })
-                          .join(", ")}
-                  </TableCell>
+          {!canViewCompensation ? (
+            <div className="py-8 text-center text-xs text-slate-500">
+              Access to compensation details is restricted for your account role.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Basis</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Allowances</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {employee.compensationRecords.map((c) => (
+                  <TableRow key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <TableCell className="text-xs font-medium">{c.effectiveFrom.toLocaleDateString()}</TableCell>
+                    <TableCell className="text-xs font-medium">{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current Active"}</TableCell>
+                    <TableCell className="text-xs font-semibold">{c.payBasis.replaceAll("_", " ")}</TableCell>
+                    <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                      ₱{Number(c.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-600 dark:text-slate-400">
+                      {c.allowances.length === 0
+                        ? "—"
+                        : c.allowances
+                            .map((a) => {
+                              const payingCo = (a as any).payingCompany?.legalName;
+                              const coStr = payingCo ? ` • Paid by ${payingCo}` : "";
+                              const freqStr = a.frequency === "DAILY" ? "/day" : "/mo";
+                              return `${a.label} (₱${Number(a.amount).toLocaleString()}${freqStr}${a.isTaxable ? "" : ", non-taxable"}${coStr})`;
+                            })
+                            .join(", ")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
