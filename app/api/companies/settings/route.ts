@@ -14,6 +14,7 @@ export async function GET() {
       CompanyRole.PAYROLL_ADMIN,
       CompanyRole.HR_STAFF,
     ]);
+    if (!ctx.isSuperAdmin) return NextResponse.json({ error: "Forbidden: SuperAdmin access required" }, { status: 403 });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -31,6 +32,7 @@ export async function PATCH(request: Request) {
   let ctx;
   try {
     ctx = await requireTenantRole(EDIT_ROLES);
+    if (!ctx.isSuperAdmin) return NextResponse.json({ error: "Forbidden: SuperAdmin access required" }, { status: 403 });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

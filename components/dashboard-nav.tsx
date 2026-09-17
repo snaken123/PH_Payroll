@@ -78,6 +78,7 @@ export function DashboardNav({ onNavigate }: DashboardNavProps) {
   const filteredGroups = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
+      if (item.href === "/dashboard/settings" && !isSuperAdmin) return false;
       if (!item.permission) return true;
       return hasPermission(userPermissions, item.permission, platformRole);
     }),

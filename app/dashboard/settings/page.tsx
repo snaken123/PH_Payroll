@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { SettingsClient } from "./settings-client";
@@ -5,6 +6,9 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default async function SettingsPage() {
   const ctx = await getTenantContext();
+  if (!ctx.isSuperAdmin) {
+    redirect("/dashboard");
+  }
 
   const [company, bankAccounts, employees] = await Promise.all([
     prisma.company.findUniqueOrThrow({
