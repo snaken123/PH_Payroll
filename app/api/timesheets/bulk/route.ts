@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
 
   const employeeIds = [...new Set(parsed.data.rows.map((r) => r.employeeId))];
   const employees = await prisma.employee.findMany({
-    where: withCompanyScope(ctx.companyId, { id: { in: employeeIds } }),
+    where: withCompanyScope(ctx.companyId, { id: { in: employeeIds }, isDeleted: false }),
     select: { id: true, companyId: true },
   });
   const validEmployeeIds = new Set(employees.map((e) => e.id));

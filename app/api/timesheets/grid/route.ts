@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     prisma.employee.findMany({
       where: withCompanyScope(ctx.companyId, {
         employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
+        isDeleted: false,
       }),
       select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
       orderBy: { employeeNumber: "asc" },

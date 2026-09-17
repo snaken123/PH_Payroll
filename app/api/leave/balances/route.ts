@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   }
 
   const employee = await prisma.employee.findFirst({
-    where: withCompanyScope(ctx.companyId, { id: employeeId }),
+    where: withCompanyScope(ctx.companyId, { id: employeeId, isDeleted: false }),
   });
   if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
 

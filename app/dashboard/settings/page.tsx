@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/db/scoped";
+import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { SettingsClient } from "./settings-client";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -15,7 +15,7 @@ export default async function SettingsPage() {
       orderBy: [{ isDefault: "desc" }, { bankName: "asc" }],
     }),
     prisma.employee.findMany({
-      where: { companyId: ctx.companyId },
+      where: withCompanyScope(ctx.companyId, { isDeleted: false }),
       select: {
         id: true,
         employeeNumber: true,

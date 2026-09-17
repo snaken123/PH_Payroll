@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   const [employee, timesheets, company] = await Promise.all([
     prisma.employee.findFirst({
-      where: withCompanyScope(ctx.companyId, { id: employeeId }),
+      where: withCompanyScope(ctx.companyId, { id: employeeId, isDeleted: false }),
       select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
     }),
     prisma.timesheetEntry.findMany({
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   const data = parsed.data;
 
   const employee = await prisma.employee.findFirst({
-    where: withCompanyScope(ctx.companyId, { id: data.employeeId }),
+    where: withCompanyScope(ctx.companyId, { id: data.employeeId, isDeleted: false }),
   });
   if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
 
