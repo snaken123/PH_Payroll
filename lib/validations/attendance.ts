@@ -66,14 +66,26 @@ export type TimesheetFormInput = z.output<typeof timesheetFormSchema>;
  * punches, not every entry has them. */
 export function combineDateAndTime(workDate: string, time: string | null | undefined): Date | null {
   if (!time) return null;
-  return new Date(`${workDate}T${time}:00`);
+  return new Date(`${workDate}T${time}:00+08:00`);
 }
 
-/** Inverse of combineDateAndTime, for populating a form from a stored entry. */
+/** Inverse of combineDateAndTime, for populating a form from a stored entry. Format in Asia/Manila timezone. */
 export function extractTimeOfDay(dateTime: Date | string | null | undefined): string {
   if (!dateTime) return "";
   const d = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  if (isNaN(d.getTime())) return "";
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(d);
+  const hour = parts.find((p) => p.type === "hour")?.value ?? "00";
+  const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
+  const hStr = hour === "24" ? "00" : hour.padStart(2, "0");
+  return `${hStr}:${minute.padStart(2, "0")}`;
 }
 
 export const generateDefaultEntriesSchema = z.object({

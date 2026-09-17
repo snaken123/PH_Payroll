@@ -28,6 +28,7 @@ import {
   type TimesheetFormValues,
   type TimesheetFormInput,
 } from "@/lib/validations/attendance";
+import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
 import { toast } from "sonner";
 
 export type { TimesheetFormValues };
@@ -38,6 +39,8 @@ export function EditTimesheetDialog({
   employeeId,
   workDate,
   initialValues,
+  scheduleType,
+  config,
   onSaved,
 }: {
   open: boolean;
@@ -45,6 +48,8 @@ export function EditTimesheetDialog({
   employeeId: string;
   workDate: string;
   initialValues: TimesheetFormValues;
+  scheduleType?: string | null;
+  config?: CompanyAttendanceConfig;
   onSaved: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -52,11 +57,26 @@ export function EditTimesheetDialog({
     register,
     handleSubmit,
     control,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<TimesheetFormValues, unknown, TimesheetFormInput>({
     resolver: zodResolver(timesheetFormSchema),
     values: initialValues,
   });
+
+  const handleTimeChange = (timeInVal: string, timeOutVal: string) => {
+    const calc = calculateTimesheetHours({
+      scheduleType,
+      timeIn: timeInVal,
+      timeOut: timeOutVal,
+      config,
+    });
+    setValue("regularHours", calc.regularHours);
+    setValue("overtimeHours", calc.overtimeHours);
+    setValue("lateMinutes", calc.lateMinutes);
+    setValue("undertimeMinutes", calc.undertimeMinutes);
+  };
 
   async function onSubmit(values: TimesheetFormInput) {
     setSubmitting(true);
@@ -135,12 +155,24 @@ export function EditTimesheetDialog({
           </div>
           <div className="space-y-1">
             <Label htmlFor="timeIn">Time in</Label>
-            <Input id="timeIn" type="time" {...register("timeIn")} />
+            <Input
+              id="timeIn"
+              type="time"
+              {...register("timeIn", {
+                onChange: (e) => handleTimeChange(e.target.value, getValues("timeOut") ?? ""),
+              })}
+            />
             {errors.timeIn && <p className="text-sm text-destructive">{errors.timeIn.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="timeOut">Time out</Label>
-            <Input id="timeOut" type="time" {...register("timeOut")} />
+            <Input
+              id="timeOut"
+              type="time"
+              {...register("timeOut", {
+                onChange: (e) => handleTimeChange(getValues("timeIn") ?? "", e.target.value),
+              })}
+            />
             {errors.timeOut && <p className="text-sm text-destructive">{errors.timeOut.message}</p>}
           </div>
           <div className="space-y-1">

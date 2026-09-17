@@ -23,17 +23,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "employeeId, start, and end are required" }, { status: 400 });
   }
 
-  const employee = await prisma.employee.findFirst({
-    where: withCompanyScope(ctx.companyId, { id: employeeId }),
-  });
+  const [employee, timesheets, company] = await Promise.all([
+    prisma.employee.findFirst({
+      where: withCompanyScope(ctx.companyId, { id: employeeId }),
+      select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
+    }),
+    prisma.timesheetEntry.findMany({
+      where: { employeeId, workDate: { gte: new Date(start), lte: new Date(end) } },
+      orderBy: { workDate: "asc" },
+    }),
+    prisma.company.findUnique({
+      where: { id: ctx.companyId },
+      select: {
+        attendanceStandardTimeIn: true,
+        attendanceStandardTimeOut: true,
+        attendanceLunchBreakMinutes: true,
+        attendanceLateGracePeriodMinutes: true,
+        attendanceOtGracePeriodMinutes: true,
+        attendanceFlexi1WindowStart: true,
+        attendanceFlexi1WindowEnd: true,
+      },
+    }),
+  ]);
+
   if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
 
-  const timesheets = await prisma.timesheetEntry.findMany({
-    where: { employeeId, workDate: { gte: new Date(start), lte: new Date(end) } },
-    orderBy: { workDate: "asc" },
-  });
-
-  return NextResponse.json({ timesheets });
+  return NextResponse.json({ timesheets, employee, config: company });
 }
 
 export async function POST(request: Request) {

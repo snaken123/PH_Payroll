@@ -18,11 +18,14 @@ import { toast } from "sonner";
 import { EditTimesheetDialog, type TimesheetFormValues } from "./edit-timesheet-dialog";
 import { extractTimeOfDay } from "@/lib/validations/attendance";
 
+import { type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
+
 interface EmployeeOption {
   id: string;
   employeeNumber: string;
   firstName: string;
   lastName: string;
+  scheduleType?: string | null;
 }
 
 interface TimesheetRow {
@@ -56,6 +59,8 @@ export function AttendanceManager({ employees }: { employees: EmployeeOption[] }
   const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
   const [{ start, end }, setRange] = useState(defaultRange());
   const [rows, setRows] = useState<TimesheetRow[]>([]);
+  const [config, setConfig] = useState<CompanyAttendanceConfig | undefined>(undefined);
+  const [currentEmployee, setCurrentEmployee] = useState<EmployeeOption | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [editingDate, setEditingDate] = useState<string | null>(null);
@@ -73,6 +78,8 @@ export function AttendanceManager({ employees }: { employees: EmployeeOption[] }
     }
     const body = await res.json();
     setRows(body.timesheets);
+    if (body.config) setConfig(body.config);
+    if (body.employee) setCurrentEmployee(body.employee);
   }, [employeeId, start, end]);
 
   useEffect(() => {
@@ -222,6 +229,8 @@ export function AttendanceManager({ employees }: { employees: EmployeeOption[] }
               isRestDay: editingRow.isRestDay,
             } as TimesheetFormValues
           }
+          scheduleType={currentEmployee?.scheduleType}
+          config={config}
           onSaved={fetchTimesheets}
         />
       )}

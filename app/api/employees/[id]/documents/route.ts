@@ -4,7 +4,7 @@ import { assertCompanyId, requireTenantRole, getTenantContext } from "@/lib/db/s
 import { CompanyRole, EmployeeDocumentCategory } from "@/lib/generated/prisma/enums";
 import { createEmployeeDocumentSchema } from "@/lib/validations/employeeDocument";
 
-const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
+const MANAGE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
 
 export async function GET(
   request: Request,

@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { timesheetStatusValues, holidayTypeValues } from "@/lib/validations/attendance";
+import { timesheetStatusValues, holidayTypeValues, extractTimeOfDay } from "@/lib/validations/attendance";
 import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
 
 interface EmployeeOption {
@@ -82,9 +82,7 @@ function cellKey(employeeId: string, workDate: string) {
 }
 
 function toTimeString(dt: string | null): string {
-  if (!dt) return "";
-  const d = new Date(dt);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return extractTimeOfDay(dt);
 }
 
 function enumerateDates(start: string, end: string): string[] {

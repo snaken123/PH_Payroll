@@ -107,8 +107,8 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
   }
 
   if (normalizedSchedule === "REGULAR") {
-    const stdInMins = parseMinutes(stdTimeInStr) ?? 480;   // 08:00
-    const stdOutMins = parseMinutes(stdTimeOutStr) ?? 1020; // 17:00
+    const stdInMins = parseMinutes(stdTimeInStr) ?? 570;   // 09:30
+    const stdOutMins = parseMinutes(stdTimeOutStr) ?? 1110; // 18:30
 
     const inMins = rawInMins ?? stdInMins;
     const outMins = rawOutMins ?? stdOutMins;
