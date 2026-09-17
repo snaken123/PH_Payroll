@@ -29,9 +29,15 @@ export async function PATCH(
 
   const { dateSeparated, birthDate, dateHired, ...rest } = parsed.data;
   const data: Record<string, unknown> = { ...rest };
-  if (dateSeparated !== undefined) data.dateSeparated = new Date(dateSeparated);
-  if (birthDate !== undefined) data.birthDate = new Date(birthDate);
-  if (dateHired !== undefined) data.dateHired = new Date(dateHired);
+  if (typeof dateSeparated === "string" && dateSeparated.trim() !== "") {
+    data.dateSeparated = new Date(dateSeparated);
+  }
+  if (typeof birthDate === "string" && birthDate.trim() !== "") {
+    data.birthDate = new Date(birthDate);
+  }
+  if (typeof dateHired === "string" && dateHired.trim() !== "") {
+    data.dateHired = new Date(dateHired);
+  }
 
   try {
     const employee = await prisma.employee.update({ where: { id }, data });

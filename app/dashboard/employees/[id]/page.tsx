@@ -180,6 +180,18 @@ export default async function EmployeeDetailPage({
                 bankAccountNumber: employee.bankAccountNumber ?? "",
                 bankBranch: employee.bankBranch ?? "",
                 paymentMethod: employee.paymentMethod,
+                isDeductSss: employee.isDeductSss,
+                sssDeductionMode: employee.sssDeductionMode,
+                sssCustomAmountEe: employee.sssCustomAmountEe ? Number(employee.sssCustomAmountEe) : undefined,
+                sssCustomAmountEr: employee.sssCustomAmountEr ? Number(employee.sssCustomAmountEr) : undefined,
+                isDeductPhilhealth: employee.isDeductPhilhealth,
+                philhealthDeductionMode: employee.philhealthDeductionMode,
+                philhealthCustomAmountEe: employee.philhealthCustomAmountEe ? Number(employee.philhealthCustomAmountEe) : undefined,
+                philhealthCustomAmountEr: employee.philhealthCustomAmountEr ? Number(employee.philhealthCustomAmountEr) : undefined,
+                isDeductPagibig: employee.isDeductPagibig,
+                pagibigDeductionMode: employee.pagibigDeductionMode,
+                pagibigCustomAmountEe: employee.pagibigCustomAmountEe ? Number(employee.pagibigCustomAmountEe) : undefined,
+                pagibigCustomAmountEr: employee.pagibigCustomAmountEr ? Number(employee.pagibigCustomAmountEr) : undefined,
               }}
             />
             <DeleteEmployeeDialog

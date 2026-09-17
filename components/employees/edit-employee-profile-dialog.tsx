@@ -68,7 +68,21 @@ export function EditEmployeeProfileDialog({
 
     if (!res.ok) {
       const body = await res.json().catch(() => null);
-      toast.error(body?.error?.formErrors?.join?.(", ") ?? body?.error ?? "Failed to update employee");
+      let errMsg = "Failed to update employee";
+      if (body?.error) {
+        if (typeof body.error === "string") {
+          errMsg = body.error;
+        } else if (body.error.fieldErrors) {
+          const fieldMsgs = Object.entries(body.error.fieldErrors)
+            .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`)
+            .filter(Boolean)
+            .join("; ");
+          if (fieldMsgs) errMsg = fieldMsgs;
+        } else if (body.error.formErrors?.length) {
+          errMsg = body.error.formErrors.join(", ");
+        }
+      }
+      toast.error(errMsg);
       return;
     }
 
