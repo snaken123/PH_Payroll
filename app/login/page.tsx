@@ -18,7 +18,6 @@ import {
   EyeIcon,
   EyeOffIcon,
   ShieldCheckIcon,
-  SparklesIcon,
   ClockIcon,
   UserCheckIcon,
   Building2Icon,
@@ -36,7 +35,6 @@ function LoginForm() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
@@ -81,13 +79,6 @@ function LoginForm() {
 
     // Force full window replacement to target route
     window.location.replace(targetUrl);
-  }
-
-  function prefillCredentials(identifier: string, mode: "ADMIN" | "ATTENDANCE" = "ADMIN") {
-    setLoginMode(mode);
-    setValue("email", identifier);
-    setValue("password", "ChangeMe123!");
-    toast.info(`Prefilled credentials for ${identifier}`);
   }
 
   return (
@@ -191,35 +182,6 @@ function LoginForm() {
               : "Sign in to Attendance Portal"}
           </Button>
         </form>
-
-        {/* Fast Demo Account Selector */}
-        <div className="pt-3 border-t border-slate-800 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            <SparklesIcon className="size-3 text-blue-400" /> Demo Quick Access Accounts
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => prefillCredentials("owner@demo-co.local", "ADMIN")}
-              className="flex flex-col items-start p-2 rounded-lg border border-slate-800 bg-slate-950/60 hover:bg-slate-800/80 transition-colors text-left group"
-            >
-              <span className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors">
-                Company Owner
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">owner@demo-co.local</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => prefillCredentials("admin@ph-payroll.local", "ADMIN")}
-              className="flex flex-col items-start p-2 rounded-lg border border-slate-800 bg-slate-950/60 hover:bg-slate-800/80 transition-colors text-left group"
-            >
-              <span className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors">
-                Platform Super Admin
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">admin@ph-payroll.local</span>
-            </button>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
