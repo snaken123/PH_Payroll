@@ -15,6 +15,7 @@ export async function GET() {
   let ctx;
   try {
     ctx = await requireTenantRole(VIEW_ROLES);
+    if (!ctx.isSuperAdmin) return NextResponse.json({ error: "Forbidden: SuperAdmin access required" }, { status: 403 });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   let ctx;
   try {
     ctx = await requireTenantRole(EDIT_ROLES);
+    if (!ctx.isSuperAdmin) return NextResponse.json({ error: "Forbidden: SuperAdmin access required" }, { status: 403 });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -92,10 +92,12 @@ export function SettingsClient({
   company,
   bankAccounts: initialBankAccounts,
   employees: initialEmployees,
+  isSuperAdmin = false,
 }: {
   company: CompanyData;
   bankAccounts: BankAccountData[];
   employees: EmployeeData[];
+  isSuperAdmin?: boolean;
 }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -296,15 +298,21 @@ export function SettingsClient({
         <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <ClockIcon className="size-3.5" /> Attendance Shift Rules
         </TabsTrigger>
-        <TabsTrigger value="banks" className="flex items-center gap-1.5 text-xs py-2 px-3">
-          <LandmarkIcon className="size-3.5" /> Payroll Banks
-        </TabsTrigger>
-        <TabsTrigger value="company-details" className="flex items-center gap-1.5 text-xs py-2 px-3">
-          <Building2Icon className="size-3.5" /> Company Details
-        </TabsTrigger>
-        <TabsTrigger value="alphalist" className="flex items-center gap-1.5 text-xs py-2 px-3">
-          <UsersIcon className="size-3.5" /> BIR Alphalist
-        </TabsTrigger>
+        {isSuperAdmin && (
+          <TabsTrigger value="banks" className="flex items-center gap-1.5 text-xs py-2 px-3">
+            <LandmarkIcon className="size-3.5" /> Payroll Banks
+          </TabsTrigger>
+        )}
+        {isSuperAdmin && (
+          <TabsTrigger value="company-details" className="flex items-center gap-1.5 text-xs py-2 px-3">
+            <Building2Icon className="size-3.5" /> Company Details
+          </TabsTrigger>
+        )}
+        {isSuperAdmin && (
+          <TabsTrigger value="alphalist" className="flex items-center gap-1.5 text-xs py-2 px-3">
+            <UsersIcon className="size-3.5" /> BIR Alphalist
+          </TabsTrigger>
+        )}
         <TabsTrigger value="theme" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <PaletteIcon className="size-3.5" /> Appearance
         </TabsTrigger>
@@ -623,341 +631,347 @@ export function SettingsClient({
       </TabsContent>
 
       {/* 2. Payroll Banks Tab */}
-      <TabsContent value="banks" className="space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Company Payroll Bank Accounts</CardTitle>
-              <CardDescription>
-                Define bank accounts used by {company.legalName} for payroll disbursement. These accounts generate the Bank Advice Report and CSV download per pay period.
-              </CardDescription>
-            </div>
-
-            <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
-              <DialogTrigger render={<Button />}>
-                <PlusCircleIcon className="size-4 mr-1.5" /> Add Bank Account
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Payroll Bank Account</DialogTitle>
-                  <DialogDescription>
-                    Enter the company bank account details for payroll advice generation.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddBankAccount} className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="bankName">Bank Name</Label>
-                    <Input
-                      id="bankName"
-                      placeholder="e.g. BDO, BPI, Metrobank, UnionBank"
-                      value={newBank.bankName}
-                      onChange={(e) => setNewBank({ ...newBank, bankName: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="bankNickname">Account Nickname (Optional)</Label>
-                    <Input
-                      id="bankNickname"
-                      placeholder="e.g. Main Payroll Account, Allowance BPI"
-                      value={newBank.nickname}
-                      onChange={(e) => setNewBank({ ...newBank, nickname: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="accountNumber">Company Account Number</Label>
-                    <Input
-                      id="accountNumber"
-                      placeholder="e.g. 001234567890"
-                      value={newBank.accountNumber}
-                      onChange={(e) => setNewBank({ ...newBank, accountNumber: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="accountName">Company Account Name</Label>
-                    <Input
-                      id="accountName"
-                      value={newBank.accountName}
-                      onChange={(e) => setNewBank({ ...newBank, accountName: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="branchName">Branch Name (Optional)</Label>
-                      <Input
-                        id="branchName"
-                        placeholder="e.g. Makati Main Branch"
-                        value={newBank.branchName}
-                        onChange={(e) => setNewBank({ ...newBank, branchName: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="swiftCode">Bank / SWIFT Code (Optional)</Label>
-                      <Input
-                        id="swiftCode"
-                        placeholder="e.g. BNORPHMM"
-                        value={newBank.swiftCode}
-                        onChange={(e) => setNewBank({ ...newBank, swiftCode: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      id="isDefaultBank"
-                      checked={newBank.isDefault}
-                      onCheckedChange={(v) => setNewBank({ ...newBank, isDefault: v })}
-                    />
-                    <Label htmlFor="isDefaultBank" className="text-xs">
-                      Set as primary default disbursing bank account for this company
-                    </Label>
-                  </div>
-
-                  <DialogFooter className="pt-2">
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? "Adding..." : "Save Bank Account"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent>
-            {bankAccounts.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
-                <LandmarkIcon className="size-8 mx-auto text-muted-foreground/50" />
-                <p>No bank accounts configured for this company yet.</p>
-                <p className="text-xs">Click &quot;Add Bank Account&quot; above to register your disbursing bank.</p>
+      {isSuperAdmin && (
+        <TabsContent value="banks" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Company Payroll Bank Accounts</CardTitle>
+                <CardDescription>
+                  Define bank accounts used by {company.legalName} for payroll disbursement. These accounts generate the Bank Advice Report and CSV download per pay period.
+                </CardDescription>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bank Name</TableHead>
-                    <TableHead>Account Number</TableHead>
-                    <TableHead>Account Name</TableHead>
-                    <TableHead>Branch / SWIFT</TableHead>
-                    <TableHead>Default</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bankAccounts.map((b) => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-semibold flex items-center gap-2">
-                        <LandmarkIcon className="size-4 text-primary shrink-0" />
-                        <div>
-                          <span>{b.bankName}</span>
-                          {b.nickname && (
-                            <span className="block text-xs font-normal text-muted-foreground">{b.nickname}</span>
+
+              <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
+                <DialogTrigger render={<Button />}>
+                  <PlusCircleIcon className="size-4 mr-1.5" /> Add Bank Account
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Payroll Bank Account</DialogTitle>
+                    <DialogDescription>
+                      Enter the company bank account details for payroll advice generation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddBankAccount} className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="bankName">Bank Name</Label>
+                      <Input
+                        id="bankName"
+                        placeholder="e.g. BDO, BPI, Metrobank, UnionBank"
+                        value={newBank.bankName}
+                        onChange={(e) => setNewBank({ ...newBank, bankName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="bankNickname">Account Nickname (Optional)</Label>
+                      <Input
+                        id="bankNickname"
+                        placeholder="e.g. Main Payroll Account, Allowance BPI"
+                        value={newBank.nickname}
+                        onChange={(e) => setNewBank({ ...newBank, nickname: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="accountNumber">Company Account Number</Label>
+                      <Input
+                        id="accountNumber"
+                        placeholder="e.g. 001234567890"
+                        value={newBank.accountNumber}
+                        onChange={(e) => setNewBank({ ...newBank, accountNumber: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="accountName">Company Account Name</Label>
+                      <Input
+                        id="accountName"
+                        value={newBank.accountName}
+                        onChange={(e) => setNewBank({ ...newBank, accountName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="branchName">Branch Name (Optional)</Label>
+                        <Input
+                          id="branchName"
+                          placeholder="e.g. Makati Main Branch"
+                          value={newBank.branchName}
+                          onChange={(e) => setNewBank({ ...newBank, branchName: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="swiftCode">Bank / SWIFT Code (Optional)</Label>
+                        <Input
+                          id="swiftCode"
+                          placeholder="e.g. BNORPHMM"
+                          value={newBank.swiftCode}
+                          onChange={(e) => setNewBank({ ...newBank, swiftCode: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Switch
+                        id="isDefaultBank"
+                        checked={newBank.isDefault}
+                        onCheckedChange={(v) => setNewBank({ ...newBank, isDefault: v })}
+                      />
+                      <Label htmlFor="isDefaultBank" className="text-xs">
+                        Set as primary default disbursing bank account for this company
+                      </Label>
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                      <Button type="submit" disabled={submitting}>
+                        {submitting ? "Adding..." : "Save Bank Account"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {bankAccounts.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
+                  <LandmarkIcon className="size-8 mx-auto text-muted-foreground/50" />
+                  <p>No bank accounts configured for this company yet.</p>
+                  <p className="text-xs">Click &quot;Add Bank Account&quot; above to register your disbursing bank.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Bank Name</TableHead>
+                      <TableHead>Account Number</TableHead>
+                      <TableHead>Account Name</TableHead>
+                      <TableHead>Branch / SWIFT</TableHead>
+                      <TableHead>Default</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bankAccounts.map((b) => (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          <LandmarkIcon className="size-4 text-primary shrink-0" />
+                          <div>
+                            <span>{b.bankName}</span>
+                            {b.nickname && (
+                              <span className="block text-xs font-normal text-muted-foreground">{b.nickname}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{b.accountNumber}</TableCell>
+                        <TableCell>{b.accountName}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {b.branchName || "—"} {b.swiftCode ? `(${b.swiftCode})` : ""}
+                        </TableCell>
+                        <TableCell>
+                          {b.isDefault ? (
+                            <Badge variant="default" className="gap-1 bg-amber-500 text-amber-950 font-semibold">
+                              <StarIcon className="size-3 fill-current" /> Primary Default
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Secondary</Badge>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{b.accountNumber}</TableCell>
-                      <TableCell>{b.accountName}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {b.branchName || "—"} {b.swiftCode ? `(${b.swiftCode})` : ""}
-                      </TableCell>
-                      <TableCell>
-                        {b.isDefault ? (
-                          <Badge variant="default" className="gap-1 bg-amber-500 text-amber-950 font-semibold">
-                            <StarIcon className="size-3 fill-current" /> Primary Default
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Secondary</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {!b.isDefault && (
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {!b.isDefault && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => handleSetDefaultBank(b.id)}
+                              >
+                                Make Default
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => handleSetDefaultBank(b.id)}
+                              size="icon"
+                              className="size-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteBank(b.id)}
                             >
-                              Make Default
+                              <Trash2Icon className="size-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteBank(b.id)}
-                          >
-                            <Trash2Icon className="size-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
 
       {/* 3. Company Details Tab */}
-      <TabsContent value="company-details" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Company Details &amp; Tax Registration</CardTitle>
-            <CardDescription>
-              Official registration identifiers for BIR Form 1601-C, 2316, Form 2307, SSS R-3, PhilHealth RF-1, and Pag-IBIG filings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label htmlFor="legalName">Legal Name</Label>
-                <Input
-                  id="legalName"
-                  value={formData.legalName}
-                  onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
-                />
+      {isSuperAdmin && (
+        <TabsContent value="company-details" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Details &amp; Tax Registration</CardTitle>
+              <CardDescription>
+                Official registration identifiers for BIR Form 1601-C, 2316, Form 2307, SSS R-3, PhilHealth RF-1, and Pag-IBIG filings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="legalName">Legal Name</Label>
+                  <Input
+                    id="legalName"
+                    value={formData.legalName}
+                    onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="tradeName">Trade Name (Optional)</Label>
+                  <Input
+                    id="tradeName"
+                    value={formData.tradeName}
+                    onChange={(e) => setFormData({ ...formData, tradeName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="tin">Tax Identification Number (TIN)</Label>
+                  <Input
+                    id="tin"
+                    value={formData.tin}
+                    onChange={(e) => setFormData({ ...formData, tin: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="rdoCode">Revenue District Office (RDO Code)</Label>
+                  <Input
+                    id="rdoCode"
+                    value={formData.rdoCode}
+                    onChange={(e) => setFormData({ ...formData, rdoCode: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="sssEmployerNumber">SSS Employer Number</Label>
+                  <Input
+                    id="sssEmployerNumber"
+                    value={formData.sssEmployerNumber}
+                    onChange={(e) => setFormData({ ...formData, sssEmployerNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="philhealthEmployerNumber">PhilHealth Employer Number</Label>
+                  <Input
+                    id="philhealthEmployerNumber"
+                    value={formData.philhealthEmployerNumber}
+                    onChange={(e) => setFormData({ ...formData, philhealthEmployerNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="pagibigEmployerId">Pag-IBIG Employer ID</Label>
+                  <Input
+                    id="pagibigEmployerId"
+                    value={formData.pagibigEmployerId}
+                    onChange={(e) => setFormData({ ...formData, pagibigEmployerId: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="region">Region</Label>
+                  <Input
+                    id="region"
+                    value={formData.region}
+                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="tradeName">Trade Name (Optional)</Label>
+              <div className="space-y-1 pt-2">
+                <Label htmlFor="registeredAddress">Registered Address</Label>
                 <Input
-                  id="tradeName"
-                  value={formData.tradeName}
-                  onChange={(e) => setFormData({ ...formData, tradeName: e.target.value })}
+                  id="registeredAddress"
+                  value={formData.registeredAddress}
+                  onChange={(e) => setFormData({ ...formData, registeredAddress: e.target.value })}
                 />
               </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="tin">Tax Identification Number (TIN)</Label>
-                <Input
-                  id="tin"
-                  value={formData.tin}
-                  onChange={(e) => setFormData({ ...formData, tin: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="rdoCode">Revenue District Office (RDO Code)</Label>
-                <Input
-                  id="rdoCode"
-                  value={formData.rdoCode}
-                  onChange={(e) => setFormData({ ...formData, rdoCode: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="sssEmployerNumber">SSS Employer Number</Label>
-                <Input
-                  id="sssEmployerNumber"
-                  value={formData.sssEmployerNumber}
-                  onChange={(e) => setFormData({ ...formData, sssEmployerNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="philhealthEmployerNumber">PhilHealth Employer Number</Label>
-                <Input
-                  id="philhealthEmployerNumber"
-                  value={formData.philhealthEmployerNumber}
-                  onChange={(e) => setFormData({ ...formData, philhealthEmployerNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="pagibigEmployerId">Pag-IBIG Employer ID</Label>
-                <Input
-                  id="pagibigEmployerId"
-                  value={formData.pagibigEmployerId}
-                  onChange={(e) => setFormData({ ...formData, pagibigEmployerId: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="region">Region</Label>
-                <Input
-                  id="region"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1 pt-2">
-              <Label htmlFor="registeredAddress">Registered Address</Label>
-              <Input
-                id="registeredAddress"
-                value={formData.registeredAddress}
-                onChange={(e) => setFormData({ ...formData, registeredAddress: e.target.value })}
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSaveSettings} disabled={submitting}>
-              {submitting ? "Saving..." : "Save Company Details"}
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSaveSettings} disabled={submitting}>
+                {submitting ? "Saving..." : "Save Company Details"}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      )}
 
       {/* 4. BIR Alphalist Employee Selection Tab */}
-      <TabsContent value="alphalist" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>BIR Alphalist (Form 1604-C) Employee Selection</CardTitle>
-            <CardDescription>
-              Select which employees are included in the annual BIR Alphalist report for {company.legalName}. Employees toggled OFF will be excluded from the generated PDF.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {employees.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No employees found in directory.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee #</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>TIN</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Include in Alphalist</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((emp) => (
-                    <TableRow key={emp.id}>
-                      <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
-                      <TableCell className="font-medium">
-                        {emp.lastName}, {emp.firstName}
-                      </TableCell>
-                      <TableCell>{emp.tin || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{emp.employmentStatus}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Switch
-                            checked={emp.isIncludedInAlphalist}
-                            onCheckedChange={() => handleToggleAlphalist(emp.id, emp.isIncludedInAlphalist)}
-                          />
-                          <span className="text-xs text-muted-foreground w-12 text-left">
-                            {emp.isIncludedInAlphalist ? "Included" : "Excluded"}
-                          </span>
-                        </div>
-                      </TableCell>
+      {isSuperAdmin && (
+        <TabsContent value="alphalist" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>BIR Alphalist (Form 1604-C) Employee Selection</CardTitle>
+              <CardDescription>
+                Select which employees are included in the annual BIR Alphalist report for {company.legalName}. Employees toggled OFF will be excluded from the generated PDF.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {employees.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No employees found in directory.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee #</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>TIN</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Include in Alphalist</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
+                  </TableHeader>
+                  <TableBody>
+                    {employees.map((emp) => (
+                      <TableRow key={emp.id}>
+                        <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
+                        <TableCell className="font-medium">
+                          {emp.lastName}, {emp.firstName}
+                        </TableCell>
+                        <TableCell>{emp.tin || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{emp.employmentStatus}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Switch
+                              checked={emp.isIncludedInAlphalist}
+                              onCheckedChange={() => handleToggleAlphalist(emp.id, emp.isIncludedInAlphalist)}
+                            />
+                            <span className="text-xs text-muted-foreground w-12 text-left">
+                              {emp.isIncludedInAlphalist ? "Included" : "Excluded"}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
 
       {/* 5. Theme & Appearance Tab */}
       <TabsContent value="theme" className="space-y-6">

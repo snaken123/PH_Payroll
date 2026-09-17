@@ -36,7 +36,7 @@ export default async function SettingsPage() {
         description="Configure pay period cutoffs, standard work days, company tax registration, payroll disbursement bank accounts, and BIR Alphalist inclusions."
       />
 
-      <SettingsClient company={company} bankAccounts={bankAccounts} employees={employees} />
+      <SettingsClient company={company} bankAccounts={bankAccounts} employees={employees} isSuperAdmin={ctx.isSuperAdmin} />
     </div>
   );
 }

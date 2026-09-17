@@ -42,6 +42,28 @@ export async function PATCH(request: Request) {
   }
   const data = parsed.data;
 
+  if (!ctx.isSuperAdmin) {
+    const existingCompany = await prisma.company.findUnique({ where: { id: ctx.companyId } });
+    if (existingCompany) {
+      const isModifyingCompanyDetails =
+        data.legalName !== existingCompany.legalName ||
+        (data.tradeName ?? "") !== (existingCompany.tradeName ?? "") ||
+        data.tin !== existingCompany.tin ||
+        data.rdoCode !== existingCompany.rdoCode ||
+        (data.sssEmployerNumber ?? "") !== (existingCompany.sssEmployerNumber ?? "") ||
+        (data.philhealthEmployerNumber ?? "") !== (existingCompany.philhealthEmployerNumber ?? "") ||
+        (data.pagibigEmployerId ?? "") !== (existingCompany.pagibigEmployerId ?? "") ||
+        data.registeredAddress !== existingCompany.registeredAddress;
+
+      if (isModifyingCompanyDetails) {
+        return NextResponse.json(
+          { error: "Forbidden: Only SuperAdmins can modify Company Details & Tax Registration" },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   try {
     let updatedEmployeeCount = 0;
     const updatedCompany = await prisma.$transaction(async (tx) => {
