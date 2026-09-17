@@ -6,7 +6,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CompanySwitcher } from "@/components/company-switcher";
-import { Building2Icon, ShieldCheckIcon, UserIcon, MenuIcon } from "lucide-react";
+import { Building2Icon, ShieldCheckIcon, ShieldAlertIcon, UserIcon, MenuIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -14,6 +14,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.user.companyId) redirect("/onboarding");
+
+  const isSuperAdmin = session.user.platformRole === "SUPER_ADMIN";
 
   const company = await prisma.company.findUnique({
     where: { id: session.user.companyId },
@@ -58,6 +60,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* User Identity & System Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 space-y-3">
+          {isSuperAdmin && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors"
+            >
+              <ShieldAlertIcon className="size-4 text-amber-400 shrink-0" />
+              <span>Platform Admin Console</span>
+            </Link>
+          )}
+
           <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-slate-800/50">
             <div className="flex size-8 items-center justify-center rounded-full bg-slate-700 text-slate-200">
               <UserIcon className="size-4" />
@@ -96,8 +108,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     {company?.legalName ?? "PH Payroll"}
                   </SheetTitle>
                 </SheetHeader>
-                <div className="py-4">
+                <div className="py-4 space-y-4">
                   <DashboardNav isAttendanceStaff={session.user.isAttendanceStaff} />
+                  {isSuperAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors"
+                    >
+                      <ShieldAlertIcon className="size-4 text-amber-400 shrink-0" />
+                      <span>Platform Admin Console</span>
+                    </Link>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -123,6 +144,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
 
           <div className="flex items-center gap-4 text-xs">
+            {isSuperAdmin && (
+              <>
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-800 font-bold hover:bg-amber-100 dark:hover:bg-amber-950/60 transition-colors"
+                >
+                  <ShieldAlertIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  Super Admin Console
+                </Link>
+                <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+              </>
+            )}
             <Link href="/dashboard/my-pay" className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-medium">
               Employee Portal
             </Link>
