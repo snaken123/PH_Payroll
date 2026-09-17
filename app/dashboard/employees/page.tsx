@@ -46,6 +46,8 @@ export default async function EmployeesPage({
     }
   );
 
+  const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
+
   let prismaOrderBy: any = { createdAt: "desc" };
   if (sort === "employeeNumber") {
     prismaOrderBy = { employeeNumber: sortOrder };
@@ -70,7 +72,7 @@ export default async function EmployeesPage({
         branch: { select: { name: true } },
         compensationRecords: { where: { effectiveTo: null }, take: 1 },
       },
-      ...(sort !== "basicRate" ? { orderBy: prismaOrderBy, skip, take } : {}),
+      ...(sort !== "basicRate" || !canViewCompensation ? { orderBy: prismaOrderBy, skip, take } : {}),
     }),
     prisma.companyBranch.findMany({
       where: withCompanyScope(ctx.companyId),
@@ -86,7 +88,7 @@ export default async function EmployeesPage({
   ]);
 
   let employees = rawEmployees;
-  if (sort === "basicRate") {
+  if (sort === "basicRate" && canViewCompensation) {
     employees = [...rawEmployees].sort((a, b) => {
       const rateA = Number(a.compensationRecords[0]?.basicRate ?? 0);
       const rateB = Number(b.compensationRecords[0]?.basicRate ?? 0);
@@ -224,15 +226,19 @@ export default async function EmployeesPage({
                       />
                     </TableHead>
                     <TableHead className="text-right">
-                      <SortableHeader
-                        label="Basic Rate"
-                        sortKey="basicRate"
-                        currentSort={sort}
-                        currentOrder={sortOrder}
-                        basePath="/dashboard/employees"
-                        query={{ q: search }}
-                        align="right"
-                      />
+                      {canViewCompensation ? (
+                        <SortableHeader
+                          label="Basic Rate"
+                          sortKey="basicRate"
+                          currentSort={sort}
+                          currentOrder={sortOrder}
+                          basePath="/dashboard/employees"
+                          query={{ q: search }}
+                          align="right"
+                        />
+                      ) : (
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</span>
+                      )}
                     </TableHead>
                     <TableHead className="w-[80px] text-right text-xs font-bold uppercase tracking-wider text-slate-500">
                       Action
@@ -265,9 +271,15 @@ export default async function EmployeesPage({
                           <StatusBadge status={e.employmentStatus} />
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
-                          {activeComp
-                            ? `₱${Number(activeComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            : "—"}
+                          {canViewCompensation ? (
+                            activeComp
+                              ? `₱${Number(activeComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : "—"
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-600 font-mono tracking-widest text-xs" title="Restricted - Requires Salary Access">
+                              ••••••
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">

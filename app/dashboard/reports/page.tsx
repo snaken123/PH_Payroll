@@ -21,8 +21,14 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   BANK_DISBURSEMENT: "Bank Disbursement Advice File",
 };
 
+import { redirect } from "next/navigation";
+import { hasPermission } from "@/lib/permissions";
+
 export default async function ReportsPage() {
   const ctx = await getTenantContext();
+  if (!hasPermission(ctx.permissions, "reports.view", ctx.platformRole)) {
+    redirect("/dashboard");
+  }
 
   const [postedRuns, employees, recentDocuments] = await Promise.all([
     prisma.payrollRun.findMany({

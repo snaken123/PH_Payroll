@@ -17,6 +17,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const isSuperAdmin = session.user.platformRole === "SUPER_ADMIN";
 
+  const userPermissions = session.user.permissions ?? [];
+  const canViewReports = isSuperAdmin || userPermissions.includes("reports.view") || userPermissions.includes("*");
+
   const company = await prisma.company.findUnique({
     where: { id: session.user.companyId },
     select: { legalName: true, companyCode: true, tradeName: true },
@@ -179,10 +182,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/dashboard/my-pay" className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-medium">
               Employee Portal
             </Link>
-            <span className="text-slate-300 dark:text-slate-700">&bull;</span>
-            <Link href="/dashboard/reports" className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-medium">
-              BIR Tax Reports
-            </Link>
+            {canViewReports && (
+              <>
+                <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+                <Link href="/dashboard/reports" className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-medium">
+                  BIR Tax Reports
+                </Link>
+              </>
+            )}
             <span className="text-slate-300 dark:text-slate-700">&bull;</span>
             <Link href="/dashboard/help" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 font-bold hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 transition-colors">
               Help &amp; Compliance Center

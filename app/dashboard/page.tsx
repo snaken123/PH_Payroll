@@ -23,6 +23,12 @@ import {
 export default async function DashboardPage() {
   const ctx = await getTenantContext();
 
+  const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
+  const canComputePayroll = ctx.isSuperAdmin || ctx.permissions.includes("payroll.compute");
+  const canSendPayslips = ctx.isSuperAdmin || ctx.permissions.includes("payroll.send_payslips");
+  const canViewReports = ctx.isSuperAdmin || ctx.permissions.includes("reports.view");
+  const canViewLoans = ctx.isSuperAdmin || ctx.permissions.includes("loans.view");
+
   const [company, employeeCount, branchCount, activeLoansCount, latestRun, recentRuns] = await Promise.all([
     prisma.company.findUniqueOrThrow({ where: { id: ctx.companyId } }),
     prisma.employee.count({ where: withCompanyScope(ctx.companyId) }),
@@ -56,12 +62,12 @@ export default async function DashboardPage() {
         description={`Philippine semi-monthly payroll & statutory compliance system. Active tenant: ${company.companyCode} · ${formattedDate}`}
         actions={
           <>
-            <SendEmailPayslipsDialog />
+            {canSendPayslips && <SendEmailPayslipsDialog />}
             <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold" render={<Link href="/dashboard/employees" />}>
               <UsersIcon className="size-3.5 text-slate-500" />
               Employee Directory
             </Button>
-            <CreateRunDialog />
+            {canComputePayroll && <CreateRunDialog />}
           </>
         }
       />
@@ -76,15 +82,21 @@ export default async function DashboardPage() {
         />
         <MetricCard
           title="Latest Run Status"
-          value={latestRun ? `#${latestRun.runNumber}` : "No runs"}
-          subtitle={latestRun ? `Paid: ${new Date(latestRun.payrollPeriod.payDate).toLocaleDateString()}` : "Click Run Payroll to start"}
+          value={canComputePayroll || canViewCompensation ? (latestRun ? `#${latestRun.runNumber}` : "No runs") : "••••••"}
+          subtitle={
+            canComputePayroll || canViewCompensation
+              ? latestRun
+                ? `Paid: ${new Date(latestRun.payrollPeriod.payDate).toLocaleDateString()}`
+                : "Click Run Payroll to start"
+              : "Restricted Access"
+          }
           icon={WalletIcon}
-          badge={latestRun ? <StatusBadge status={latestRun.status} /> : undefined}
+          badge={latestRun && (canComputePayroll || canViewCompensation) ? <StatusBadge status={latestRun.status} /> : undefined}
         />
         <MetricCard
           title="Active Loans"
-          value={activeLoansCount}
-          subtitle="Automated cutoff deductions"
+          value={canViewLoans ? activeLoansCount : "••••••"}
+          subtitle={canViewLoans ? "Automated cutoff deductions" : "Restricted Access"}
           icon={BanknoteIcon}
         />
         <MetricCard
@@ -97,43 +109,47 @@ export default async function DashboardPage() {
 
       {/* Operational Highlights / Quick Access Grid */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="size-9 rounded-lg bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 flex items-center justify-center font-bold">
-              <WalletIcon className="size-5" />
+        {(canComputePayroll || canViewCompensation) && (
+          <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="size-9 rounded-lg bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 flex items-center justify-center font-bold">
+                <WalletIcon className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Payroll Computation</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Compute semi-monthly cutoffs, review draft payslips, recompute adjustments, approve and post runs.
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Payroll Computation</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Compute semi-monthly cutoffs, review draft payslips, recompute adjustments, approve and post runs.
-              </p>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Link href="/dashboard/payroll" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                Open Payroll Register <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
+              </Link>
             </div>
-          </div>
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Link href="/dashboard/payroll" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-              Open Payroll Register <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="size-9 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-slate-800 dark:text-emerald-400 flex items-center justify-center font-bold">
-              <FileTextIcon className="size-5" />
+        {canViewReports && (
+          <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="size-9 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-slate-800 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <FileTextIcon className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Statutory Tax &amp; Government Reports</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Generate official BIR 1601-C, BIR 2316, BIR Alphalist, SSS R-3, and PhilHealth RF-1 statutory PDF reports.
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Statutory Tax &amp; Government Reports</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Generate official BIR 1601-C, BIR 2316, BIR Alphalist, SSS R-3, and PhilHealth RF-1 statutory PDF reports.
-              </p>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Link href="/dashboard/reports" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300">
+                View Reports Library <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
+              </Link>
             </div>
-          </div>
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Link href="/dashboard/reports" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300">
-              View Reports Library <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
           <div className="space-y-3">
@@ -156,69 +172,71 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent Payroll Runs Table */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Recent Payroll Runs</CardTitle>
-            <CardDescription className="text-xs">Calculated and posted semi-monthly payroll periods.</CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" className="text-xs font-semibold text-blue-600 dark:text-blue-400" render={<Link href="/dashboard/payroll" />}>
-            View All Runs &rarr;
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentRuns.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500 space-y-3">
-              <p>No payroll runs recorded yet.</p>
-              <CreateRunDialog />
+      {(canComputePayroll || canViewCompensation || canViewReports) && (
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Recent Payroll Runs</CardTitle>
+              <CardDescription className="text-xs">Calculated and posted semi-monthly payroll periods.</CardDescription>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                  <TableHead className="w-[100px] text-xs font-bold uppercase tracking-wider text-slate-500">Run #</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employees</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentRuns.map((r) => (
-                  <TableRow key={r.id} className="group hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                    <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                      <Link href={`/dashboard/payroll/${r.id}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                        #{r.runNumber}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600 dark:text-slate-300">
-                      {new Date(r.payrollPeriod.cutoffStart).toLocaleDateString()} – {new Date(r.payrollPeriod.cutoffEnd).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                      {new Date(r.payrollPeriod.payDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-100">
-                      {r._count.payslips} employees
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={r.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        href={`/dashboard/payroll/${r.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        Details <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </TableCell>
+            <Button variant="ghost" size="sm" className="text-xs font-semibold text-blue-600 dark:text-blue-400" render={<Link href="/dashboard/payroll" />}>
+              View All Runs &rarr;
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {recentRuns.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-500 space-y-3">
+                <p>No payroll runs recorded yet.</p>
+                {canComputePayroll && <CreateRunDialog />}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
+                    <TableHead className="w-[100px] text-xs font-bold uppercase tracking-wider text-slate-500">Run #</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employees</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {recentRuns.map((r) => (
+                    <TableRow key={r.id} className="group hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                        <Link href={`/dashboard/payroll/${r.id}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                          #{r.runNumber}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                        {new Date(r.payrollPeriod.cutoffStart).toLocaleDateString()} – {new Date(r.payrollPeriod.cutoffEnd).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        {new Date(r.payrollPeriod.payDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                        {r._count.payslips} employees
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={r.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          href={`/dashboard/payroll/${r.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Details <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

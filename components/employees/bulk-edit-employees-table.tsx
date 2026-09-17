@@ -39,7 +39,13 @@ const COPYABLE_FIELDS = new Set<Field>([
   "payBasis",
 ]);
 
-export function BulkEditEmployeesTable({ initialRows }: { initialRows: BulkEmployeeRow[] }) {
+export function BulkEditEmployeesTable({
+  initialRows,
+  canViewCompensation = true,
+}: {
+  initialRows: BulkEmployeeRow[];
+  canViewCompensation?: boolean;
+}) {
   const router = useRouter();
   const [rows, setRows] = useState<BulkEmployeeRow[]>(initialRows);
   const [saving, setSaving] = useState(false);
@@ -105,8 +111,8 @@ export function BulkEditEmployeesTable({ initialRows }: { initialRows: BulkEmplo
               <ColumnHead label="SSS" />
               <ColumnHead label="PhilHealth" />
               <ColumnHead label="Pag-IBIG" />
-              <ColumnHead label="Pay basis" field="payBasis" onCopyDown={copyDown} />
-              <ColumnHead label="Basic rate" />
+              {canViewCompensation && <ColumnHead label="Pay basis" field="payBasis" onCopyDown={copyDown} />}
+              {canViewCompensation && <ColumnHead label="Basic rate" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -193,21 +199,25 @@ export function BulkEditEmployeesTable({ initialRows }: { initialRows: BulkEmplo
                 <TableCell>
                   <Input className="w-32" value={row.pagibigNumber ?? ""} onChange={(e) => updateCell(index, "pagibigNumber", e.target.value)} />
                 </TableCell>
-                <TableCell>
-                  <Select value={row.payBasis} onValueChange={(v) => v && updateCell(index, "payBasis", v)}>
-                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {payBasisValues.map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {v.replaceAll("_", " ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input className="w-28" type="number" step="0.01" value={row.basicRate} onChange={(e) => updateCell(index, "basicRate", Number(e.target.value))} />
-                </TableCell>
+                {canViewCompensation && (
+                  <TableCell>
+                    <Select value={row.payBasis} onValueChange={(v) => v && updateCell(index, "payBasis", v)}>
+                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {payBasisValues.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {v.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                )}
+                {canViewCompensation && (
+                  <TableCell>
+                    <Input className="w-28" type="number" step="0.01" value={row.basicRate} onChange={(e) => updateCell(index, "basicRate", Number(e.target.value))} />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -5,6 +5,7 @@ import type { BulkEmployeeRow } from "@/lib/validations/employee";
 
 export default async function BulkEditEmployeesPage() {
   const ctx = await getTenantContext();
+  const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
 
   const employees = await prisma.employee.findMany({
     where: withCompanyScope(ctx.companyId),
@@ -46,7 +47,7 @@ export default async function BulkEditEmployeesPage() {
           it never overwrites past pay history in place.
         </p>
       </div>
-      <BulkEditEmployeesTable initialRows={rows} />
+      <BulkEditEmployeesTable initialRows={rows} canViewCompensation={canViewCompensation} />
     </div>
   );
 }

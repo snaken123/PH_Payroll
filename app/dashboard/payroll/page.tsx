@@ -13,12 +13,18 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { WalletIcon, CheckCircle2Icon, ClockIcon, ArrowRightIcon } from "lucide-react";
 import { PayrollRunStatus } from "@/lib/generated/prisma/enums";
 
+import { redirect } from "next/navigation";
+import { hasPermission } from "@/lib/permissions";
+
 export default async function PayrollPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
   const ctx = await getTenantContext();
+  if (!hasPermission(ctx.permissions, "payroll.compute", ctx.platformRole)) {
+    redirect("/dashboard");
+  }
   const page = parsePageParam((await searchParams).page);
   const totalCount = await prisma.payrollRun.count({ where: { companyId: ctx.companyId } });
   const { skip, take, totalPages } = paginationMeta(page, totalCount);
