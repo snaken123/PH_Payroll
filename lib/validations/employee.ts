@@ -156,6 +156,7 @@ export const updateEmployeeSchema = z.object({
   lastName: z.string().min(1).optional(),
   middleName: z.string().optional(),
   birthDate: z.string().min(1).optional(),
+  dateHired: z.string().min(1).optional(),
   sex: z.enum(sexValues).optional(),
   civilStatus: z.enum(civilStatusValues).optional(),
   personalEmail: z.string().email("Invalid email").optional().or(z.literal("")).nullable(),
@@ -201,15 +202,13 @@ export const updateEmployeeSchema = z.object({
 });
 export type UpdateEmployeeInput = z.output<typeof updateEmployeeSchema>;
 
-// Subset the edit-profile dialog actually submits — same partial-update
-// schema underneath (PATCH /api/employees/[id] is shared by several
-// distinct flows), just the fields relevant to fixing profile data.
 export const editEmployeeProfileSchema = z.object({
   employeeNumber: z.string().min(1, "Required"),
   firstName: z.string().min(1, "Required"),
   lastName: z.string().min(1, "Required"),
   middleName: z.string().optional(),
   birthDate: z.string().min(1, "Required"),
+  dateHired: z.string().min(1, "Required").optional(),
   sex: z.enum(sexValues),
   civilStatus: z.enum(civilStatusValues),
   personalEmail: z.string().email("Invalid email").optional().or(z.literal("")).nullable(),

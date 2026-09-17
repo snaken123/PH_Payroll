@@ -117,6 +117,11 @@ export function EditEmployeeProfileDialog({
             {errors.birthDate && <p className="text-sm text-destructive">{errors.birthDate.message}</p>}
           </div>
           <div className="space-y-1">
+            <Label htmlFor="dateHired">Date hired</Label>
+            <Input id="dateHired" type="date" {...register("dateHired")} />
+            {errors.dateHired && <p className="text-sm text-destructive">{errors.dateHired.message}</p>}
+          </div>
+          <div className="space-y-1">
             <Label htmlFor="sex">Sex</Label>
             <Controller
               control={control}

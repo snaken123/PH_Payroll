@@ -27,10 +27,11 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { dateSeparated, birthDate, ...rest } = parsed.data;
+  const { dateSeparated, birthDate, dateHired, ...rest } = parsed.data;
   const data: Record<string, unknown> = { ...rest };
   if (dateSeparated !== undefined) data.dateSeparated = new Date(dateSeparated);
   if (birthDate !== undefined) data.birthDate = new Date(birthDate);
+  if (dateHired !== undefined) data.dateHired = new Date(dateHired);
 
   try {
     const employee = await prisma.employee.update({ where: { id }, data });
