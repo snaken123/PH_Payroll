@@ -16,6 +16,7 @@ import {
   UserCheckIcon,
   SettingsIcon,
   BookOpenIcon,
+  ShieldAlertIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,8 +62,9 @@ export function DashboardNav({ onNavigate, isAttendanceStaff: isAttendanceStaffP
     isAttendanceStaffProp !== undefined
       ? isAttendanceStaffProp
       : session?.data?.user?.isAttendanceStaff ?? false;
+  const isSuperAdmin = session?.data?.user?.platformRole === "SUPER_ADMIN";
 
-  const visibleGroups = isAttendanceStaff
+  const baseGroups = isAttendanceStaff
     ? [
         {
           title: "ATTENDANCE PORTAL",
@@ -70,6 +72,16 @@ export function DashboardNav({ onNavigate, isAttendanceStaff: isAttendanceStaffP
         },
       ]
     : NAV_GROUPS;
+
+  const visibleGroups = isSuperAdmin
+    ? [
+        {
+          title: "PLATFORM ADMIN",
+          items: [{ href: "/admin", label: "Super Admin Console", icon: ShieldAlertIcon }],
+        },
+        ...baseGroups,
+      ]
+    : baseGroups;
 
   return (
     <div className="space-y-6">

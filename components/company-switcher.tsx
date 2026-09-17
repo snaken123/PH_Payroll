@@ -69,8 +69,15 @@ export function CompanySwitcher({ initialCompanyId, initialCompanyName }: Compan
     );
   }
 
+  const isSuperAdmin = session?.user?.platformRole === "SUPER_ADMIN";
+
   async function switchCompany(companyId: string | null) {
-    if (!companyId || companyId === currentCompanyId) return;
+    if (!companyId) return;
+    if (companyId === "__ADMIN__") {
+      window.location.href = "/admin";
+      return;
+    }
+    if (companyId === currentCompanyId) return;
     setSwitching(true);
     try {
       await update({ companyId });
@@ -100,6 +107,11 @@ export function CompanySwitcher({ initialCompanyId, initialCompanyName }: Compan
         </div>
       </SelectTrigger>
       <SelectContent>
+        {isSuperAdmin && (
+          <SelectItem value="__ADMIN__" className="text-xs font-bold text-amber-500 dark:text-amber-400">
+            🛡️ Platform Admin Console (/admin)
+          </SelectItem>
+        )}
         {companies.map((c) => (
           <SelectItem key={c.id} value={c.id} className="text-xs font-medium">
             {c.legalName}

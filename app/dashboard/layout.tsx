@@ -70,19 +70,39 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </Link>
           )}
 
-          <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-slate-800/50">
-            <div className="flex size-8 items-center justify-center rounded-full bg-slate-700 text-slate-200">
-              <UserIcon className="size-4" />
+          {isSuperAdmin ? (
+            <Link
+              href="/admin"
+              title="Click to switch to Super Admin Console"
+              className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 transition-colors group border border-amber-500/30"
+            >
+              <div className="flex size-8 items-center justify-center rounded-full bg-amber-500/20 text-amber-300 group-hover:scale-105 transition-transform">
+                <ShieldAlertIcon className="size-4 text-amber-400" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-semibold text-slate-200 truncate group-hover:text-amber-300 transition-colors">
+                  {session.user.name || session.user.email}
+                </span>
+                <span className="text-[10px] text-amber-400/90 font-medium truncate">
+                  Click for Admin Console →
+                </span>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg bg-slate-800/50">
+              <div className="flex size-8 items-center justify-center rounded-full bg-slate-700 text-slate-200">
+                <UserIcon className="size-4" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-semibold text-slate-200 truncate">
+                  {session.user.name || session.user.email}
+                </span>
+                <span className="text-[10px] text-slate-400 truncate">
+                  {session.user.email}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-semibold text-slate-200 truncate">
-                {session.user.name || session.user.email}
-              </span>
-              <span className="text-[10px] text-slate-400 truncate">
-                {session.user.email}
-              </span>
-            </div>
-          </div>
+          )}
 
           <div className="flex items-center justify-between pt-1">
             <ThemeToggle />
