@@ -297,12 +297,15 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
               control={control}
               name="rank"
               render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <Select
+                  value={field.value && field.value !== "" ? field.value : "NONE"}
+                  onValueChange={(val) => field.onChange(val === "NONE" ? undefined : val)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select rank" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None / Unspecified</SelectItem>
+                    <SelectItem value="NONE">None / Unspecified</SelectItem>
                     {rankValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v}
@@ -320,12 +323,15 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
               control={control}
               name="scheduleType"
               render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <Select
+                  value={field.value && field.value !== "" ? field.value : "NONE"}
+                  onValueChange={(val) => field.onChange(val === "NONE" ? undefined : val)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select schedule type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None / Unspecified</SelectItem>
+                    <SelectItem value="NONE">None / Unspecified</SelectItem>
                     {scheduleTypeValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v}
@@ -541,14 +547,14 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                         name={`allowances.${index}.payingCompanyId` as const}
                         render={({ field: companyField }) => (
                           <Select
-                            value={companyField.value ?? ""}
-                            onValueChange={(val) => companyField.onChange(val || null)}
+                            value={companyField.value || "CURRENT_COMPANY"}
+                            onValueChange={(val) => companyField.onChange(val === "CURRENT_COMPANY" ? null : val)}
                           >
                             <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
                               <SelectValue placeholder="Current Company (Default)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Current Company (Default)</SelectItem>
+                              <SelectItem value="CURRENT_COMPANY">Current Company (Default)</SelectItem>
                               {companies.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
                                   {c.legalName}

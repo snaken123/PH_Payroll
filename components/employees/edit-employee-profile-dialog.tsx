@@ -194,12 +194,15 @@ export function EditEmployeeProfileDialog({
               control={control}
               name="rank"
               render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <Select
+                  value={field.value && field.value !== "" ? field.value : "NONE"}
+                  onValueChange={(val) => field.onChange(val === "NONE" ? null : val)}
+                >
                   <SelectTrigger id="rank">
                     <SelectValue placeholder="Select rank" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None / Unspecified</SelectItem>
+                    <SelectItem value="NONE">None / Unspecified</SelectItem>
                     {rankValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v}
@@ -216,12 +219,15 @@ export function EditEmployeeProfileDialog({
               control={control}
               name="scheduleType"
               render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <Select
+                  value={field.value && field.value !== "" ? field.value : "NONE"}
+                  onValueChange={(val) => field.onChange(val === "NONE" ? null : val)}
+                >
                   <SelectTrigger id="scheduleType">
                     <SelectValue placeholder="Select schedule type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None / Unspecified</SelectItem>
+                    <SelectItem value="NONE">None / Unspecified</SelectItem>
                     {scheduleTypeValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v}

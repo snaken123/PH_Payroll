@@ -379,7 +379,7 @@ export function AddCompensationDialog({
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Current Employee Company (Default)</SelectItem>
+                                <SelectItem value="CURRENT_COMPANY">Current Employee Company (Default)</SelectItem>
                                 {companies.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>
                                     {c.legalName} ({c.companyCode})
