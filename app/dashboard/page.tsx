@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
+import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { LoanStatus } from "@/lib/generated/prisma/enums";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,6 +24,27 @@ import {
 
 export default async function DashboardPage() {
   const ctx = await getTenantContext();
+
+  const canViewOverview = ctx.isSuperAdmin || hasPermission(ctx.permissions, "overview.view", ctx.platformRole);
+  if (!canViewOverview) {
+    if (hasPermission(ctx.permissions, "employee.view_info", ctx.platformRole)) {
+      redirect("/dashboard/employees");
+    } else if (hasPermission(ctx.permissions, "attendance.view", ctx.platformRole)) {
+      redirect("/dashboard/attendance");
+    } else if (hasPermission(ctx.permissions, "leave.view", ctx.platformRole)) {
+      redirect("/dashboard/leave");
+    } else if (hasPermission(ctx.permissions, "loans.view", ctx.platformRole)) {
+      redirect("/dashboard/loans");
+    } else if (hasPermission(ctx.permissions, "payroll.compute", ctx.platformRole)) {
+      redirect("/dashboard/payroll");
+    } else if (hasPermission(ctx.permissions, "reports.view", ctx.platformRole)) {
+      redirect("/dashboard/reports");
+    } else if (hasPermission(ctx.permissions, "contractors.view", ctx.platformRole)) {
+      redirect("/dashboard/contractors");
+    } else {
+      redirect("/dashboard/my-pay");
+    }
+  }
 
   const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
   const canComputePayroll = ctx.isSuperAdmin || ctx.permissions.includes("payroll.compute");

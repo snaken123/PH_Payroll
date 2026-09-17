@@ -10,6 +10,7 @@ import {
   ChevronRightIcon,
   Building2Icon,
   ShieldAlertIcon,
+  LayoutDashboardIcon,
   UsersIcon,
   ClockIcon,
   PalmtreeIcon,
@@ -46,6 +47,7 @@ interface AccessTreeProps {
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  overview: LayoutDashboardIcon,
   employee: UsersIcon,
   attendance: ClockIcon,
   leave: PalmtreeIcon,

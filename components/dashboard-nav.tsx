@@ -37,7 +37,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
   {
     title: "OPERATIONS",
     items: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon, permission: "overview.view" },
       { href: "/dashboard/employees", label: "Employees", icon: UsersIcon, permission: "employee.view_info" },
       { href: "/dashboard/attendance", label: "Attendance", icon: ClockIcon, permission: "attendance.view" },
       { href: "/dashboard/holidays", label: "Holidays", icon: CalendarDaysIcon, permission: "attendance.view" },

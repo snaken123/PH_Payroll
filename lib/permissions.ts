@@ -14,6 +14,19 @@ export interface PermissionCategory {
 
 export const PERMISSION_CATEGORIES: PermissionCategory[] = [
   {
+    id: "overview",
+    title: "Dashboard & Overview Access",
+    iconName: "LayoutDashboard",
+    description: "Access company summary dashboard, KPI metric cards, and operational shortcuts",
+    items: [
+      {
+        key: "overview.view",
+        label: "View Dashboard Overview Page",
+        description: "Access the main company metrics overview and operational highlights page",
+      },
+    ],
+  },
+  {
     id: "employee",
     title: "Employee / 201 File Management",
     iconName: "Users",
@@ -161,6 +174,7 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
   HR_ADMIN_NO_PAY: {
     label: "HR Admin (201 Info & Documents Only - No Pay Information)",
     permissions: [
+      "overview.view",
       "employee.view_info",
       "employee.upload_docs",
       "employee.manage",
@@ -172,11 +186,12 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
   },
   ATTENDANCE_ONLY: {
     label: "Attendance & Timekeeper Only",
-    permissions: ["attendance.view", "attendance.manage", "employee.view_info"],
+    permissions: ["overview.view", "attendance.view", "attendance.manage", "employee.view_info"],
   },
   PAYROLL_PROCESSOR: {
     label: "Payroll & Tax Processor",
     permissions: [
+      "overview.view",
       "employee.view_info",
       "employee.view_compensation",
       "attendance.view",
