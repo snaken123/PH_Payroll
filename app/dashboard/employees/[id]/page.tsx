@@ -119,6 +119,7 @@ export default async function EmployeeDetailPage({
   }));
 
   const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
+  const canViewLoans = ctx.isSuperAdmin || ctx.permissions.includes("loans.view");
 
   return (
     <div className="space-y-6">
@@ -215,12 +216,14 @@ export default async function EmployeeDetailPage({
 
       {/* Quick Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Current Basic Rate"
-          value={canViewCompensation ? (currentComp ? `₱${Number(currentComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—") : "••••••"}
-          subtitle={canViewCompensation ? (currentComp ? `${currentComp.payBasis.replaceAll("_", " ")} Rate` : "No active comp") : "Restricted Access"}
-          icon={BanknoteIcon}
-        />
+        {canViewCompensation && (
+          <MetricCard
+            title="Current Basic Rate"
+            value={currentComp ? `₱${Number(currentComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
+            subtitle={currentComp ? `${currentComp.payBasis.replaceAll("_", " ")} Rate` : "No active comp"}
+            icon={BanknoteIcon}
+          />
+        )}
         <MetricCard
           title="Date Hired"
           value={employee.dateHired.toLocaleDateString()}
@@ -433,33 +436,35 @@ export default async function EmployeeDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <BanknoteIcon className="size-4 text-blue-600" /> Payroll Bank Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-            <div className="space-y-1">
-              <span className="text-slate-500 font-medium block">Payment Method</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 inline-block">
-                {employee.paymentMethod.replaceAll("_", " ")}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-slate-500 font-medium block">Bank Name</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankName || "—"}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-slate-500 font-medium block">Account Number</span>
-              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.bankAccountNumber || "—"}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-slate-500 font-medium block">Bank Branch</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankBranch || "—"}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {canViewCompensation && (
+          <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <BanknoteIcon className="size-4 text-blue-600" /> Payroll Bank Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+              <div className="space-y-1">
+                <span className="text-slate-500 font-medium block">Payment Method</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 inline-block">
+                  {employee.paymentMethod.replaceAll("_", " ")}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-slate-500 font-medium block">Bank Name</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankName || "—"}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-slate-500 font-medium block">Account Number</span>
+                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.bankAccountNumber || "—"}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-slate-500 font-medium block">Bank Branch</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankBranch || "—"}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* 201 Digital Document Vault & Records */}
@@ -529,13 +534,13 @@ export default async function EmployeeDetailPage({
       </Card>
 
       {/* Compensation History */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Compensation History</CardTitle>
-            <CardDescription className="text-xs">Historical basic pay rates, effective dates, and allowances.</CardDescription>
-          </div>
-          {canViewCompensation && (
+      {canViewCompensation && (
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Compensation History</CardTitle>
+              <CardDescription className="text-xs">Historical basic pay rates, effective dates, and allowances.</CardDescription>
+            </div>
             <AddCompensationDialog
               employeeId={employee.id}
               currentCompensation={
@@ -557,14 +562,8 @@ export default async function EmployeeDetailPage({
                   : undefined
               }
             />
-          )}
-        </CardHeader>
-        <CardContent className="p-0">
-          {!canViewCompensation ? (
-            <div className="py-8 text-center text-xs text-slate-500">
-              Access to compensation details is restricted for your account role.
-            </div>
-          ) : (
+          </CardHeader>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
@@ -600,63 +599,65 @@ export default async function EmployeeDetailPage({
                 ))}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Loans & Cash Advances */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Loans &amp; Cash Advances</CardTitle>
-            <CardDescription className="text-xs">Active loans and automated cutoff deductions.</CardDescription>
-          </div>
-          <CreateLoanDialog employeeId={employee.id} />
-        </CardHeader>
-        <CardContent className="p-0">
-          {employee.loans.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-500">No active loans or cash advances on record.</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Loan Name</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Principal</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Installment</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Frequency</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Remaining</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employee.loans.map((l) => (
-                  <TableRow key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                    <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">{l.name}</TableCell>
-                    <TableCell className="text-xs text-slate-600 dark:text-slate-400">{l.category.replaceAll("_", " ")}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">
-                      {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.principal).toLocaleString()}`}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs font-semibold">₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs">{l.deductionFrequency === "MONTHLY" ? "Monthly" : "Every Cutoff"}</TableCell>
-                    <TableCell className="text-right font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.remainingBalance).toLocaleString()}`}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={l.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {l.status === "ACTIVE" && <CancelLoanButton loanId={l.id} />}
-                      {l.status === "PENDING_APPROVAL" && <LoanApprovalActions loanId={l.id} />}
-                    </TableCell>
+      {canViewLoans && (
+        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Loans &amp; Cash Advances</CardTitle>
+              <CardDescription className="text-xs">Active loans and automated cutoff deductions.</CardDescription>
+            </div>
+            <CreateLoanDialog employeeId={employee.id} />
+          </CardHeader>
+          <CardContent className="p-0">
+            {employee.loans.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">No active loans or cash advances on record.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Loan Name</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</TableHead>
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Principal</TableHead>
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Installment</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Frequency</TableHead>
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Remaining</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {employee.loans.map((l) => (
+                    <TableRow key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">{l.name}</TableCell>
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">{l.category.replaceAll("_", " ")}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.principal).toLocaleString()}`}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs font-semibold">₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{l.deductionFrequency === "MONTHLY" ? "Monthly" : "Every Cutoff"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                        {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.remainingBalance).toLocaleString()}`}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={l.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {l.status === "ACTIVE" && <CancelLoanButton loanId={l.id} />}
+                        {l.status === "PENDING_APPROVAL" && <LoanApprovalActions loanId={l.id} />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
