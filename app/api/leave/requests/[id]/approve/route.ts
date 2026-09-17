@@ -48,6 +48,33 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   }
   const regularHoursIfLeave = leaveRequest.leaveType.isPaid ? 8 : 0;
 
+  // Check entitlement if this is a paid leave request
+  if (leaveRequest.leaveType.isPaid) {
+    const year = leaveRequest.startDate.getFullYear();
+    const balance = await prisma.leaveBalance.findUnique({
+      where: {
+        employeeId_leaveTypeId_year: {
+          employeeId: leaveRequest.employeeId,
+          leaveTypeId: leaveRequest.leaveTypeId,
+          year,
+        },
+      },
+    });
+
+    if (balance) {
+      const totalEntitled = balance.entitledDays.plus(balance.carriedOverDays).plus(balance.adjustedDays);
+      const remaining = totalEntitled.minus(balance.usedDays);
+      if (leaveRequest.daysCount.gt(remaining)) {
+        return NextResponse.json(
+          {
+            error: `Insufficient leave balance. Requested ${leaveRequest.daysCount.toString()} days, but employee has only ${remaining.toString()} available days for ${year}.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.leaveRequest.update({

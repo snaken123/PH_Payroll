@@ -22,6 +22,14 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Authorization check: User must either have HR/Admin manage role or be the employee itself
+  const isManager = ctx.platformRole === "SUPER_ADMIN" || (ctx.companyRole && MANAGE_ROLES.includes(ctx.companyRole));
+  const isSelf = employee.userId === ctx.userId;
+
+  if (!isManager && !isSelf) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const categoryParam = searchParams.get("category");
 

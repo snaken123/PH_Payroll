@@ -49,10 +49,10 @@ describe("computeFinalPay — authorized-cause redundancy, full scenario", () =>
     const thirteenthLine = result.lineItems.find((li) => li.description.includes("exempt portion"));
     expect(thirteenthLine?.amount.toNumber()).toBe(10000);
 
-    // Leave cashout: 3 * 1000 = 3000, taxable
+    // Leave cashout: 3 * 1000 = 3000 (3 days <= 10 days de minimis cap -> exempt)
     const leaveLine = result.lineItems.find((li) => li.category === "LEAVE_CASHOUT");
     expect(leaveLine?.amount.toNumber()).toBe(3000);
-    expect(leaveLine?.isTaxExempt).toBe(false);
+    expect(leaveLine?.isTaxExempt).toBe(true);
 
     // Taxable for the year (100000 prior + 5000 unpaid wages + 3000 leave = 108000)
     // stays within the 0% annual bracket -> no tax adjustment line item

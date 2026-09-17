@@ -30,19 +30,27 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (existing.status === "POSTED" || existing.status === "VOID") {
+  if (existing.status === "POSTED" || existing.status === "VOID" || existing.status === "SUPERSEDED") {
     return NextResponse.json(
-      { error: "Cannot recompute a posted or voided payroll run" },
+      { error: `Cannot recompute a payroll run in ${existing.status} status` },
       { status: 400 }
     );
   }
 
   try {
-    // Delete old draft payslips and re-calculate
-    await prisma.$transaction(async (tx) => {
-      await tx.payslip.deleteMany({ where: { payrollRunId: existing.id } });
-      await tx.payrollRun.delete({ where: { id: existing.id } });
-    });
+    let replacesRunId: string | undefined = undefined;
+
+    if (existing.status === "APPROVED") {
+      // Never delete an approved run — create a new draft replacing it.
+      // When the new draft gets approved, the old run's status becomes SUPERSEDED.
+      replacesRunId = existing.id;
+    } else {
+      // Unapproved drafts can be recalculated by clearing old draft data
+      await prisma.$transaction(async (tx) => {
+        await tx.payslip.deleteMany({ where: { payrollRunId: existing.id } });
+        await tx.payrollRun.delete({ where: { id: existing.id } });
+      });
+    }
 
     const newRunId = await computeAndPersistPayrollRun({
       companyId: ctx.companyId,
@@ -51,6 +59,7 @@ export async function POST(
       payDate: existing.payrollPeriod.payDate,
       periodType: existing.payrollPeriod.periodType,
       computedByUserId: ctx.userId,
+      replacesRunId,
     });
 
     return NextResponse.json({ success: true, runId: newRunId });

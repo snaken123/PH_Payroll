@@ -67,16 +67,34 @@ export function computeFinalPay(input: FinalPayInput): FinalPayResult {
     });
   }
 
-  // 3. Leave cashout (see simplification note above)
-  const leaveCashout = computeLeaveCashout(input.unusedConvertibleLeaveDays, input.dailyRateEquivalent);
-  if (leaveCashout.greaterThan(0)) {
-    lineItems.push({
-      category: "LEAVE_CASHOUT",
-      direction: "EARNING",
-      description: "Cash conversion of unused convertible leave",
-      amount: leaveCashout,
-      isTaxExempt: false,
-    });
+  // 3. Leave cashout (up to 10 days is de minimis tax-exempt per BIR RR 2-98)
+  const totalDays = new Decimal(input.unusedConvertibleLeaveDays);
+  const dailyRate = new Decimal(input.dailyRateEquivalent);
+  if (totalDays.greaterThan(0)) {
+    const exemptDays = Decimal.min(totalDays, 10);
+    const taxableDays = Decimal.max(0, totalDays.minus(10));
+
+    const exemptAmount = exemptDays.times(dailyRate);
+    const taxableAmount = taxableDays.times(dailyRate);
+
+    if (exemptAmount.greaterThan(0)) {
+      lineItems.push({
+        category: "LEAVE_CASHOUT",
+        direction: "EARNING",
+        description: "Cash conversion of unused leave (tax-exempt up to 10 days)",
+        amount: exemptAmount,
+        isTaxExempt: true,
+      });
+    }
+    if (taxableAmount.greaterThan(0)) {
+      lineItems.push({
+        category: "LEAVE_CASHOUT",
+        direction: "EARNING",
+        description: "Cash conversion of unused leave (taxable excess over 10 days)",
+        amount: taxableAmount,
+        isTaxExempt: false,
+      });
+    }
   }
 
   // 4. Separation / retirement pay — category-gated. RESIGNATION,

@@ -723,6 +723,7 @@ enum PayrollRunStatus {
   APPROVED
   POSTED
   VOID
+  SUPERSEDED
 }
 
 // Once POSTED, a run and its payslips/line items are immutable (enforced in
@@ -744,20 +745,27 @@ model PayrollRun {
   voidedAt              DateTime?
   voidedByUserId        String?
   voidReason            String?
+  replacesRunId         String?
+  supersededByRunId     String?
+  supersededAt          DateTime?
   // Snapshot of which statutory rate table rows (by id) were actually
   // applied, so a posted payslip's numbers stay reproducible even if the
   // rate tables are edited later.
   statutoryRateSnapshot Json?
   createdAt             DateTime         @default(now())
 
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  payrollPeriod  PayrollPeriod   @relation(fields: [payrollPeriodId], references: [id])
-  payslips       Payslip[]
-  loanDeductions LoanDeduction[]
+  company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollPeriod    PayrollPeriod   @relation(fields: [payrollPeriodId], references: [id])
+  replacesRun      PayrollRun?     @relation("RunSupersedeHistory", fields: [replacesRunId], references: [id])
+  supersededByRuns PayrollRun[]    @relation("RunSupersedeHistory")
+  payslips         Payslip[]
+  loanDeductions   LoanDeduction[]
 
   @@unique([companyId, runNumber])
   @@index([companyId])
   @@index([payrollPeriodId])
+  @@index([replacesRunId])
+  @@index([supersededByRunId])
 }
 
 model Payslip {

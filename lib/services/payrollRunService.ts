@@ -20,6 +20,7 @@ export async function computeAndPersistPayrollRun({
   payDate,
   periodType,
   computedByUserId,
+  replacesRunId,
 }: {
   companyId: string;
   cutoffStart: Date;
@@ -27,6 +28,7 @@ export async function computeAndPersistPayrollRun({
   payDate: Date;
   periodType: PeriodType;
   computedByUserId: string;
+  replacesRunId?: string;
 }) {
   const period = await prisma.payrollPeriod.upsert({
     where: { companyId_cutoffStart_cutoffEnd: { companyId, cutoffStart, cutoffEnd } },
@@ -134,12 +136,12 @@ export async function computeAndPersistPayrollRun({
     where: {
       companyId,
       payrollPeriodId: period.id,
-      status: { in: ["DRAFT", "PENDING_APPROVAL", "APPROVED"] },
+      status: { in: ["DRAFT", "PENDING_APPROVAL"] },
     },
   });
   if (existingActiveRun) {
     throw new PayrollRunError(
-      `An active payroll run (#${existingActiveRun.runNumber}) for this cutoff period already exists (${existingActiveRun.status}). Please review or void the existing run in Payroll History.`
+      `An active draft/pending payroll run (#${existingActiveRun.runNumber}) for this cutoff period already exists (${existingActiveRun.status}). Please review or void the existing draft run in Payroll History.`
     );
   }
 
@@ -158,6 +160,7 @@ export async function computeAndPersistPayrollRun({
         runNumber,
         computedAt: new Date(),
         computedByUserId,
+        replacesRunId: replacesRunId ?? null,
         statutoryRateSnapshot,
       },
     });

@@ -5,6 +5,8 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { CompanyRole, PlatformRole } from "./generated/prisma/enums";
 
+import { checkRateLimit, resetRateLimit } from "./rate-limit";
+
 export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
@@ -32,7 +34,14 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const identifier = credentials.email.trim();
+        const identifier = credentials.email.trim().toLowerCase();
+
+        // Finding #2 Fix: Rate limit login attempts per identifier (max 10 attempts per 15 mins)
+        const rateLimitKey = `auth_login:${identifier}`;
+        const limit = checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000);
+        if (!limit.allowed) {
+          throw new Error("Too many failed login attempts. Please try again later.");
+        }
 
         // 1. Try standard User lookup by email
         const user = await prisma.user.findUnique({
@@ -42,6 +51,7 @@ export const authOptions: NextAuthOptions = {
         if (user && user.password) {
           const passwordMatch = await bcrypt.compare(credentials.password, user.password);
           if (passwordMatch) {
+            resetRateLimit(rateLimitKey);
             return { id: user.id, email: user.email, name: user.name };
           }
         }
@@ -54,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         if (attendanceAccount && attendanceAccount.passwordHash) {
           const passwordMatch = await bcrypt.compare(credentials.password, attendanceAccount.passwordHash);
           if (passwordMatch) {
+            resetRateLimit(rateLimitKey);
             return {
               id: attendanceAccount.id,
               email: `${attendanceAccount.username}@attendance.local`,
@@ -104,6 +115,7 @@ export const authOptions: NextAuthOptions = {
             const acc = await prisma.attendanceAccount.findFirst({
               where: {
                 id: token.id as string,
+                isActive: true,
                 OR: [
                   { companyId: session.companyId },
                   { companies: { some: { companyId: session.companyId } } },
@@ -112,6 +124,9 @@ export const authOptions: NextAuthOptions = {
             });
             if (acc) {
               token.companyId = session.companyId;
+            } else {
+              // Account no longer active or assigned to company — revoke token
+              return {};
             }
           } catch (error) {
             console.error("Error switching attendance company:", error);
@@ -139,25 +154,28 @@ export const authOptions: NextAuthOptions = {
             },
           });
 
-          if (dbUser) {
-            token.name = dbUser.name;
-            token.platformRole = dbUser.platformRole;
+          // Finding #7 Fix: Revoke JWT session immediately if user account no longer exists
+          if (!dbUser) {
+            return {};
+          }
 
-            const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
-            const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId);
+          token.name = dbUser.name;
+          token.platformRole = dbUser.platformRole;
 
-            if (activeMembership) {
-              token.companyId = activeMembership.companyId;
-              token.companyRole = activeMembership.role;
-            } else if (dbUser.platformRole === PlatformRole.SUPER_ADMIN && requestedCompanyId) {
-              const company = await prisma.company.findUnique({ where: { id: requestedCompanyId }, select: { id: true } });
-              token.companyId = company?.id ?? dbUser.memberships[0]?.companyId ?? null;
-              token.companyRole = null;
-            } else {
-              const fallback = dbUser.memberships[0];
-              token.companyId = fallback?.companyId ?? null;
-              token.companyRole = fallback?.role ?? null;
-            }
+          const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
+          const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId);
+
+          if (activeMembership) {
+            token.companyId = activeMembership.companyId;
+            token.companyRole = activeMembership.role;
+          } else if (dbUser.platformRole === PlatformRole.SUPER_ADMIN && requestedCompanyId) {
+            const company = await prisma.company.findUnique({ where: { id: requestedCompanyId }, select: { id: true } });
+            token.companyId = company?.id ?? dbUser.memberships[0]?.companyId ?? null;
+            token.companyRole = null;
+          } else {
+            const fallback = dbUser.memberships[0];
+            token.companyId = fallback?.companyId ?? null;
+            token.companyRole = fallback?.role ?? null;
           }
         } catch (error) {
           console.error("NextAuth jwt callback db error:", error);

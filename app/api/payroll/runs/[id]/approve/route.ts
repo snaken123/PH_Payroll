@@ -26,15 +26,31 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (run.status !== "DRAFT" && run.status !== "PENDING_APPROVAL") {
-    return NextResponse.json({ error: `Cannot approve a run in ${run.status} status` }, { status: 409 });
+  if (run.status !== "PENDING_APPROVAL") {
+    return NextResponse.json({ error: `Cannot approve a run in ${run.status} status. It must first be submitted for approval.` }, { status: 409 });
   }
 
   try {
-    const updated = await prisma.payrollRun.update({
-      where: { id },
-      data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
+    const updated = await prisma.$transaction(async (tx) => {
+      const approvedRun = await tx.payrollRun.update({
+        where: { id },
+        data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: ctx.userId },
+      });
+
+      if (run.replacesRunId) {
+        await tx.payrollRun.update({
+          where: { id: run.replacesRunId },
+          data: {
+            status: "SUPERSEDED",
+            supersededByRunId: id,
+            supersededAt: new Date(),
+          },
+        });
+      }
+
+      return approvedRun;
     });
+
     return NextResponse.json({ run: updated });
   } catch (err) {
     return mutationErrorResponse(err);
