@@ -146,20 +146,6 @@ export function SettingsClient({
     attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd ?? "10:00",
   });
 
-  // Add Company Form State
-  const [newCompany, setNewCompany] = useState({
-    companyCode: "",
-    legalName: "",
-    tradeName: "",
-    tin: "",
-    rdoCode: "RDO-039",
-    registeredAddress: "",
-    region: "NCR",
-    ownerEmail: "owner@company.local",
-    ownerName: "Company Owner",
-    ownerPassword: "ChangeMe123!",
-  });
-
   async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent) {
     const override = typeof applyToEmployeesOverride === "boolean" ? applyToEmployeesOverride : undefined;
     const hasWorkDaysChanged = formData.standardWorkDaysPerMonth !== company.standardWorkDaysPerMonth;
@@ -300,30 +286,6 @@ export function SettingsClient({
     }
   }
 
-  async function handleCreateCompany(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/companies", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCompany),
-      });
-
-      if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error ?? "Failed to create company");
-      }
-
-      toast.success("New company created! Switching context...");
-      router.refresh();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <>
       <Tabs defaultValue="pay-period" className="space-y-6">
@@ -345,9 +307,6 @@ export function SettingsClient({
         </TabsTrigger>
         <TabsTrigger value="theme" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <PaletteIcon className="size-3.5" /> Appearance
-        </TabsTrigger>
-        <TabsTrigger value="add-company" className="flex items-center gap-1.5 text-xs py-2 px-3">
-          <PlusCircleIcon className="size-3.5" /> Add New Company
         </TabsTrigger>
       </TabsList>
 
@@ -1043,92 +1002,6 @@ export function SettingsClient({
               </button>
             </div>
           </CardContent>
-        </Card>
-      </TabsContent>
-
-      {/* 6. Add New Company Tab */}
-      <TabsContent value="add-company" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Company Tenant</CardTitle>
-            <CardDescription>
-              Create a new company account. You will automatically be granted Owner role and can switch active workspace between companies.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleCreateCompany}>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="newCompanyCode">Company Code / ID</Label>
-                  <Input
-                    id="newCompanyCode"
-                    placeholder="e.g. acme-corp"
-                    value={newCompany.companyCode}
-                    onChange={(e) => setNewCompany({ ...newCompany, companyCode: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="newLegalName">Legal Name</Label>
-                  <Input
-                    id="newLegalName"
-                    placeholder="e.g. Acme Philippines Inc."
-                    value={newCompany.legalName}
-                    onChange={(e) => setNewCompany({ ...newCompany, legalName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="newTin">Tax Identification Number (TIN)</Label>
-                  <Input
-                    id="newTin"
-                    placeholder="000-000-000-000"
-                    value={newCompany.tin}
-                    onChange={(e) => setNewCompany({ ...newCompany, tin: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="newRdoCode">RDO Code</Label>
-                  <Input
-                    id="newRdoCode"
-                    value={newCompany.rdoCode}
-                    onChange={(e) => setNewCompany({ ...newCompany, rdoCode: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="newRegion">Region</Label>
-                  <Input
-                    id="newRegion"
-                    value={newCompany.region}
-                    onChange={(e) => setNewCompany({ ...newCompany, region: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="newRegisteredAddress">Registered Address</Label>
-                <Input
-                  id="newRegisteredAddress"
-                  placeholder="Street, City, Province"
-                  value={newCompany.registeredAddress}
-                  onChange={(e) => setNewCompany({ ...newCompany, registeredAddress: e.target.value })}
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating..." : "Create New Company"}
-              </Button>
-            </CardFooter>
-          </form>
         </Card>
       </TabsContent>
     </Tabs>

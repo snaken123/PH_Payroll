@@ -1,6 +1,28 @@
-# ANTIGRAVITY PROJECT HANDOVER
+# ANTIGRAVITY PROJECT HANDOVER & CONTEXT MEMORY
 
-**Audited:** 2026-08-10, at commit `7692b6d` on branch `main` (clean working tree, single branch, no open PRs). Repo: `https://github.com/snaken123/PH_Payroll`.
+**Latest System Memory Update:** 2026-09-17 at commit `2b43ebd` on branch `main`. Repo: `https://github.com/snaken123/PH_Payroll`.
+
+---
+
+## Active Business Rules & System Defaults
+
+1. **26 Standard Work Days Per Month**:
+   - `Company.standardWorkDaysPerMonth` defaults to `26.0`.
+   - `estimateDailyRateEquivalent` and `estimateMonthlyEquivalentCompensation` compute daily/monthly conversions using a 26-day divisor.
+
+2. **9:30 AM Starting Office Hours**:
+   - `attendanceStandardTimeIn = "09:30"` (time-in) and `attendanceStandardTimeOut = "18:30"` (time-out for 8-hour workday + 60 min break).
+
+3. **Cross-Company Allowances**:
+   - Allowances paid by a non-root company (`payingCompanyId !== currentCompanyId`) are **excluded from SSS, PhilHealth, Pag-IBIG statutory contribution bases** (`estimateMonthlyEquivalent.ts`).
+   - Allowances paid by a non-root company are treated as **100% NON-TAXABLE** (`nonTaxableAmount = amount`) in the paying company's withholding tax calculation (`engine.ts`).
+
+4. **Recently Completed Modules**:
+   - **Employee 201 File Dossier**: Personal profile, contact info, and emergency next-of-kin details on `/dashboard/employees/[id]`.
+   - **201 Digital Document Vault**: Upload and manage 201 records (Attendance Memos, Quitclaims, Coaching logs, Legal Contracts, Medical Clearances, IDs up to 10MB).
+   - **Resend Email Payslip Distribution**: `SendEmailPayslipsDialog` on the main dashboard overview (`/dashboard`) allowing HR admins to send itemized HTML payslips with attached PDF reports for fully approved/posted payroll runs via Resend API (`RESEND_API_KEY`).
+
+---
 
 ## Project name
 
