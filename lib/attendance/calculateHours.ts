@@ -62,6 +62,23 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     };
   }
 
+  // Overnight shift detection (time-out is on the next calendar day, e.g. 17:00 to 04:00)
+  if (rawInMins !== null && rawOutMins !== null && rawOutMins < rawInMins) {
+    const effectiveOutMins = rawOutMins + 1440;
+    const totalWorkedMins = Math.max(0, effectiveOutMins - rawInMins - lunchBreakMinutes);
+    const workedHours = totalWorkedMins / 60;
+    const regularHours = Math.min(8.0, roundToQuarter(workedHours));
+    const overtimeHours = Math.max(0, roundToQuarter(workedHours - 8.0));
+
+    return {
+      regularHours,
+      overtimeHours,
+      lateMinutes: 0,
+      undertimeMinutes: 0,
+      breakMinutes: lunchBreakMinutes,
+    };
+  }
+
   const normalizedSchedule = (scheduleType || "Regular").trim().toUpperCase();
 
   if (normalizedSchedule === "FLEXI1") {

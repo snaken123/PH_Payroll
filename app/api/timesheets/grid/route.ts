@@ -29,18 +29,21 @@ export async function GET(request: Request) {
   const startDate = new Date(start);
   const endDate = new Date(end);
 
-  const [employees, timesheets, holidays, company] = await Promise.all([
-    prisma.employee.findMany({
-      where: withCompanyScope(ctx.companyId, {
-        employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
-        isDeleted: false,
-      }),
-      select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
-      orderBy: { employeeNumber: "asc" },
+  const employees = await prisma.employee.findMany({
+    where: withCompanyScope(ctx.companyId, {
+      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
+      isDeleted: false,
     }),
+    select: { id: true, employeeNumber: true, firstName: true, lastName: true, scheduleType: true },
+    orderBy: { employeeNumber: "asc" },
+  });
+
+  const employeeIds = employees.map((e) => e.id);
+
+  const [timesheets, holidays, company] = await Promise.all([
     prisma.timesheetEntry.findMany({
       where: {
-        companyId: ctx.companyId,
+        employeeId: { in: employeeIds },
         workDate: { gte: startDate, lte: endDate },
       },
     }),
