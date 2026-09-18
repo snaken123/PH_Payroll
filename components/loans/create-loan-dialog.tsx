@@ -32,6 +32,20 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+const defaultLoanValues = (empId: string) => ({
+  employeeId: empId,
+  category: "CASH_ADVANCE" as const,
+  name: "",
+  principal: "" as unknown as number,
+  installmentAmount: "" as unknown as number,
+  deductionFrequency: "EVERY_CUTOFF" as const,
+  termMonths: "" as unknown as number,
+  startDate: "",
+  endDate: "",
+  referenceNumber: "",
+  hasNoExpiration: false,
+});
+
 export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -46,7 +60,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
     formState: { errors },
   } = useForm<CreateLoanFormValues, unknown, CreateLoanInput>({
     resolver: zodResolver(createLoanSchema),
-    defaultValues: { employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF" },
+    defaultValues: defaultLoanValues(employeeId),
   });
 
   const category = watch("category");
@@ -54,6 +68,13 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
   const endDate = watch("endDate");
 
   const isPrincipalOptional = hasNoExpiration || Boolean(endDate && endDate.trim() !== "");
+
+  function handleOpenChange(newOpen: boolean) {
+    setOpen(newOpen);
+    if (newOpen) {
+      reset(defaultLoanValues(employeeId));
+    }
+  }
 
   async function onSubmit(values: CreateLoanInput) {
     setSubmitting(true);
@@ -74,13 +95,13 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
     }
 
     toast.success(values.category === "CASH_ADVANCE" ? "Cash advance request submitted for approval" : "Loan added");
-    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF", hasNoExpiration: false, endDate: "" });
+    reset(defaultLoanValues(employeeId));
     setOpen(false);
     router.refresh();
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>New loan</DialogTrigger>
       <DialogContent>
         <DialogHeader>
