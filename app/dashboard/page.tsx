@@ -54,7 +54,7 @@ export default async function DashboardPage() {
 
   const [company, employeeCount, branchCount, activeLoansCount, latestRun, recentRuns] = await Promise.all([
     prisma.company.findUniqueOrThrow({ where: { id: ctx.companyId } }),
-    prisma.employee.count({ where: withCompanyScope(ctx.companyId) }),
+    prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) }),
     prisma.companyBranch.count({ where: withCompanyScope(ctx.companyId) }),
     prisma.loan.count({ where: withCompanyScope(ctx.companyId, { status: LoanStatus.ACTIVE }) }),
     prisma.payrollRun.findFirst({
