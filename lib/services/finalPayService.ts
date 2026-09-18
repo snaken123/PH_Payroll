@@ -26,7 +26,7 @@ export async function computeAndPersistFinalPayRun({
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
-      compensationRecords: { orderBy: { effectiveFrom: "desc" } },
+      compensationRecords: { orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }] },
       loans: { where: { status: "ACTIVE" } },
       leaveBalances: { include: { leaveType: true } },
       payslips: { include: { payrollRun: { include: { payrollPeriod: true } }, lineItems: true } },

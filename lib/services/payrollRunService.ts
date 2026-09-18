@@ -64,7 +64,7 @@ export async function computeAndPersistPayrollRun({
     },
     include: {
       compensationRecords: {
-        orderBy: { effectiveFrom: "desc" },
+        orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }],
         include: { allowances: true },
       },
       timesheetEntries: { where: { workDate: { gte: cutoffStart, lte: cutoffEnd } } },
