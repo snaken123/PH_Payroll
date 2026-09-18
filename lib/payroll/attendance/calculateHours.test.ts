@@ -89,6 +89,33 @@ describe("calculateTimesheetHours", () => {
       expect(res.regularHours).toBe(8.0);
     });
 
+    it("should calculate pre-shift OT if arrival is before standard time-in by at least OT grace period", () => {
+      const res = calculateTimesheetHours({
+        scheduleType: "Regular",
+        timeIn: "06:00",
+        timeOut: "17:00",
+        config: defaultConfig,
+      });
+
+      expect(res.overtimeHours).toBe(2.0); // 2.0 hours before 08:00
+      expect(res.regularHours).toBe(8.0);
+      expect(res.lateMinutes).toBe(0);
+    });
+
+    it("should calculate combined pre-shift and post-shift OT for early arrival and late departure", () => {
+      const res = calculateTimesheetHours({
+        scheduleType: "Regular",
+        timeIn: "06:00",
+        timeOut: "19:00",
+        config: defaultConfig,
+      });
+
+      expect(res.overtimeHours).toBe(4.0); // 2.0h pre-shift + 2.0h post-shift
+      expect(res.regularHours).toBe(8.0);
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(0);
+    });
+
     it("should calculate late minutes and reduce regular hours when time-in is 09:46 even if time-out is omitted", () => {
       const res = calculateTimesheetHours({
         scheduleType: "Regular",

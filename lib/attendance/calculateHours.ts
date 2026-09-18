@@ -125,12 +125,20 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       undertimeMinutes = stdOutMins - outMins;
     }
 
-    // Overtime Hours
-    let overtimeHours = 0;
-    if (outMins > stdOutMins + otGraceMinutes) {
-      const otMinutes = outMins - stdOutMins;
-      overtimeHours = roundToQuarter(otMinutes / 60);
+    // Pre-shift Overtime (early arrival before standard time in)
+    let preOtMinutes = 0;
+    if (inMins < stdInMins - otGraceMinutes) {
+      preOtMinutes = stdInMins - inMins;
     }
+
+    // Post-shift Overtime (late departure after standard time out)
+    let postOtMinutes = 0;
+    if (outMins > stdOutMins + otGraceMinutes) {
+      postOtMinutes = outMins - stdOutMins;
+    }
+
+    const totalOtMinutes = preOtMinutes + postOtMinutes;
+    const overtimeHours = roundToQuarter(totalOtMinutes / 60);
 
     const netReductionMinutes = lateMinutes + undertimeMinutes;
     const regularHours = Math.max(0, roundToQuarter(8.0 - netReductionMinutes / 60));
