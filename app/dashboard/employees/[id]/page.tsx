@@ -161,6 +161,7 @@ export default async function EmployeeDetailPage({
                 dateHired: employee.dateHired.toISOString().slice(0, 10),
                 sex: employee.sex,
                 civilStatus: employee.civilStatus,
+                employmentStatus: employee.employmentStatus,
                 personalEmail: employee.personalEmail ?? "",
                 mobileNumber: employee.mobileNumber ?? "",
                 currentAddress: employee.currentAddress ?? "",

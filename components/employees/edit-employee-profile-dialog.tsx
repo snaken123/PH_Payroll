@@ -27,6 +27,7 @@ import {
   editEmployeeProfileSchema,
   sexValues,
   civilStatusValues,
+  employmentStatusValues,
   rankValues,
   scheduleTypeValues,
   paymentMethodValues,
@@ -170,6 +171,27 @@ export function EditEmployeeProfileDialog({
                     {civilStatusValues.map((v) => (
                       <SelectItem key={v} value={v}>
                         {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="employmentStatus">Employment Status</Label>
+            <Controller
+              control={control}
+              name="employmentStatus"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="employmentStatus">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employmentStatusValues.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v.replaceAll("_", " ")}
                       </SelectItem>
                     ))}
                   </SelectContent>

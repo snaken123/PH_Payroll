@@ -228,6 +228,7 @@ export const editEmployeeProfileSchema = z.object({
   bankBranch: z.string().optional().nullable(),
   paymentMethod: z.enum(paymentMethodValues).optional().default("BANK_TRANSFER"),
   photoUrl: z.string().optional().nullable(),
+  employmentStatus: z.enum(employmentStatusValues).optional(),
   tin: z.string().optional().nullable().or(z.literal("")),
   sssNumber: z.string().optional().nullable().or(z.literal("")),
   philhealthNumber: z.string().optional().nullable().or(z.literal("")),
