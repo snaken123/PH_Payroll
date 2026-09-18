@@ -715,7 +715,7 @@ export function AttendanceGrid() {
             <DialogTitle>
               {editingEmployee ? `${editingEmployee.lastName}, ${editingEmployee.firstName}` : ""} — {editingCell?.date}
             </DialogTitle>
-            <DialogDescription>Time in/out, late, undertime, night differential, rest day, and holiday type.</DialogDescription>
+            <DialogDescription>Time in/out, regular & overtime hours, late, undertime, night differential, rest day, and holiday type.</DialogDescription>
           </DialogHeader>
           {editingCell && editingState && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -735,6 +735,26 @@ export function AttendanceGrid() {
                   type="time"
                   value={editingState.timeOut}
                   onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { timeOut: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="detailRegular">Regular hours</Label>
+                <Input
+                  id="detailRegular"
+                  type="number"
+                  step="0.25"
+                  value={editingState.regularHours}
+                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { regularHours: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="detailOvertime">Overtime hours (auto-computed)</Label>
+                <Input
+                  id="detailOvertime"
+                  type="number"
+                  step="0.25"
+                  value={editingState.overtimeHours}
+                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { overtimeHours: Number(e.target.value) })}
                 />
               </div>
               <div className="space-y-1">
