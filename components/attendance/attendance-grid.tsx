@@ -665,22 +665,20 @@ export function AttendanceGrid() {
                               </SelectContent>
                             </Select>
                             <div className="flex items-center gap-1">
-                              <Input
-                                className="h-7 w-14 px-1 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                type="number"
-                                step="0.25"
-                                title="Regular hours"
-                                value={c.regularHours}
-                                onChange={(e) => updateCell(emp.id, date, { regularHours: Number(e.target.value) })}
-                              />
-                              <Input
-                                className="h-7 w-14 px-1 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                type="number"
-                                step="0.25"
-                                title="Overtime hours"
-                                value={c.overtimeHours}
-                                onChange={(e) => updateCell(emp.id, date, { overtimeHours: Number(e.target.value) })}
-                              />
+                              <div
+                                onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                className="h-7 w-12 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 font-mono text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 cursor-pointer select-none hover:border-slate-300 dark:hover:border-slate-700"
+                                title="Regular hours (read-only, click pencil to edit)"
+                              >
+                                {c.regularHours}
+                              </div>
+                              <div
+                                onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                className="h-7 w-12 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 font-mono text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 cursor-pointer select-none hover:border-slate-300 dark:hover:border-slate-700"
+                                title="Overtime hours (read-only, click pencil to edit)"
+                              >
+                                {c.overtimeHours}
+                              </div>
                               <Button
                                 type="button"
                                 variant="ghost"
