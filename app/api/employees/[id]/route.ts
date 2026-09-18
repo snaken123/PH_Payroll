@@ -119,6 +119,7 @@ export async function DELETE(
       where: { id: employee.id },
       data: {
         isDeleted: true,
+        employeeNumber: `${employee.employeeNumber}__deleted_${employee.id}`,
         deletedAt: new Date(),
         deletedByUserId: ctx.userId,
         deletionReason: reason,

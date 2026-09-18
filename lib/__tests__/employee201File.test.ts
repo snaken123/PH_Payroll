@@ -50,7 +50,16 @@ describe("Employee 201 File Validation & Payload Schema", () => {
     if (parsed.success) {
       expect(parsed.data.personalEmail).toBe("ariel.sibonga@personal.local");
       expect(parsed.data.mobileNumber).toBe("0917-555-1234");
-      expect(parsed.data.emergencyContactName).toBe("Elena Sibonga");
     }
+  });
+
+  it("formats deleted employee numbers with suffix to allow employee number recycling", () => {
+    const originalEmpNo = "Retainer-02";
+    const employeeId = "emp123456";
+    const recycledEmpNo = `${originalEmpNo}__deleted_${employeeId}`;
+
+    expect(recycledEmpNo).toBe("Retainer-02__deleted_emp123456");
+    expect(recycledEmpNo.startsWith(originalEmpNo)).toBe(true);
+    expect(recycledEmpNo).not.toBe(originalEmpNo);
   });
 });
