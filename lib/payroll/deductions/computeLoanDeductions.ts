@@ -9,6 +9,7 @@ export interface ActiveLoanInput {
   remainingBalance: Decimal.Value;
   deductionFrequency: LoanDeductionFrequency;
   hasNoExpiration?: boolean;
+  endDate?: Date | string | null;
 }
 
 export interface LoanDeductionResult {
@@ -17,17 +18,19 @@ export interface LoanDeductionResult {
   amountDeducted: Decimal;
   balanceAfter: Decimal;
   hasNoExpiration?: boolean;
+  endDate?: Date | string | null;
 }
 
 /**
  * Deducts each active loan's installment in order, never exceeding that
- * loan's own remaining balance (unless hasNoExpiration is true) and never
- * exceeding `availableForDeductions` in total.
+ * loan's own remaining balance (unless hasNoExpiration is true or endDate is active)
+ * and never exceeding `availableForDeductions` in total.
  */
 export function computeLoanDeductions(
   loans: ActiveLoanInput[],
   availableForDeductions: Decimal.Value,
-  isMonthlyDeductionCutoff: boolean
+  isMonthlyDeductionCutoff: boolean,
+  cutoffDate?: Date | string | null
 ): LoanDeductionResult[] {
   let remaining = new Decimal(availableForDeductions);
   const results: LoanDeductionResult[] = [];
@@ -38,17 +41,26 @@ export function computeLoanDeductions(
 
     const balance = new Decimal(loan.remainingBalance);
     const hasNoExpiration = !!loan.hasNoExpiration;
+    const hasEndDate = !!loan.endDate;
 
-    if (!hasNoExpiration && balance.lte(0)) continue;
+    if (hasEndDate && cutoffDate) {
+      const cutoff = new Date(cutoffDate);
+      const end = new Date(loan.endDate!);
+      if (cutoff > end) continue;
+    }
 
-    const installment = hasNoExpiration
+    const isOngoingOrEndDate = hasNoExpiration || hasEndDate;
+
+    if (!isOngoingOrEndDate && balance.lte(0)) continue;
+
+    const installment = isOngoingOrEndDate
       ? new Decimal(loan.installmentAmount)
       : Decimal.min(loan.installmentAmount, balance);
 
     const deduction = Decimal.min(installment, remaining);
     if (deduction.lte(0)) continue;
 
-    const balanceAfter = hasNoExpiration ? new Decimal(0) : balance.minus(deduction);
+    const balanceAfter = isOngoingOrEndDate ? new Decimal(0) : balance.minus(deduction);
 
     results.push({
       loanId: loan.id,
@@ -56,6 +68,7 @@ export function computeLoanDeductions(
       amountDeducted: deduction,
       balanceAfter,
       hasNoExpiration,
+      endDate: loan.endDate,
     });
     remaining = remaining.minus(deduction);
   }

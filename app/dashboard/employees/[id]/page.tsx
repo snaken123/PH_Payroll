@@ -637,12 +637,22 @@ export default async function EmployeeDetailPage({
                       <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">{l.name}</TableCell>
                       <TableCell className="text-xs text-slate-600 dark:text-slate-400">{l.category.replaceAll("_", " ")}</TableCell>
                       <TableCell className="text-right font-mono text-xs">
-                        {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.principal).toLocaleString()}`}
+                        {l.hasNoExpiration
+                          ? "Ongoing"
+                          : l.endDate
+                          ? Number(l.principal) > 0
+                            ? `₱${Number(l.principal).toLocaleString()}`
+                            : `Until ${new Date(l.endDate).toLocaleDateString()}`
+                          : `₱${Number(l.principal).toLocaleString()}`}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs font-semibold">₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{l.deductionFrequency === "MONTHLY" ? "Monthly" : "Every Cutoff"}</TableCell>
                       <TableCell className="text-right font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                        {l.hasNoExpiration ? "Ongoing" : `₱${Number(l.remainingBalance).toLocaleString()}`}
+                        {l.hasNoExpiration
+                          ? "Ongoing"
+                          : l.endDate && Number(l.principal) === 0
+                          ? `Until ${new Date(l.endDate).toLocaleDateString()}`
+                          : `₱${Number(l.remainingBalance).toLocaleString()}`}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={l.status} />

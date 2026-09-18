@@ -20,9 +20,21 @@ export const createLoanSchema = z.object({
   installmentAmount: z.coerce.number().positive("Must be greater than 0"),
   deductionFrequency: z.enum(loanDeductionFrequencyValues).default("EVERY_CUTOFF"),
   startDate: z.string().min(1, "Required"),
+  endDate: z.string().optional().nullable().or(z.literal("")),
   referenceNumber: z.string().optional(),
   hasNoExpiration: z.boolean().default(false),
-});
+}).refine(
+  (data) => {
+    if (!data.hasNoExpiration && (!data.endDate || data.endDate.trim() === "")) {
+      return (data.principal ?? 0) > 0;
+    }
+    return true;
+  },
+  {
+    message: "Principal amount is required unless an end date or ongoing recurring deduction is specified",
+    path: ["principal"],
+  }
+);
 export type CreateLoanFormValues = z.input<typeof createLoanSchema>;
 export type CreateLoanInput = z.output<typeof createLoanSchema>;
 

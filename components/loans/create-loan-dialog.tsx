@@ -51,6 +51,9 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
 
   const category = watch("category");
   const hasNoExpiration = watch("hasNoExpiration");
+  const endDate = watch("endDate");
+
+  const isPrincipalOptional = hasNoExpiration || Boolean(endDate && endDate.trim() !== "");
 
   async function onSubmit(values: CreateLoanInput) {
     setSubmitting(true);
@@ -71,7 +74,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
     }
 
     toast.success(values.category === "CASH_ADVANCE" ? "Cash advance request submitted for approval" : "Loan added");
-    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF", hasNoExpiration: false });
+    reset({ employeeId, category: "CASH_ADVANCE", deductionFrequency: "EVERY_CUTOFF", hasNoExpiration: false, endDate: "" });
     setOpen(false);
     router.refresh();
   }
@@ -136,8 +139,10 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
 
           {!hasNoExpiration && (
             <div className="space-y-1">
-              <Label htmlFor="principal">Principal (₱)</Label>
-              <Input id="principal" type="number" step="0.01" {...register("principal")} />
+              <Label htmlFor="principal">
+                Principal (₱) {isPrincipalOptional && <span className="text-muted-foreground font-normal">(optional)</span>}
+              </Label>
+              <Input id="principal" type="number" step="0.01" placeholder={isPrincipalOptional ? "Optional when End Date is set" : ""} {...register("principal")} />
               {errors.principal && <p className="text-sm text-destructive">{errors.principal.message}</p>}
             </div>
           )}
@@ -176,11 +181,21 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
               <Input id="termMonths" type="number" {...register("termMonths")} />
             </div>
           )}
-          <div className="space-y-1">
-            <Label htmlFor="startDate">Start date</Label>
-            <Input id="startDate" type="date" {...register("startDate")} />
-            {errors.startDate && <p className="text-sm text-destructive">{errors.startDate.message}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="startDate">Start date</Label>
+              <Input id="startDate" type="date" {...register("startDate")} />
+              {errors.startDate && <p className="text-sm text-destructive">{errors.startDate.message}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="endDate">End date <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input id="endDate" type="date" {...register("endDate")} />
+              {errors.endDate && <p className="text-sm text-destructive">{errors.endDate.message}</p>}
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Setting an End Date automatically makes Principal optional, and deductions will recur until the end date.
+          </p>
           <div className="space-y-1">
             <Label htmlFor="referenceNumber">Reference number (optional)</Label>
             <Input id="referenceNumber" autoComplete="off" {...register("referenceNumber")} />

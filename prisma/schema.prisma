@@ -862,6 +862,7 @@ model Loan {
   installmentAmount  Decimal                @db.Decimal(14, 2)
   deductionFrequency LoanDeductionFrequency @default(EVERY_CUTOFF)
   startDate          DateTime
+  endDate            DateTime?
   referenceNumber    String?
   hasNoExpiration    Boolean                @default(false)
   status             LoanStatus             @default(ACTIVE)

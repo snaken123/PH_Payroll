@@ -50,19 +50,23 @@ export async function POST(request: Request) {
   // fact (e.g. an existing SSS loan being tracked) and starts ACTIVE.
   const status = data.category === LoanCategory.CASH_ADVANCE ? LoanStatus.PENDING_APPROVAL : LoanStatus.ACTIVE;
 
+  const hasNoExpOrEndDate = data.hasNoExpiration || (data.endDate && data.endDate.trim() !== "");
+  const principalVal = hasNoExpOrEndDate && (!data.principal || data.principal === 0) ? 0 : (data.principal ?? 0);
+
   const loan = await prisma.loan.create({
     data: {
       companyId: ctx.companyId,
       employeeId: data.employeeId,
       category: data.category,
       name: data.name,
-      principal: data.hasNoExpiration ? 0 : data.principal,
+      principal: principalVal,
       termMonths: data.hasNoExpiration ? null : (data.termMonths ?? null),
       installmentAmount: data.installmentAmount,
       deductionFrequency: data.deductionFrequency,
       startDate: new Date(data.startDate),
+      endDate: data.endDate && data.endDate.trim() !== "" ? new Date(data.endDate) : null,
       referenceNumber: data.referenceNumber || null,
-      remainingBalance: data.hasNoExpiration ? 0 : data.principal,
+      remainingBalance: principalVal,
       hasNoExpiration: data.hasNoExpiration ?? false,
       status,
     },

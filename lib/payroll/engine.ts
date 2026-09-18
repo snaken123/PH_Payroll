@@ -106,6 +106,8 @@ export interface PayrollEngineInput {
   };
   /** Active loans/cash advances to deduct this cutoff, in deduction order. */
   activeLoans?: ActiveLoanInput[];
+  /** Cutoff end date for checking loan end dates. */
+  cutoffDate?: Date | string | null;
 }
 
 export interface PayrollEngineResult {
@@ -422,7 +424,8 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   const loanDeductions = computeLoanDeductions(
     input.activeLoans ?? [],
     availableForLoans,
-    input.isStatutoryDeductionCutoff
+    input.isStatutoryDeductionCutoff,
+    input.cutoffDate
   );
   for (const ld of loanDeductions) {
     lineItems.push({

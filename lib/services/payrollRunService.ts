@@ -218,6 +218,7 @@ export async function computeAndPersistPayrollRun({
         remainingBalance: l.remainingBalance.toString(),
         deductionFrequency: l.deductionFrequency,
         hasNoExpiration: l.hasNoExpiration,
+        endDate: l.endDate ? l.endDate.toISOString().split("T")[0] : null,
       }));
 
       const result = computePayroll({
@@ -246,6 +247,7 @@ export async function computeAndPersistPayrollRun({
         monthlyEquivalentCompensation: monthlyEquivalentCompensation.toString(),
         rates: rateInputs,
         activeLoans,
+        cutoffDate: cutoffEnd,
       });
 
       computed.push({ employeeId: emp.id, result });
@@ -378,8 +380,13 @@ export async function computeAndPersistPayrollRun({
             tx.loan.update({
               where: { id: ld.loanId },
               data: {
-                remainingBalance: ld.hasNoExpiration ? "0.00" : ld.balanceAfter.toFixed(2),
-                status: !ld.hasNoExpiration && ld.balanceAfter.lte(0) ? LoanStatus.COMPLETED : LoanStatus.ACTIVE,
+                remainingBalance: (ld.hasNoExpiration || ld.endDate) ? "0.00" : ld.balanceAfter.toFixed(2),
+                status:
+                  !ld.hasNoExpiration && !ld.endDate && ld.balanceAfter.lte(0)
+                    ? LoanStatus.COMPLETED
+                    : ld.endDate && cutoffEnd >= new Date(ld.endDate)
+                    ? LoanStatus.COMPLETED
+                    : LoanStatus.ACTIVE,
               },
             })
           )
