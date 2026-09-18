@@ -318,7 +318,24 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
           </div>
 
           <div className="space-y-1">
-            <Label>Schedule Type</Label>
+            <div className="flex items-center justify-between">
+              <Label>Schedule Type</Label>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                <Controller
+                  control={control}
+                  name="isManagerialExempt"
+                  render={({ field }) => (
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 accent-blue-600"
+                    />
+                  )}
+                />
+                <span>Manager (No OT)</span>
+              </label>
+            </div>
             <Controller
               control={control}
               name="scheduleType"
@@ -418,18 +435,6 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
             )}
           </div>
 
-          {employeeType === "MANAGERIAL_SUPERVISORY" && (
-            <div className="flex items-center gap-2 self-end pb-2">
-              <Controller
-                control={control}
-                name="isManagerialExempt"
-                render={({ field }) => (
-                  <Switch checked={field.value} onCheckedChange={field.onChange} id="isManagerialExempt" />
-                )}
-              />
-              <Label htmlFor="isManagerialExempt">Exempt from OT/holiday-premium rules</Label>
-            </div>
-          )}
 
           <div className="space-y-1">
             <Label>Pay basis</Label>

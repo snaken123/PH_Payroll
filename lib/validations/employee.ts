@@ -223,6 +223,7 @@ export const editEmployeeProfileSchema = z.object({
   departmentName: z.string().optional().nullable(),
   rank: z.string().optional().nullable(),
   scheduleType: z.string().optional().nullable(),
+  isManagerialExempt: z.boolean().default(false),
   bankName: z.string().optional().nullable(),
   bankAccountNumber: z.string().optional().nullable(),
   bankBranch: z.string().optional().nullable(),

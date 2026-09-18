@@ -174,6 +174,7 @@ export default async function EmployeeDetailPage({
                 departmentName: employee.departmentName ?? "",
                 rank: employee.rank ?? "",
                 scheduleType: employee.scheduleType ?? "",
+                isManagerialExempt: employee.isManagerialExempt,
                 tin: employee.tin ?? "",
                 sssNumber: employee.sssNumber ?? "",
                 philhealthNumber: employee.philhealthNumber ?? "",
