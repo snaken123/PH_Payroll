@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       payDate: new Date(data.payDate),
       periodType: data.periodType,
       computedByUserId: ctx.userId,
+      approvedOtEmployeeIds: data.approvedOtEmployeeIds,
     });
 
     return NextResponse.json({ runId }, { status: 201 });

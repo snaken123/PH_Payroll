@@ -66,7 +66,8 @@ export type TimesheetFormInput = z.output<typeof timesheetFormSchema>;
  * punches, not every entry has them. */
 export function combineDateAndTime(workDate: string, time: string | null | undefined): Date | null {
   if (!time) return null;
-  return new Date(`${workDate}T${time}:00+08:00`);
+  const dateStr = workDate.slice(0, 10);
+  return new Date(`${dateStr}T${time}:00+08:00`);
 }
 
 /** Inverse of combineDateAndTime, for populating a form from a stored entry. Format in Asia/Manila timezone. */

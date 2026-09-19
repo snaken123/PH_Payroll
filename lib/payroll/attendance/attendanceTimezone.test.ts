@@ -25,6 +25,21 @@ describe("Attendance Timezone & Schedule Alignment", () => {
     expect(formatted).toBe("00:15");
   });
 
+  it("should maintain round-trip idempotency across all hours of the day", () => {
+    for (let h = 0; h < 24; h++) {
+      const hh = String(h).padStart(2, "0");
+      const timeStr = `${hh}:30`;
+      const date = combineDateAndTime("2026-09-17", timeStr);
+      expect(extractTimeOfDay(date)).toBe(timeStr);
+    }
+  });
+
+  it("should handle full ISO workDate strings safely without date string corruption", () => {
+    const date = combineDateAndTime("2026-09-17T00:00:00.000Z", "09:30");
+    expect(date).not.toBeNull();
+    expect(extractTimeOfDay(date)).toBe("09:30");
+  });
+
   it("should fallback to 09:30 standard time in REGULAR schedule when config standard times are undefined", () => {
     const res = calculateTimesheetHours({
       scheduleType: "Regular",
@@ -37,3 +52,4 @@ describe("Attendance Timezone & Schedule Alignment", () => {
     expect(res.regularHours).toBe(8.0);
   });
 });
+

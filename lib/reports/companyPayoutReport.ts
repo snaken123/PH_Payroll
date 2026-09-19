@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 export interface CompanyPayoutReportParams {
   selectedRunId?: string;
   companyIds?: string[];
+  employeeIds?: string[];
 }
 
 export interface InternalPayoutItem {
@@ -46,6 +47,15 @@ export interface CompanyOption {
   companyCode: string;
 }
 
+export interface EmployeeReportOption {
+  id: string;
+  employeeNumber: string;
+  name: string;
+  companyId: string;
+  companyCode: string;
+  companyName: string;
+}
+
 export interface RunOptionItem {
   runId: string;
   companyId: string;
@@ -62,8 +72,10 @@ export interface RunOptionItem {
 export interface CompanyPayoutReportResult {
   runOptions: RunOptionItem[];
   companies: CompanyOption[];
+  employees: EmployeeReportOption[];
   selectedRunId: string;
   selectedCompanyIds: string[];
+  selectedEmployeeIds: string[];
   reportData: CompanyReportData[];
   groupTotals: {
     totalInternalNet: number;
@@ -72,6 +84,7 @@ export interface CompanyPayoutReportResult {
   };
   filterSummary: {
     includedCompanies: string;
+    includedEmployees: string;
     payrollRunLabel: string;
     statusFilterLabel: string;
   };
@@ -80,7 +93,7 @@ export interface CompanyPayoutReportResult {
 export async function generateCompanyPayoutReport(
   params: CompanyPayoutReportParams = {}
 ): Promise<CompanyPayoutReportResult> {
-  const { selectedRunId = "ALL", companyIds } = params;
+  const { selectedRunId = "ALL", companyIds, employeeIds } = params;
 
   // 1. Fetch all draft, pending, approved, or posted payroll runs
   const payrollRuns = await prisma.payrollRun.findMany({
@@ -142,7 +155,44 @@ export async function generateCompanyPayoutReport(
     });
   }
 
-  // 3. If target runs exist, query payslips
+  // 3. Fetch all active employees across group companies for options
+  const allEmployees = await prisma.employee.findMany({
+    where: {
+      isDeleted: false,
+      companyId: { in: filterCompanyIds },
+    },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: {
+      id: true,
+      employeeNumber: true,
+      firstName: true,
+      lastName: true,
+      companyId: true,
+      company: { select: { id: true, legalName: true, companyCode: true } },
+    },
+  });
+
+  const employeeOptions: EmployeeReportOption[] = allEmployees.map((e) => ({
+    id: e.id,
+    employeeNumber: e.employeeNumber,
+    name: `${e.lastName}, ${e.firstName}`,
+    companyId: e.companyId,
+    companyCode: e.company.companyCode,
+    companyName: e.company.legalName,
+  }));
+
+  const allEmployeeIds = allEmployees.map((e) => e.id);
+  const isEmployeeFiltered = employeeIds && employeeIds.length > 0 && !employeeIds.includes("ALL");
+  const filterEmployeeIds = isEmployeeFiltered
+    ? allEmployeeIds.filter((id) => employeeIds.includes(id))
+    : allEmployeeIds;
+
+  const isEmployeeIncluded = (empId: string) => {
+    if (!isEmployeeFiltered) return true;
+    return filterEmployeeIds.includes(empId);
+  };
+
+  // 4. If target runs exist, query payslips
   if (targetRunIds.length > 0) {
     const payslips = await prisma.payslip.findMany({
       where: {
@@ -180,6 +230,10 @@ export async function generateCompanyPayoutReport(
     });
 
     for (const payslip of payslips) {
+      if (!isEmployeeIncluded(payslip.employee.id)) {
+        continue;
+      }
+
       const primaryCompanyId = payslip.employee.companyId;
       const runLabel = `Run #${payslip.payrollRun.runNumber} (${payslip.payrollRun.company.companyCode}) [${payslip.payrollRun.status.replace("_", " ")}]`;
 
@@ -254,11 +308,17 @@ export async function generateCompanyPayoutReport(
     ? `All ${allCompanies.length} Group Companies`
     : `${selectedCompanies.map((c) => c.companyCode).join(", ")} (${selectedCompanies.length} of ${allCompanies.length} selected)`;
 
+  const includedEmployeesLabel = !isEmployeeFiltered || filterEmployeeIds.length === allEmployeeIds.length
+    ? `All ${allEmployeeIds.length} Employees`
+    : `${filterEmployeeIds.length} of ${allEmployeeIds.length} Employees Selected`;
+
   return {
     runOptions,
     companies: allCompanies,
+    employees: employeeOptions,
     selectedRunId,
     selectedCompanyIds: filterCompanyIds,
+    selectedEmployeeIds: filterEmployeeIds,
     reportData,
     groupTotals: {
       totalInternalNet: Math.round(totalGroupInternalNet * 100) / 100,
@@ -267,6 +327,7 @@ export async function generateCompanyPayoutReport(
     },
     filterSummary: {
       includedCompanies: includedCompaniesLabel,
+      includedEmployees: includedEmployeesLabel,
       payrollRunLabel,
       statusFilterLabel: "Drafts, Pending Approval, Approved & Posted",
     },

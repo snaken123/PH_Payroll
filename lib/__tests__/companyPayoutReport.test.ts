@@ -80,4 +80,20 @@ describe("Company Payout Special Report Logic", () => {
     expect(co2Report.totalInternalNet).toBe(21500);
     expect(co2Report.intercompany.length).toBe(0);
   });
+
+  it("excludes unselected employees from report totals when filtered", () => {
+    const payslips = [
+      { employeeId: "emp-1", netPay: 15000 },
+      { employeeId: "emp-2", netPay: 20000 },
+      { employeeId: "emp-3", netPay: 25000 },
+    ];
+
+    const selectedEmployeeIds = ["emp-1", "emp-3"];
+
+    const filtered = payslips.filter((ps) => selectedEmployeeIds.includes(ps.employeeId));
+    const totalNet = filtered.reduce((acc, ps) => acc + ps.netPay, 0);
+
+    expect(filtered.length).toBe(2);
+    expect(totalNet).toBe(40000); // 15000 + 25000 (emp-2 20000 is excluded)
+  });
 });

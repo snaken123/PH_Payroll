@@ -21,6 +21,7 @@ export async function computeAndPersistPayrollRun({
   periodType,
   computedByUserId,
   replacesRunId,
+  approvedOtEmployeeIds,
 }: {
   companyId: string;
   cutoffStart: Date;
@@ -29,6 +30,7 @@ export async function computeAndPersistPayrollRun({
   periodType: PeriodType;
   computedByUserId: string;
   replacesRunId?: string;
+  approvedOtEmployeeIds?: string[];
 }) {
   const period = await prisma.payrollPeriod.upsert({
     where: { companyId_cutoffStart_cutoffEnd: { companyId, cutoffStart, cutoffEnd } },
@@ -175,11 +177,13 @@ export async function computeAndPersistPayrollRun({
       ) ?? emp.compensationRecords[0];
       if (!comp) continue; // no compensation record found — skip
 
+      const isOtApproved = !approvedOtEmployeeIds || approvedOtEmployeeIds.includes(emp.id);
+
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => ({
         workDate: t.workDate.toISOString(),
         status: t.status,
         regularHours: t.regularHours.toString(),
-        overtimeHours: t.overtimeHours.toString(),
+        overtimeHours: isOtApproved ? t.overtimeHours.toString() : "0",
         nightDiffHours: t.nightDiffHours.toString(),
         lateMinutes: t.lateMinutes,
         undertimeMinutes: t.undertimeMinutes,
