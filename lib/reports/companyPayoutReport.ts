@@ -29,6 +29,16 @@ export interface IntercompanyPayoutItem {
   runLabel: string;
 }
 
+export interface ConsolidatedEmployeePayout {
+  employeeId: string;
+  employeeNumber: string;
+  employeeName: string;
+  companyName: string;
+  bankName: string;
+  bankAccountNumber: string;
+  netAmount: number;
+}
+
 export interface CompanyReportData {
   companyId: string;
   companyName: string;
@@ -77,6 +87,7 @@ export interface CompanyPayoutReportResult {
   selectedCompanyIds: string[];
   selectedEmployeeIds: string[];
   reportData: CompanyReportData[];
+  consolidatedEmployees: ConsolidatedEmployeePayout[];
   groupTotals: {
     totalInternalNet: number;
     totalIntercompanyNet: number;
@@ -164,6 +175,8 @@ export async function generateCompanyPayoutReport(
     });
   }
 
+  const consolidatedEmployeeMap = new Map<string, ConsolidatedEmployeePayout>();
+
   // 3. Fetch all active employees across group companies for options
   const allEmployees = await prisma.employee.findMany({
     where: {
@@ -215,6 +228,9 @@ export async function generateCompanyPayoutReport(
             firstName: true,
             lastName: true,
             positionTitle: true,
+            bankName: true,
+            bankAccountNumber: true,
+            paymentMethod: true,
             companyId: true,
             company: { select: { id: true, legalName: true, companyCode: true } },
             compensationRecords: {
@@ -284,6 +300,9 @@ export async function generateCompanyPayoutReport(
       const primaryGross = Math.round(Math.max(0, gross - totalExternalIntercompanyAllowances) * 100) / 100;
       const primaryNet = Math.round((net - totalExternalIntercompanyAllowances) * 100) / 100;
 
+      const bankNameVal = payslip.employee.paymentMethod === "CASH" ? "CASH" : (payslip.employee.bankName || "N/A");
+      const bankAccountVal = payslip.employee.paymentMethod === "CASH" ? "N/A" : (payslip.employee.bankAccountNumber || "N/A");
+
       // Internal Payout for Primary Employer
       const primaryCompanyReport = companyReportMap.get(primaryCompanyId);
       if (primaryCompanyReport) {
@@ -299,6 +318,19 @@ export async function generateCompanyPayoutReport(
           runLabel,
         });
         primaryCompanyReport.totalInternalNet += primaryNet;
+
+        if (!consolidatedEmployeeMap.has(payslip.employee.id)) {
+          consolidatedEmployeeMap.set(payslip.employee.id, {
+            employeeId: payslip.employee.id,
+            employeeNumber: payslip.employee.employeeNumber,
+            employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
+            companyName: payslip.employee.company.legalName,
+            bankName: bankNameVal,
+            bankAccountNumber: bankAccountVal,
+            netAmount: 0,
+          });
+        }
+        consolidatedEmployeeMap.get(payslip.employee.id)!.netAmount += primaryNet;
       }
 
       // Intercompany Payouts for Funding Companies
@@ -316,6 +348,19 @@ export async function generateCompanyPayoutReport(
             runLabel,
           });
           payingCoReport.totalIntercompanyNet += item.amount;
+
+          if (!consolidatedEmployeeMap.has(payslip.employee.id)) {
+            consolidatedEmployeeMap.set(payslip.employee.id, {
+              employeeId: payslip.employee.id,
+              employeeNumber: payslip.employee.employeeNumber,
+              employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
+              companyName: payslip.employee.company.legalName,
+              bankName: bankNameVal,
+              bankAccountNumber: bankAccountVal,
+              netAmount: 0,
+            });
+          }
+          consolidatedEmployeeMap.get(payslip.employee.id)!.netAmount += item.amount;
         }
       }
     }
@@ -334,6 +379,14 @@ export async function generateCompanyPayoutReport(
 
     return cr;
   });
+
+  const consolidatedEmployees = Array.from(consolidatedEmployeeMap.values())
+    .map((e) => ({
+      ...e,
+      netAmount: Math.round(e.netAmount * 100) / 100,
+    }))
+    .filter((e) => e.netAmount > 0)
+    .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 
   let payrollRunLabel = "All Runs (Drafts, Pending, Approved & Posted)";
   if (targetRunIds.length === 1) {
@@ -361,6 +414,7 @@ export async function generateCompanyPayoutReport(
     selectedCompanyIds: filterCompanyIds,
     selectedEmployeeIds: filterEmployeeIds,
     reportData,
+    consolidatedEmployees,
     groupTotals: {
       totalInternalNet: Math.round(totalGroupInternalNet * 100) / 100,
       totalIntercompanyNet: Math.round(totalGroupIntercompanyNet * 100) / 100,

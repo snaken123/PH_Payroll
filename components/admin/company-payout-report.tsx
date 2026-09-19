@@ -82,6 +82,16 @@ interface IntercompanyPayout {
   runLabel: string;
 }
 
+interface ConsolidatedEmployee {
+  employeeId: string;
+  employeeNumber: string;
+  employeeName: string;
+  companyName: string;
+  bankName: string;
+  bankAccountNumber: string;
+  netAmount: number;
+}
+
 interface CompanyReportItem {
   companyId: string;
   companyName: string;
@@ -116,6 +126,7 @@ export function CompanyPayoutReport() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const [reportData, setReportData] = useState<CompanyReportItem[]>([]);
+  const [consolidatedEmployees, setConsolidatedEmployees] = useState<ConsolidatedEmployee[]>([]);
   const [groupTotals, setGroupTotals] = useState<GroupTotals>({ totalInternalNet: 0, totalIntercompanyNet: 0, grandTotalNet: 0 });
   const [filterSummary, setFilterSummary] = useState<FilterSummary>({
     includedCompanies: "All Companies",
@@ -154,6 +165,7 @@ export function CompanyPayoutReport() {
         setCompanies(data.companies || []);
         setEmployees(data.employees || []);
         setReportData(data.reportData || []);
+        setConsolidatedEmployees(data.consolidatedEmployees || []);
         setGroupTotals(data.groupTotals || { totalInternalNet: 0, totalIntercompanyNet: 0, grandTotalNet: 0 });
         if (data.filterSummary) {
           setFilterSummary(data.filterSummary);
@@ -717,6 +729,57 @@ export function CompanyPayoutReport() {
               </Card>
             );
           })}
+
+          {/* Consolidated Group-Wide Employee Payout List */}
+          {consolidatedEmployees.length > 0 && (
+            <Card className="border-slate-800 bg-slate-900/90 shadow-md">
+              <CardHeader className="border-b border-slate-800 pb-3">
+                <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                  <UsersIcon className="size-4 text-emerald-400" />
+                  Consolidated Employee Payout Summary ({consolidatedEmployees.length} Selected Employees)
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-400">
+                  Total payout per employee across all selected companies and runs. Total matches the Total Group Net Payout.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-950/60">
+                    <TableRow className="border-slate-800 hover:bg-transparent">
+                      <TableHead className="text-xs font-bold text-slate-300">Employee ID</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-300">Employee Name</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-300">Company Name</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-300">Bank Name</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-300">Bank Account Number</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-300 text-right">Net Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {consolidatedEmployees.map((emp) => (
+                      <TableRow key={emp.employeeId} className="border-slate-800/60 hover:bg-slate-800/40">
+                        <TableCell className="text-xs font-mono text-slate-400">{emp.employeeNumber}</TableCell>
+                        <TableCell className="text-xs font-bold text-white">{emp.employeeName}</TableCell>
+                        <TableCell className="text-xs text-slate-300">{emp.companyName}</TableCell>
+                        <TableCell className="text-xs text-slate-300">{emp.bankName}</TableCell>
+                        <TableCell className="text-xs font-mono text-slate-300">{emp.bankAccountNumber}</TableCell>
+                        <TableCell className="text-xs text-right font-mono font-bold text-emerald-400">
+                          ₱{emp.netAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="border-t-2 border-slate-700 bg-slate-950/80 font-bold">
+                      <TableCell colSpan={5} className="text-xs font-bold text-white">
+                        Total Consolidated Net Payout ({consolidatedEmployees.length} Employees)
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-mono font-bold text-emerald-400 text-sm">
+                        ₱{groupTotals.grandTotalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

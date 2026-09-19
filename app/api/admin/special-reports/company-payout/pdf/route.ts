@@ -68,6 +68,7 @@ export async function GET(request: Request) {
         runLabel: i.runLabel,
       })),
     })),
+    consolidatedEmployees: result.consolidatedEmployees,
   };
 
   return pdfResponse(CompanyPayoutDocument({ data: pdfData }), "Company_Payout_Special_Report.pdf");
