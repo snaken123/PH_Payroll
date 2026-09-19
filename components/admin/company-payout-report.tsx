@@ -191,12 +191,66 @@ export function CompanyPayoutReport() {
     setDialogOpen(true);
   }
 
+  const availableEmployees = useMemo(() => {
+    if (tempCompanyIds.length === 0) return [];
+    return employees.filter((e) => tempCompanyIds.includes(e.companyId));
+  }, [employees, tempCompanyIds]);
+
+  const filteredEmployeesForModal = useMemo(() => {
+    if (!employeeSearchFilter.trim()) return availableEmployees;
+    const q = employeeSearchFilter.trim().toLowerCase();
+    return availableEmployees.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.employeeNumber.toLowerCase().includes(q) ||
+        e.companyCode.toLowerCase().includes(q) ||
+        e.companyName.toLowerCase().includes(q)
+    );
+  }, [availableEmployees, employeeSearchFilter]);
+
+  const availableRuns = useMemo(() => {
+    if (tempCompanyIds.length === 0) return [];
+    return runOptions.filter((r) => tempCompanyIds.includes(r.companyId));
+  }, [runOptions, tempCompanyIds]);
+
+  const filteredRunsForModal = useMemo(() => {
+    if (!runSearchFilter.trim()) return availableRuns;
+    const q = runSearchFilter.trim().toLowerCase();
+    return availableRuns.filter(
+      (r) =>
+        r.label.toLowerCase().includes(q) ||
+        r.companyName.toLowerCase().includes(q) ||
+        r.companyCode.toLowerCase().includes(q)
+    );
+  }, [availableRuns, runSearchFilter]);
+
   function handleSelectAllRuns() {
-    setTempRunIds(["ALL"]);
+    const availIds = availableRuns.map((r) => r.runId);
+    if (availIds.length === runOptions.length && runOptions.length > 0) {
+      setTempRunIds(["ALL"]);
+    } else {
+      setTempRunIds(Array.from(new Set([...tempRunIds.filter((id) => id !== "ALL"), ...availIds])));
+    }
   }
 
   function handleClearAllRuns() {
-    setTempRunIds([]);
+    const availIds = new Set(availableRuns.map((r) => r.runId));
+    if (tempRunIds.includes("ALL")) {
+      const remainingRuns = runOptions.filter((r) => !availIds.has(r.runId)).map((r) => r.runId);
+      setTempRunIds(remainingRuns);
+    } else {
+      setTempRunIds(tempRunIds.filter((id) => !availIds.has(id)));
+    }
+  }
+
+  function handleSelectAllEmployees() {
+    const availIds = availableEmployees.map((e) => e.id);
+    setTempEmployeeIds(Array.from(new Set([...tempEmployeeIds, ...availIds])));
+  }
+
+  function handleClearAllEmployees() {
+    const availIds = new Set(availableEmployees.map((e) => e.id));
+    setTempEmployeeIds(tempEmployeeIds.filter((id) => !availIds.has(id)));
   }
 
   function handleToggleRun(runId: string) {
@@ -206,8 +260,7 @@ export function CompanyPayoutReport() {
     }
 
     if (current.includes(runId)) {
-      const next = current.filter((id) => id !== runId);
-      setTempRunIds(next);
+      setTempRunIds(current.filter((id) => id !== runId));
     } else {
       const next = [...current, runId];
       if (next.length === runOptions.length && runOptions.length > 0) {
@@ -232,14 +285,6 @@ export function CompanyPayoutReport() {
     } else {
       setTempCompanyIds([...tempCompanyIds, id]);
     }
-  }
-
-  function handleSelectAllEmployees() {
-    setTempEmployeeIds(employees.map((e) => e.id));
-  }
-
-  function handleClearAllEmployees() {
-    setTempEmployeeIds([]);
   }
 
   function handleToggleEmployee(id: string) {
@@ -308,29 +353,6 @@ export function CompanyPayoutReport() {
     window.open(pdfUrl, "_blank");
     setTimeout(() => setDownloadingPdf(false), 1500);
   }
-
-  const filteredEmployeesForModal = useMemo(() => {
-    if (!employeeSearchFilter.trim()) return employees;
-    const q = employeeSearchFilter.trim().toLowerCase();
-    return employees.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        e.employeeNumber.toLowerCase().includes(q) ||
-        e.companyCode.toLowerCase().includes(q) ||
-        e.companyName.toLowerCase().includes(q)
-    );
-  }, [employees, employeeSearchFilter]);
-
-  const filteredRunsForModal = useMemo(() => {
-    if (!runSearchFilter.trim()) return runOptions;
-    const q = runSearchFilter.trim().toLowerCase();
-    return runOptions.filter(
-      (r) =>
-        r.label.toLowerCase().includes(q) ||
-        r.companyName.toLowerCase().includes(q) ||
-        r.companyCode.toLowerCase().includes(q)
-    );
-  }, [runOptions, runSearchFilter]);
 
   return (
     <div className="space-y-6">
@@ -712,7 +734,7 @@ export function CompanyPayoutReport() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  2. Included Employees ({tempEmployeeIds.length} of {employees.length} selected)
+                  2. Included Employees ({tempEmployeeIds.filter((id) => availableEmployees.some((e) => e.id === id)).length} of {availableEmployees.length} selected)
                 </label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -749,8 +771,10 @@ export function CompanyPayoutReport() {
               </div>
 
               <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-1.5">
-                {filteredEmployeesForModal.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-4">No employees match filter.</p>
+                {tempCompanyIds.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No companies selected above.</p>
+                ) : filteredEmployeesForModal.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No employees match filter for selected companies.</p>
                 ) : (
                   filteredEmployeesForModal.map((emp) => {
                     const isChecked = tempEmployeeIds.includes(emp.id);
@@ -781,7 +805,7 @@ export function CompanyPayoutReport() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  3. Included Payroll Runs ({tempRunIds.includes("ALL") || tempRunIds.length === 0 ? "All" : tempRunIds.length} of {runOptions.length} selected)
+                  3. Included Payroll Runs ({tempRunIds.includes("ALL") ? availableRuns.length : tempRunIds.filter((id) => availableRuns.some((r) => r.runId === id)).length} of {availableRuns.length} selected)
                 </label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -806,7 +830,7 @@ export function CompanyPayoutReport() {
                 </div>
               </div>
 
-              {runOptions.length > 4 && (
+              {availableRuns.length > 4 && (
                 <div className="relative">
                   <SearchIcon className="absolute left-2.5 top-2.5 size-3.5 text-slate-400" />
                   <Input
@@ -820,8 +844,10 @@ export function CompanyPayoutReport() {
               )}
 
               <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-1.5">
-                {filteredRunsForModal.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-4">No payroll runs match filter.</p>
+                {tempCompanyIds.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No companies selected above.</p>
+                ) : filteredRunsForModal.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No payroll runs match filter for selected companies.</p>
                 ) : (
                   filteredRunsForModal.map((run) => {
                     const isChecked = tempRunIds.includes("ALL") || tempRunIds.includes(run.runId);
