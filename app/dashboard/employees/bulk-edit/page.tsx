@@ -8,7 +8,7 @@ export default async function BulkEditEmployeesPage() {
   const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
 
   const employees = await prisma.employee.findMany({
-    where: withCompanyScope(ctx.companyId),
+    where: withCompanyScope(ctx.companyId, { isDeleted: false }),
     include: {
       compensationRecords: { where: { effectiveTo: null }, take: 1 },
     },
