@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 
 export interface CompanyPayoutReportParams {
-  selectedRunId?: string;
+  selectedRunId?: string | string[];
   companyIds?: string[];
   employeeIds?: string[];
 }
@@ -73,7 +73,7 @@ export interface CompanyPayoutReportResult {
   runOptions: RunOptionItem[];
   companies: CompanyOption[];
   employees: EmployeeReportOption[];
-  selectedRunId: string;
+  selectedRunId: string | string[];
   selectedCompanyIds: string[];
   selectedEmployeeIds: string[];
   reportData: CompanyReportData[];
@@ -136,9 +136,18 @@ export async function generateCompanyPayoutReport(
   }
 
   // Filter target runs
-  const targetRunIds = selectedRunId && selectedRunId !== "ALL"
-    ? [selectedRunId]
-    : payrollRuns.map((r) => r.id);
+  let targetRunIds: string[] = [];
+  if (!selectedRunId || selectedRunId === "ALL" || (Array.isArray(selectedRunId) && (selectedRunId.length === 0 || selectedRunId.includes("ALL")))) {
+    targetRunIds = payrollRuns.map((r) => r.id);
+  } else if (Array.isArray(selectedRunId)) {
+    targetRunIds = selectedRunId.filter((id) => id !== "ALL");
+  } else {
+    targetRunIds = selectedRunId.split(",").map((s) => s.trim()).filter((s) => s && s !== "ALL");
+  }
+
+  if (targetRunIds.length === 0) {
+    targetRunIds = payrollRuns.map((r) => r.id);
+  }
 
   // Initialize per-company map
   const companyReportMap = new Map<string, CompanyReportData>();
@@ -299,10 +308,15 @@ export async function generateCompanyPayoutReport(
     return cr;
   });
 
-  const selectedRunOption = runOptions.find((r) => r.runId === selectedRunId);
-  const payrollRunLabel = selectedRunId === "ALL" || !selectedRunOption
-    ? "All Runs (Drafts, Pending, Approved & Posted)"
-    : selectedRunOption.label;
+  let payrollRunLabel = "All Runs (Drafts, Pending, Approved & Posted)";
+  if (targetRunIds.length === 1) {
+    const singleRun = runOptions.find((r) => r.runId === targetRunIds[0]);
+    if (singleRun) {
+      payrollRunLabel = singleRun.label;
+    }
+  } else if (targetRunIds.length < payrollRuns.length) {
+    payrollRunLabel = `${targetRunIds.length} Selected Payroll Runs`;
+  }
 
   const includedCompaniesLabel = selectedCompanies.length === allCompanies.length
     ? `All ${allCompanies.length} Group Companies`

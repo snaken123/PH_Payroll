@@ -111,7 +111,7 @@ export function CompanyPayoutReport() {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
 
-  const [selectedRunId, setSelectedRunId] = useState<string>("ALL");
+  const [selectedRunIds, setSelectedRunIds] = useState<string[]>(["ALL"]);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
@@ -129,24 +129,30 @@ export function CompanyPayoutReport() {
 
   // Modal Dialog Filter State
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [tempRunId, setTempRunId] = useState<string>("ALL");
+  const [tempRunIds, setTempRunIds] = useState<string[]>(["ALL"]);
   const [tempCompanyIds, setTempCompanyIds] = useState<string[]>([]);
   const [tempEmployeeIds, setTempEmployeeIds] = useState<string[]>([]);
   const [employeeSearchFilter, setEmployeeSearchFilter] = useState<string>("");
+  const [runSearchFilter, setRunSearchFilter] = useState<string>("");
 
-  async function fetchReport(runId: string, companyIdsList: string[], employeeIdsList: string[]) {
+  function serializeParam(items: string[]): string {
+    if (items.length === 0 || items.includes("ALL")) return "ALL";
+    return items.join(",");
+  }
+
+  async function fetchReport(runIdsList: string[], companyIdsList: string[], employeeIdsList: string[]) {
     setLoading(true);
     try {
+      const runParam = serializeParam(runIdsList);
       const companyParam = companyIdsList.length > 0 ? companyIdsList.join(",") : "ALL";
       const employeeParam = employeeIdsList.length > 0 ? employeeIdsList.join(",") : "ALL";
-      const url = `/api/admin/special-reports/company-payout?runId=${encodeURIComponent(runId)}&companyIds=${encodeURIComponent(companyParam)}&employeeIds=${encodeURIComponent(employeeParam)}`;
+      const url = `/api/admin/special-reports/company-payout?runId=${encodeURIComponent(runParam)}&companyIds=${encodeURIComponent(companyParam)}&employeeIds=${encodeURIComponent(employeeParam)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setRunOptions(data.runOptions || []);
         setCompanies(data.companies || []);
         setEmployees(data.employees || []);
-        setSelectedRunId(data.selectedRunId || "ALL");
         setReportData(data.reportData || []);
         setGroupTotals(data.groupTotals || { totalInternalNet: 0, totalIntercompanyNet: 0, grandTotalNet: 0 });
         if (data.filterSummary) {
@@ -169,11 +175,11 @@ export function CompanyPayoutReport() {
   }
 
   useEffect(() => {
-    fetchReport("ALL", [], []);
+    fetchReport(["ALL"], [], []);
   }, []);
 
   function handleOpenFilterModal() {
-    setTempRunId(selectedRunId);
+    setTempRunIds(selectedRunIds.length > 0 ? selectedRunIds : ["ALL"]);
     setTempCompanyIds(
       selectedCompanyIds.length > 0 ? selectedCompanyIds : companies.map((c) => c.id)
     );
@@ -181,7 +187,35 @@ export function CompanyPayoutReport() {
       selectedEmployeeIds.length > 0 ? selectedEmployeeIds : employees.map((e) => e.id)
     );
     setEmployeeSearchFilter("");
+    setRunSearchFilter("");
     setDialogOpen(true);
+  }
+
+  function handleSelectAllRuns() {
+    setTempRunIds(["ALL"]);
+  }
+
+  function handleClearAllRuns() {
+    setTempRunIds([]);
+  }
+
+  function handleToggleRun(runId: string) {
+    let current = tempRunIds;
+    if (current.includes("ALL")) {
+      current = runOptions.map((r) => r.runId);
+    }
+
+    if (current.includes(runId)) {
+      const next = current.filter((id) => id !== runId);
+      setTempRunIds(next);
+    } else {
+      const next = [...current, runId];
+      if (next.length === runOptions.length && runOptions.length > 0) {
+        setTempRunIds(["ALL"]);
+      } else {
+        setTempRunIds(next);
+      }
+    }
   }
 
   function handleSelectAllCompanies() {
@@ -225,7 +259,7 @@ export function CompanyPayoutReport() {
       nextEmployeeIds = [...selectedEmployeeIds, empId];
     }
     setSelectedEmployeeIds(nextEmployeeIds);
-    fetchReport(selectedRunId, selectedCompanyIds, nextEmployeeIds);
+    fetchReport(selectedRunIds, selectedCompanyIds, nextEmployeeIds);
   }
 
   // Interactive on-screen toggle for company-level internal/intercompany payouts
@@ -238,7 +272,7 @@ export function CompanyPayoutReport() {
       nextEmployeeIds = selectedEmployeeIds.filter((id) => !companyEmpIds.has(id));
     }
     setSelectedEmployeeIds(nextEmployeeIds);
-    fetchReport(selectedRunId, selectedCompanyIds, nextEmployeeIds);
+    fetchReport(selectedRunIds, selectedCompanyIds, nextEmployeeIds);
   }
 
   function handleToggleAllCompanyIntercompany(companyReport: CompanyReportItem, select: boolean) {
@@ -250,22 +284,27 @@ export function CompanyPayoutReport() {
       nextEmployeeIds = selectedEmployeeIds.filter((id) => !companyEmpIds.has(id));
     }
     setSelectedEmployeeIds(nextEmployeeIds);
-    fetchReport(selectedRunId, selectedCompanyIds, nextEmployeeIds);
+    fetchReport(selectedRunIds, selectedCompanyIds, nextEmployeeIds);
   }
 
   function handleApplyFilters() {
-    setSelectedRunId(tempRunId);
-    setSelectedCompanyIds(tempCompanyIds);
-    setSelectedEmployeeIds(tempEmployeeIds);
+    const finalRunIds = tempRunIds.length === 0 ? ["ALL"] : tempRunIds;
+    const finalCompanyIds = tempCompanyIds.length === 0 ? companies.map((c) => c.id) : tempCompanyIds;
+    const finalEmployeeIds = tempEmployeeIds.length === 0 ? employees.map((e) => e.id) : tempEmployeeIds;
+
+    setSelectedRunIds(finalRunIds);
+    setSelectedCompanyIds(finalCompanyIds);
+    setSelectedEmployeeIds(finalEmployeeIds);
     setDialogOpen(false);
-    fetchReport(tempRunId, tempCompanyIds, tempEmployeeIds);
+    fetchReport(finalRunIds, finalCompanyIds, finalEmployeeIds);
   }
 
   function handleDownloadPdf() {
     setDownloadingPdf(true);
+    const runParam = serializeParam(selectedRunIds);
     const companyParam = selectedCompanyIds.length > 0 ? selectedCompanyIds.join(",") : "ALL";
     const employeeParam = selectedEmployeeIds.length > 0 ? selectedEmployeeIds.join(",") : "ALL";
-    const pdfUrl = `/api/admin/special-reports/company-payout/pdf?runId=${encodeURIComponent(selectedRunId)}&companyIds=${encodeURIComponent(companyParam)}&employeeIds=${encodeURIComponent(employeeParam)}`;
+    const pdfUrl = `/api/admin/special-reports/company-payout/pdf?runId=${encodeURIComponent(runParam)}&companyIds=${encodeURIComponent(companyParam)}&employeeIds=${encodeURIComponent(employeeParam)}`;
     window.open(pdfUrl, "_blank");
     setTimeout(() => setDownloadingPdf(false), 1500);
   }
@@ -281,6 +320,17 @@ export function CompanyPayoutReport() {
         e.companyName.toLowerCase().includes(q)
     );
   }, [employees, employeeSearchFilter]);
+
+  const filteredRunsForModal = useMemo(() => {
+    if (!runSearchFilter.trim()) return runOptions;
+    const q = runSearchFilter.trim().toLowerCase();
+    return runOptions.filter(
+      (r) =>
+        r.label.toLowerCase().includes(q) ||
+        r.companyName.toLowerCase().includes(q) ||
+        r.companyCode.toLowerCase().includes(q)
+    );
+  }, [runOptions, runSearchFilter]);
 
   return (
     <div className="space-y-6">
@@ -729,21 +779,72 @@ export function CompanyPayoutReport() {
 
             {/* 3. Payroll Run Selection */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                3. Payroll Run Filter
-              </label>
-              <select
-                value={tempRunId}
-                onChange={(e) => setTempRunId(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-100 font-medium focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="ALL">All Payroll Runs (Drafts, Pending, Approved &amp; Posted)</option>
-                {runOptions.map((run) => (
-                  <option key={run.runId} value={run.runId}>
-                    {run.label}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  3. Included Payroll Runs ({tempRunIds.includes("ALL") || tempRunIds.length === 0 ? "All" : tempRunIds.length} of {runOptions.length} selected)
+                </label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={handleSelectAllRuns}
+                    className="text-xs text-blue-400 hover:text-blue-300 hover:bg-slate-800 h-6 px-2"
+                  >
+                    Select All
+                  </Button>
+                  <span className="text-slate-600 text-xs">|</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={handleClearAllRuns}
+                    className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 h-6 px-2"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+
+              {runOptions.length > 4 && (
+                <div className="relative">
+                  <SearchIcon className="absolute left-2.5 top-2.5 size-3.5 text-slate-400" />
+                  <Input
+                    type="text"
+                    placeholder="Filter payroll runs by number, company, or cutoff..."
+                    value={runSearchFilter}
+                    onChange={(e) => setRunSearchFilter(e.target.value)}
+                    className="pl-8 h-8 text-xs bg-slate-950 border-slate-800 text-slate-100"
+                  />
+                </div>
+              )}
+
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-1.5">
+                {filteredRunsForModal.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-4">No payroll runs match filter.</p>
+                ) : (
+                  filteredRunsForModal.map((run) => {
+                    const isChecked = tempRunIds.includes("ALL") || tempRunIds.includes(run.runId);
+                    return (
+                      <div
+                        key={run.runId}
+                        onClick={() => handleToggleRun(run.runId)}
+                        className="flex items-center space-x-3 cursor-pointer p-1.5 rounded hover:bg-slate-800/60 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          className="size-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
+                        />
+                        <div className="text-xs flex items-center justify-between w-full pr-2">
+                          <span className="font-semibold text-white">{run.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
