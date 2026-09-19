@@ -7,7 +7,7 @@ import { computeAndPersistPayrollRun } from "@/lib/services/payrollRunService";
 const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   let ctx;
@@ -37,6 +37,11 @@ export async function POST(
     );
   }
 
+  const body = await request.json().catch(() => ({}));
+  const approvedOtEmployeeIds = Array.isArray(body?.approvedOtEmployeeIds)
+    ? (body.approvedOtEmployeeIds as string[])
+    : undefined;
+
   try {
     let replacesRunId: string | undefined = undefined;
 
@@ -60,6 +65,7 @@ export async function POST(
       periodType: existing.payrollPeriod.periodType,
       computedByUserId: ctx.userId,
       replacesRunId,
+      approvedOtEmployeeIds,
     });
 
     return NextResponse.json({ success: true, runId: newRunId });

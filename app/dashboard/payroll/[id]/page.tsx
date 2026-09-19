@@ -67,7 +67,12 @@ export default async function PayrollRunDetailPage({
                 <DownloadIcon className="size-3.5" /> Register PDF
               </Button>
             )}
-            <RunActions runId={run.id} status={run.status} />
+            <RunActions
+              runId={run.id}
+              status={run.status}
+              cutoffStart={run.payrollPeriod.cutoffStart}
+              cutoffEnd={run.payrollPeriod.cutoffEnd}
+            />
           </>
         }
       />

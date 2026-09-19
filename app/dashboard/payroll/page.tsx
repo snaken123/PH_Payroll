@@ -122,7 +122,12 @@ export default async function PayrollPage({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <RunActions runId={r.id} status={r.status} />
+                        <RunActions
+                          runId={r.id}
+                          status={r.status}
+                          cutoffStart={r.payrollPeriod.cutoffStart}
+                          cutoffEnd={r.payrollPeriod.cutoffEnd}
+                        />
                         <Link
                           href={`/dashboard/payroll/${r.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"

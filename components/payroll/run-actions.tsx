@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +16,39 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Search, Clock, ShieldAlert } from "lucide-react";
 
-export function RunActions({ runId, status }: { runId: string; status: string }) {
+interface EmployeeOtPreview {
+  employeeId: string;
+  employeeNumber: string;
+  employeeName: string;
+  positionTitle: string;
+  totalOtHours: number;
+}
+
+export function RunActions({
+  runId,
+  status,
+  cutoffStart,
+  cutoffEnd,
+}: {
+  runId: string;
+  status: string;
+  cutoffStart?: Date | string;
+  cutoffEnd?: Date | string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [checkingOt, setCheckingOt] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voidOpen, setVoidOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
+
+  // OT Approval modal state for Recompute
+  const [otDialogOpen, setOtDialogOpen] = useState(false);
+  const [employeesWithOt, setEmployeesWithOt] = useState<EmployeeOtPreview[]>([]);
+  const [selectedOtIds, setSelectedOtIds] = useState<string[]>([]);
+  const [otSearchQuery, setOtSearchQuery] = useState("");
 
   async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute", body?: unknown) {
     setBusy(true);
@@ -41,6 +68,7 @@ export function RunActions({ runId, status }: { runId: string; status: string })
     if (action === "recompute") {
       const responseBody = await res.json();
       toast.success("Payslips recomputed successfully!");
+      setOtDialogOpen(false);
       if (responseBody.runId) {
         router.push(`/dashboard/payroll/${responseBody.runId}`);
         router.refresh();
@@ -48,16 +76,194 @@ export function RunActions({ runId, status }: { runId: string; status: string })
       return;
     }
 
-    toast.success(`Run ${action === "submit" ? "submitted for approval" : action === "approve" ? "approved" : action === "post" ? "posted" : "voided"}`);
+    toast.success(
+      `Run ${
+        action === "submit"
+          ? "submitted for approval"
+          : action === "approve"
+          ? "approved"
+          : action === "post"
+          ? "posted"
+          : "voided"
+      }`
+    );
     router.refresh();
   }
+
+  async function handleRecomputeClick() {
+    if (!cutoffStart || !cutoffEnd) {
+      await callAction("recompute");
+      return;
+    }
+
+    setCheckingOt(true);
+    try {
+      const startStr = typeof cutoffStart === "string" ? cutoffStart : cutoffStart.toISOString();
+      const endStr = typeof cutoffEnd === "string" ? cutoffEnd : cutoffEnd.toISOString();
+      const url = `/api/payroll/runs/ot-preview?cutoffStart=${encodeURIComponent(startStr)}&cutoffEnd=${encodeURIComponent(endStr)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        await callAction("recompute");
+        return;
+      }
+      const data = await res.json();
+      const otList: EmployeeOtPreview[] = data.employeesWithOt ?? [];
+
+      if (otList.length > 0) {
+        setEmployeesWithOt(otList);
+        setSelectedOtIds(otList.map((e) => e.employeeId)); // default all checked
+        setOtDialogOpen(true);
+      } else {
+        await callAction("recompute");
+      }
+    } catch {
+      await callAction("recompute");
+    } finally {
+      setCheckingOt(false);
+    }
+  }
+
+  function toggleOtEmployee(id: string) {
+    setSelectedOtIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }
+
+  function handleSelectAllOt() {
+    setSelectedOtIds(employeesWithOt.map((e) => e.employeeId));
+  }
+
+  function handleDeselectAllOt() {
+    setSelectedOtIds([]);
+  }
+
+  const filteredOtEmployees = employeesWithOt.filter((emp) => {
+    const q = otSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      emp.employeeName.toLowerCase().includes(q) ||
+      emp.employeeNumber.toLowerCase().includes(q) ||
+      emp.positionTitle.toLowerCase().includes(q)
+    );
+  });
 
   if (status === "DRAFT" || status === "PENDING_APPROVAL") {
     return (
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => callAction("recompute")} disabled={busy}>
-          Recompute Payslips
+        <Button variant="outline" onClick={handleRecomputeClick} disabled={busy || checkingOt}>
+          {checkingOt ? "Checking Overtime..." : busy ? "Recomputing..." : "Recompute Payslips"}
         </Button>
+
+        {/* OT Approval Modal for Recompute */}
+        <Dialog open={otDialogOpen} onOpenChange={setOtDialogOpen}>
+          <DialogContent className="max-w-md md:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Clock className="size-5 text-amber-600" />
+                Recompute — Overtime Approvals
+              </DialogTitle>
+              <DialogDescription>
+                Select employees whose overtime pay is approved for this cutoff. Unchecked employees will have OT pay excluded from their payslips, but their timesheet logs will remain intact.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter employee name or number..."
+                    value={otSearchQuery}
+                    onChange={(e) => setOtSearchQuery(e.target.value)}
+                    className="pl-8 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="outline" size="sm" onClick={handleSelectAllOt} className="text-xs">
+                    Select All
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDeselectAllOt} className="text-xs">
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground flex justify-between items-center px-1">
+                <span>
+                  Approved: <strong className="text-foreground">{selectedOtIds.length}</strong> of {employeesWithOt.length} employees
+                </span>
+              </div>
+
+              <div className="max-h-[260px] overflow-y-auto border rounded-md p-2 space-y-1.5 bg-muted/20">
+                {filteredOtEmployees.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    No matching employees found.
+                  </p>
+                ) : (
+                  filteredOtEmployees.map((emp) => {
+                    const isChecked = selectedOtIds.includes(emp.employeeId);
+                    return (
+                      <div
+                        key={emp.employeeId}
+                        onClick={() => toggleOtEmployee(emp.employeeId)}
+                        className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors ${
+                          isChecked
+                            ? "bg-background border-primary/40 shadow-2xs"
+                            : "bg-muted/40 border-transparent opacity-75"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={() => toggleOtEmployee(emp.employeeId)}
+                          />
+                          <div>
+                            <div className="text-sm font-medium leading-none">{emp.employeeName}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            {emp.totalOtHours} hrs OT
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 p-2.5 border border-amber-200 dark:border-amber-900 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                <ShieldAlert className="size-4 shrink-0 mt-0.5" />
+                <span>
+                  Unapproved employees will receive <strong>0.0 hrs OT pay</strong> while retaining their raw timesheet records.
+                </span>
+              </div>
+            </div>
+
+            <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setOtDialogOpen(false)}
+                disabled={busy}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => callAction("recompute", { approvedOtEmployeeIds: selectedOtIds })}
+              >
+                {busy ? "Recomputing..." : "Confirm & Recompute Payslips"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {status === "DRAFT" && (
           <Button variant="outline" onClick={() => callAction("submit")} disabled={busy}>
             Submit for Approval
