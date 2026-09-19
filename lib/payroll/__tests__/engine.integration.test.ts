@@ -272,3 +272,57 @@ describe("computePayroll — de minimis allowance ceiling capping", () => {
     expect(result.totalStatutoryDeductions.toNumber()).toBe(4804.1);
   });
 });
+
+describe("computePayroll — Allowance Rules (Monthly Division & Daily Days Worked)", () => {
+  it("divides monthly allowance equally by 2 for semi-monthly pay periods", () => {
+    const result = computePayroll({
+      payBasis: "DAILY_RATE",
+      basicRate: 495,
+      isManagerialExempt: false,
+      isSemiMonthly: true,
+      timesheets: Array.from({ length: 11 }, () => fact()),
+      allowances: [
+        { label: "Inter-Company", amount: 20000, frequency: "MONTHLY", isTaxable: false },
+      ],
+      isStatutoryDeductionCutoff: false,
+      monthlyEquivalentCompensation: 20000,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    const allowanceLine = result.lineItems.find((li) => li.description === "Inter-Company");
+    expect(allowanceLine?.amount.toNumber()).toBe(10000); // 20,000 / 2 = 10,000
+  });
+
+  it("calculates daily allowances strictly on actual days worked (excluding unworked rest days and holidays)", () => {
+    const timesheets: TimesheetFact[] = [
+      ...Array.from({ length: 10 }, () => fact({ status: "PRESENT" })),
+      fact({ status: "HALF_DAY", regularHours: 4 }),
+      fact({ status: "REST_DAY", regularHours: 0, isRestDay: true }),
+      fact({ status: "REST_DAY", regularHours: 0, isRestDay: true }),
+      fact({ status: "HOLIDAY", regularHours: 0, holidayType: "REGULAR_HOLIDAY" }),
+      fact({ status: "ABSENT", regularHours: 0 }),
+    ];
+
+    const result = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 17108,
+      standardWorkDaysPerMonth: 26,
+      isManagerialExempt: false,
+      isSemiMonthly: true,
+      timesheets,
+      allowances: [
+        { label: "Daily Meal Allowance", amount: 100, frequency: "DAILY", isTaxable: true },
+      ],
+      isStatutoryDeductionCutoff: false,
+      monthlyEquivalentCompensation: 17108,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    // 10 PRESENT days (10.0) + 1 HALF_DAY (0.5) = 10.5 worked days
+    // Unworked rest days, unworked holiday, and absent days are NOT counted.
+    // 10.5 * 100 = 1050
+    const allowanceLine = result.lineItems.find((li) => li.description === "Daily Meal Allowance");
+    expect(allowanceLine?.amount.toNumber()).toBe(1050);
+  });
+});
+

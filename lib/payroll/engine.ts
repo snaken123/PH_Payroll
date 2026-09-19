@@ -230,14 +230,33 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     let amount = new Decimal(allowance.amount);
 
     if (allowance.frequency === "DAILY") {
-      const workedDays = input.timesheets.filter(
-        (t) => t.status !== "ABSENT"
-      ).length;
-      if (workedDays > 0) {
+      if (input.timesheets.length > 0) {
+        let workedDays = new Decimal(0);
+        for (const t of input.timesheets) {
+          const totalHours = new Decimal(t.regularHours || 0).plus(t.overtimeHours || 0);
+          if (t.status === "PRESENT" || t.status === "LATE_UNDERTIME" || t.status === "WFH") {
+            workedDays = workedDays.plus(1);
+          } else if (t.status === "HALF_DAY") {
+            workedDays = workedDays.plus(0.5);
+          } else if (
+            (t.status === "LEAVE" || t.status === "SICK_LEAVE" || t.status === "VACATION_LEAVE") &&
+            new Decimal(t.regularHours || 0).greaterThan(0)
+          ) {
+            workedDays = workedDays.plus(1);
+          } else if (totalHours.greaterThan(0)) {
+            // Worked on a rest day, holiday, or non-working day
+            workedDays = workedDays.plus(1);
+          }
+        }
         amount = amount.times(workedDays);
-      } else if (input.timesheets.length === 0) {
-        const defaultCutoffDays = new Decimal(input.standardWorkDaysPerMonth || 22).div(2);
+      } else {
+        const defaultCutoffDays = new Decimal(input.standardWorkDaysPerMonth || 22).div(input.isSemiMonthly ? 2 : 1);
         amount = amount.times(defaultCutoffDays);
+      }
+    } else {
+      // MONTHLY allowance (or unspecified frequency): divide equally per pay period if semi-monthly
+      if (input.isSemiMonthly) {
+        amount = amount.div(2);
       }
     }
 
