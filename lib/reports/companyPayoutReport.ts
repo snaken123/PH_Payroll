@@ -251,7 +251,40 @@ export async function generateCompanyPayoutReport(
       const otherDeductions = Number(payslip.totalOtherDeductions);
       const net = Number(payslip.netPay);
 
-      // Internal Payout
+      let totalExternalIntercompanyAllowances = 0;
+      const intercompanyItems: Array<{ payingCompanyId: string; label: string; amount: number }> = [];
+
+      const currentComp = payslip.employee.compensationRecords[0];
+      if (currentComp && currentComp.allowances) {
+        for (const allowance of currentComp.allowances) {
+          if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
+            // Match actual calculated allowance line item from payslip
+            const lineItemMatch =
+              payslip.lineItems.find(
+                (li) =>
+                  li.category === "ALLOWANCE" &&
+                  li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
+              ) ||
+              payslip.lineItems.find(
+                (li) => li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
+              );
+
+            const allowanceAmount = lineItemMatch ? Number(lineItemMatch.amount) : Number(allowance.amount);
+            totalExternalIntercompanyAllowances += allowanceAmount;
+            intercompanyItems.push({
+              payingCompanyId: allowance.payingCompanyId,
+              label: allowance.label,
+              amount: allowanceAmount,
+            });
+          }
+        }
+      }
+
+      // Net and Gross for the primary company (excluding external intercompany allowances funded by other companies)
+      const primaryGross = Math.round(Math.max(0, gross - totalExternalIntercompanyAllowances) * 100) / 100;
+      const primaryNet = Math.round((net - totalExternalIntercompanyAllowances) * 100) / 100;
+
+      // Internal Payout for Primary Employer
       const primaryCompanyReport = companyReportMap.get(primaryCompanyId);
       if (primaryCompanyReport) {
         primaryCompanyReport.internalPayouts.push({
@@ -259,48 +292,30 @@ export async function generateCompanyPayoutReport(
           employeeNumber: payslip.employee.employeeNumber,
           employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
           positionTitle: payslip.employee.positionTitle,
-          grossPay: gross,
+          grossPay: primaryGross,
           statutoryDeductions: statDeductions,
           otherDeductions: otherDeductions,
-          netPay: net,
+          netPay: primaryNet,
           runLabel,
         });
-        primaryCompanyReport.totalInternalNet += net;
+        primaryCompanyReport.totalInternalNet += primaryNet;
       }
 
-      // Intercompany Payouts
-      const currentComp = payslip.employee.compensationRecords[0];
-      if (currentComp && currentComp.allowances) {
-        for (const allowance of currentComp.allowances) {
-          if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
-            const payingCoReport = companyReportMap.get(allowance.payingCompanyId);
-            if (payingCoReport) {
-              // Match actual calculated allowance line item from payslip
-              const lineItemMatch =
-                payslip.lineItems.find(
-                  (li) =>
-                    li.category === "ALLOWANCE" &&
-                    li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
-                ) ||
-                payslip.lineItems.find(
-                  (li) => li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
-                );
-
-              const allowanceAmount = lineItemMatch ? Number(lineItemMatch.amount) : Number(allowance.amount);
-
-              payingCoReport.intercompanyPayouts.push({
-                employeeId: payslip.employee.id,
-                employeeNumber: payslip.employee.employeeNumber,
-                employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
-                primaryCompany: payslip.employee.company.legalName,
-                itemLabel: allowance.label,
-                grossAmount: allowanceAmount,
-                netPay: allowanceAmount,
-                runLabel,
-              });
-              payingCoReport.totalIntercompanyNet += allowanceAmount;
-            }
-          }
+      // Intercompany Payouts for Funding Companies
+      for (const item of intercompanyItems) {
+        const payingCoReport = companyReportMap.get(item.payingCompanyId);
+        if (payingCoReport) {
+          payingCoReport.intercompanyPayouts.push({
+            employeeId: payslip.employee.id,
+            employeeNumber: payslip.employee.employeeNumber,
+            employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
+            primaryCompany: payslip.employee.company.legalName,
+            itemLabel: item.label,
+            grossAmount: item.amount,
+            netPay: item.amount,
+            runLabel,
+          });
+          payingCoReport.totalIntercompanyNet += item.amount;
         }
       }
     }
