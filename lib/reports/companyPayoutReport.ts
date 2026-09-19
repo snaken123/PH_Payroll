@@ -275,7 +275,19 @@ export async function generateCompanyPayoutReport(
           if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
             const payingCoReport = companyReportMap.get(allowance.payingCompanyId);
             if (payingCoReport) {
-              const allowanceAmount = Number(allowance.amount);
+              // Match actual calculated allowance line item from payslip
+              const lineItemMatch =
+                payslip.lineItems.find(
+                  (li) =>
+                    li.category === "ALLOWANCE" &&
+                    li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
+                ) ||
+                payslip.lineItems.find(
+                  (li) => li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
+                );
+
+              const allowanceAmount = lineItemMatch ? Number(lineItemMatch.amount) : Number(allowance.amount);
+
               payingCoReport.intercompanyPayouts.push({
                 employeeId: payslip.employee.id,
                 employeeNumber: payslip.employee.employeeNumber,

@@ -224,15 +224,15 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
         <View style={pdfStyles.kpiRow}>
           <View style={pdfStyles.kpiCard}>
             <Text style={pdfStyles.kpiTitle}>Total Group Net Payout</Text>
-            <Text style={pdfStyles.kpiValue}>₱{formatMoney(data.groupTotals.grandTotalNet)}</Text>
+            <Text style={pdfStyles.kpiValue}>PHP {formatMoney(data.groupTotals.grandTotalNet)}</Text>
           </View>
           <View style={pdfStyles.kpiCard}>
             <Text style={pdfStyles.kpiTitle}>Total Internal Payouts</Text>
-            <Text style={pdfStyles.kpiValue}>₱{formatMoney(data.groupTotals.totalInternalNet)}</Text>
+            <Text style={pdfStyles.kpiValue}>PHP {formatMoney(data.groupTotals.totalInternalNet)}</Text>
           </View>
           <View style={pdfStyles.kpiCard}>
             <Text style={pdfStyles.kpiTitle}>Total Intercompany Payouts</Text>
-            <Text style={pdfStyles.kpiValue}>₱{formatMoney(data.groupTotals.totalIntercompanyNet)}</Text>
+            <Text style={pdfStyles.kpiValue}>PHP {formatMoney(data.groupTotals.totalIntercompanyNet)}</Text>
           </View>
           <View style={pdfStyles.kpiCard}>
             <Text style={pdfStyles.kpiTitle}>Included Group Entities</Text>
@@ -248,13 +248,13 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
                 {company.companyName} ({company.companyCode})
               </Text>
               <Text style={pdfStyles.companyBadge}>
-                Grand Total: ₱{formatMoney(company.grandTotalNet)}
+                Grand Total: PHP {formatMoney(company.grandTotalNet)}
               </Text>
             </View>
 
             {/* Internal Payouts */}
             <Text style={pdfStyles.sectionSubtitle}>
-              Internal Payouts ({company.internalPayouts.length} Employees) — Total: ₱{formatMoney(company.totalInternalNet)}
+              Internal Payouts ({company.internalPayouts.length} Employees) — Total: PHP {formatMoney(company.totalInternalNet)}
             </Text>
             {company.internalPayouts.length === 0 ? (
               <Text style={[pdfStyles.cell, { color: "#94A3B8", fontStyle: "italic", marginBottom: 4 }]}>
@@ -277,10 +277,10 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
                     <Text style={[pdfStyles.cell, pdfStyles.colEmpNo]}>{emp.employeeNumber}</Text>
                     <Text style={[pdfStyles.boldCell, pdfStyles.colName]}>{emp.employeeName}</Text>
                     <Text style={[pdfStyles.cell, pdfStyles.colPosition]}>{emp.positionTitle || "—"}</Text>
-                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>₱{formatMoney(emp.grossPay)}</Text>
-                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>₱{formatMoney(emp.statutoryDeductions)}</Text>
-                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>₱{formatMoney(emp.otherDeductions)}</Text>
-                    <Text style={[pdfStyles.boldCell, pdfStyles.colAmount, { color: "#059669" }]}>₱{formatMoney(emp.netPay)}</Text>
+                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>PHP {formatMoney(emp.grossPay)}</Text>
+                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>PHP {formatMoney(emp.statutoryDeductions)}</Text>
+                    <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>PHP {formatMoney(emp.otherDeductions)}</Text>
+                    <Text style={[pdfStyles.boldCell, pdfStyles.colAmount, { color: "#059669" }]}>PHP {formatMoney(emp.netPay)}</Text>
                     <Text style={[pdfStyles.cell, pdfStyles.colRun]}>{emp.runLabel}</Text>
                   </View>
                 ))}
@@ -291,7 +291,7 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
             {company.intercompanyPayouts.length > 0 && (
               <>
                 <Text style={pdfStyles.sectionSubtitle}>
-                  Intercompany Cross-Funded Payouts ({company.intercompanyPayouts.length} Items) — Total: ₱{formatMoney(company.totalIntercompanyNet)}
+                  Intercompany Cross-Funded Payouts ({company.intercompanyPayouts.length} Items) — Total: PHP {formatMoney(company.totalIntercompanyNet)}
                 </Text>
                 <View style={pdfStyles.table}>
                   <View style={pdfStyles.headerRow}>
@@ -309,8 +309,8 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
                       <Text style={[pdfStyles.boldCell, pdfStyles.colName]}>{emp.employeeName}</Text>
                       <Text style={[pdfStyles.cell, pdfStyles.colPosition]}>{emp.primaryCompany}</Text>
                       <Text style={[pdfStyles.cell, pdfStyles.colPosition]}>{emp.itemLabel}</Text>
-                      <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>₱{formatMoney(emp.grossAmount)}</Text>
-                      <Text style={[pdfStyles.boldCell, pdfStyles.colAmount, { color: "#2563EB" }]}>₱{formatMoney(emp.netPay)}</Text>
+                      <Text style={[pdfStyles.cell, pdfStyles.colAmount]}>PHP {formatMoney(emp.grossAmount)}</Text>
+                      <Text style={[pdfStyles.boldCell, pdfStyles.colAmount, { color: "#2563EB" }]}>PHP {formatMoney(emp.netPay)}</Text>
                       <Text style={[pdfStyles.cell, pdfStyles.colRun]}>{emp.runLabel}</Text>
                     </View>
                   ))}
