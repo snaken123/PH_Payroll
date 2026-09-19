@@ -57,6 +57,8 @@ interface CompanyData {
   payDateOffsetDays: number;
   standardWorkDaysPerMonth: number;
   statutoryDeductionTiming?: "FIRST_HALF" | "SECOND_HALF" | "SPLIT";
+  basicPayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
+  allowancePayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
   includeOtherCompanyAllowancesInContributions?: boolean;
   attendanceStandardTimeIn?: string;
   attendanceStandardTimeOut?: string;
@@ -138,6 +140,8 @@ export function SettingsClient({
     payDateOffsetDays: company.payDateOffsetDays,
     standardWorkDaysPerMonth: company.standardWorkDaysPerMonth ?? 26,
     statutoryDeductionTiming: company.statutoryDeductionTiming ?? "SECOND_HALF",
+    basicPayFrequency: company.basicPayFrequency ?? "TWICE_A_MONTH",
+    allowancePayFrequency: company.allowancePayFrequency ?? "TWICE_A_MONTH",
     includeOtherCompanyAllowancesInContributions: company.includeOtherCompanyAllowancesInContributions ?? false,
     attendanceStandardTimeIn: company.attendanceStandardTimeIn ?? "09:30",
     attendanceStandardTimeOut: company.attendanceStandardTimeOut ?? "18:30",
@@ -482,6 +486,60 @@ export function SettingsClient({
                 </Select>
                 <p className="text-[11px] text-muted-foreground">
                   Controls when SSS, PhilHealth, and Pag-IBIG contributions are deducted during semi-monthly payroll runs.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="basicPayFrequency">Basic Pay Period Frequency</Label>
+                <Select
+                  value={formData.basicPayFrequency}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        basicPayFrequency: val as "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF",
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="basicPayFrequency">
+                    <SelectValue placeholder="Select basic pay frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TWICE_A_MONTH">Twice a Month (Default — Split 50/50 per cutoff)</SelectItem>
+                    <SelectItem value="ONCE_A_MONTH_SECOND_HALF">Once a Month — 2nd Half Cutoff (16th–End)</SelectItem>
+                    <SelectItem value="ONCE_A_MONTH_FIRST_HALF">Once a Month — 1st Half Cutoff (1st–15th)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Controls whether monthly-rate basic salary is paid twice a month (split per cutoff) or once a month.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="allowancePayFrequency">Allowance Pay Period Frequency</Label>
+                <Select
+                  value={formData.allowancePayFrequency}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        allowancePayFrequency: val as "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF",
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="allowancePayFrequency">
+                    <SelectValue placeholder="Select allowance pay frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TWICE_A_MONTH">Twice a Month (Default — Divide monthly allowances 50/50 per cutoff)</SelectItem>
+                    <SelectItem value="ONCE_A_MONTH_SECOND_HALF">Once a Month — 2nd Half Cutoff (16th–End)</SelectItem>
+                    <SelectItem value="ONCE_A_MONTH_FIRST_HALF">Once a Month — 1st Half Cutoff (1st–15th)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Controls whether monthly allowances are paid twice a month (split per cutoff) or once a month.
                 </p>
               </div>
 

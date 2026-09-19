@@ -11,6 +11,8 @@ export interface BasePayInput {
   timesheets: TimesheetFact[];
   /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to false if unsupplied. */
   isSemiMonthly?: boolean;
+  cutoffType?: "FIRST_HALF" | "SECOND_HALF" | "MONTHLY";
+  basicPayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
 }
 
 export interface BasePayResult {
@@ -98,8 +100,17 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
   );
   const lateUndertimeDeduction = hourlyRateEquivalent.times(lateUndertimeMinutes).dividedBy(60);
 
-  const grossBasicPay = input.isSemiMonthly ? rate.dividedBy(2) : rate;
-  const basePay = grossBasicPay.minus(absenceDeduction).minus(lateUndertimeDeduction);
+  let grossBasicPay: Decimal;
+  if (input.basicPayFrequency === "ONCE_A_MONTH_SECOND_HALF") {
+    grossBasicPay = input.cutoffType === "FIRST_HALF" ? new Decimal(0) : rate;
+  } else if (input.basicPayFrequency === "ONCE_A_MONTH_FIRST_HALF") {
+    grossBasicPay = input.cutoffType === "SECOND_HALF" ? new Decimal(0) : rate;
+  } else {
+    // TWICE_A_MONTH (Default)
+    grossBasicPay = input.isSemiMonthly ? rate.dividedBy(2) : rate;
+  }
+
+  const basePay = Decimal.max(0, grossBasicPay.minus(absenceDeduction).minus(lateUndertimeDeduction));
 
   return {
     dailyRateEquivalent,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StatutoryDeductionTiming } from "@/lib/generated/prisma/enums";
+import { StatutoryDeductionTiming, PayPeriodFrequency } from "@/lib/generated/prisma/enums";
 
 export const updateCompanySettingsSchema = z.object({
   legalName: z.string().min(1, "Legal Name is required"),
@@ -19,6 +19,8 @@ export const updateCompanySettingsSchema = z.object({
   payDateOffsetDays: z.number().int().min(0).max(30).default(5),
   standardWorkDaysPerMonth: z.number().min(1).max(31).default(26),
   statutoryDeductionTiming: z.nativeEnum(StatutoryDeductionTiming).default(StatutoryDeductionTiming.SECOND_HALF),
+  basicPayFrequency: z.nativeEnum(PayPeriodFrequency).default(PayPeriodFrequency.TWICE_A_MONTH),
+  allowancePayFrequency: z.nativeEnum(PayPeriodFrequency).default(PayPeriodFrequency.TWICE_A_MONTH),
   includeOtherCompanyAllowancesInContributions: z.boolean().optional().default(false),
   attendanceStandardTimeIn: z.string().default("09:30"),
   attendanceStandardTimeOut: z.string().default("18:30"),

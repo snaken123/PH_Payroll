@@ -324,5 +324,51 @@ describe("computePayroll — Allowance Rules (Monthly Division & Daily Days Work
     const allowanceLine = result.lineItems.find((li) => li.description === "Daily Meal Allowance");
     expect(allowanceLine?.amount.toNumber()).toBe(1050);
   });
+
+  it("pays 100% of basic pay and monthly allowance on 2nd half cutoff when set to ONCE_A_MONTH_SECOND_HALF", () => {
+    // 1st half cutoff: should pay 0 basic pay and 0 monthly allowance
+    const resultCutoff1 = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 30000,
+      standardWorkDaysPerMonth: 26,
+      isManagerialExempt: false,
+      isSemiMonthly: true,
+      cutoffType: "FIRST_HALF",
+      basicPayFrequency: "ONCE_A_MONTH_SECOND_HALF",
+      allowancePayFrequency: "ONCE_A_MONTH_SECOND_HALF",
+      timesheets: Array.from({ length: 11 }, () => fact()),
+      allowances: [{ label: "Executive Allowance", amount: 6000, frequency: "MONTHLY", isTaxable: true }],
+      isStatutoryDeductionCutoff: false,
+      monthlyEquivalentCompensation: 30000,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    const basicPay1 = resultCutoff1.lineItems.find((li) => li.category === "BASIC_PAY");
+    const allowance1 = resultCutoff1.lineItems.find((li) => li.description === "Executive Allowance");
+    expect(basicPay1?.amount.toNumber()).toBe(0);
+    expect(allowance1).toBeUndefined();
+
+    // 2nd half cutoff: should pay 100% of basic pay (30,000) and 100% of monthly allowance (6,000)
+    const resultCutoff2 = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 30000,
+      standardWorkDaysPerMonth: 26,
+      isManagerialExempt: false,
+      isSemiMonthly: true,
+      cutoffType: "SECOND_HALF",
+      basicPayFrequency: "ONCE_A_MONTH_SECOND_HALF",
+      allowancePayFrequency: "ONCE_A_MONTH_SECOND_HALF",
+      timesheets: Array.from({ length: 11 }, () => fact()),
+      allowances: [{ label: "Executive Allowance", amount: 6000, frequency: "MONTHLY", isTaxable: true }],
+      isStatutoryDeductionCutoff: true,
+      monthlyEquivalentCompensation: 30000,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    const basicPay2 = resultCutoff2.lineItems.find((li) => li.category === "BASIC_PAY");
+    const allowance2 = resultCutoff2.lineItems.find((li) => li.description === "Executive Allowance");
+    expect(basicPay2?.amount.toNumber()).toBe(30000);
+    expect(allowance2?.amount.toNumber()).toBe(6000);
+  });
 });
 

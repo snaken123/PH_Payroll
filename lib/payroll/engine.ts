@@ -67,6 +67,12 @@ export interface PayrollEngineInput {
   currentCompanyId?: string | null;
   /** Whether this cutoff is semi-monthly (15-day / twice per month). Defaults to true. */
   isSemiMonthly?: boolean;
+  /** Cutoff period type ("FIRST_HALF", "SECOND_HALF", "MONTHLY"). */
+  cutoffType?: "FIRST_HALF" | "SECOND_HALF" | "MONTHLY";
+  /** Basic pay pay-period frequency setting ("TWICE_A_MONTH", "ONCE_A_MONTH_SECOND_HALF", "ONCE_A_MONTH_FIRST_HALF"). */
+  basicPayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
+  /** Allowance pay-period frequency setting ("TWICE_A_MONTH", "ONCE_A_MONTH_SECOND_HALF", "ONCE_A_MONTH_FIRST_HALF"). */
+  allowancePayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
   /** Optional scale factor for statutory deductions (e.g. 0.5 when company timing is set to SPLIT across cutoffs). Defaults to 1. */
   statutoryDeductionScale?: Decimal.Value;
   /**
@@ -141,6 +147,8 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     standardWorkDaysPerMonth: input.standardWorkDaysPerMonth,
     timesheets: input.timesheets,
     isSemiMonthly: input.isSemiMonthly ?? false,
+    cutoffType: input.cutoffType,
+    basicPayFrequency: input.basicPayFrequency,
   });
   lineItems.push({
     category: "BASIC_PAY",
@@ -254,10 +262,21 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
         amount = amount.times(defaultCutoffDays);
       }
     } else {
-      // MONTHLY allowance (or unspecified frequency): divide equally per pay period if semi-monthly
-      if (input.isSemiMonthly) {
-        amount = amount.div(2);
+      // MONTHLY allowance (or unspecified frequency)
+      if (input.allowancePayFrequency === "ONCE_A_MONTH_SECOND_HALF") {
+        amount = input.cutoffType === "FIRST_HALF" ? zero : amount;
+      } else if (input.allowancePayFrequency === "ONCE_A_MONTH_FIRST_HALF") {
+        amount = input.cutoffType === "SECOND_HALF" ? zero : amount;
+      } else {
+        // TWICE_A_MONTH (Default): divide equally per pay period if semi-monthly
+        if (input.isSemiMonthly) {
+          amount = amount.div(2);
+        }
       }
+    }
+
+    if (amount.isZero() && (input.allowancePayFrequency === "ONCE_A_MONTH_SECOND_HALF" || input.allowancePayFrequency === "ONCE_A_MONTH_FIRST_HALF")) {
+      continue;
     }
 
     let nonTaxableAmount = zero;

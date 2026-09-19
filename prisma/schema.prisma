@@ -75,6 +75,12 @@ enum StatutoryDeductionTiming {
   SPLIT
 }
 
+enum PayPeriodFrequency {
+  TWICE_A_MONTH
+  ONCE_A_MONTH_SECOND_HALF
+  ONCE_A_MONTH_FIRST_HALF
+}
+
 model Company {
   id                       String                   @id @default(cuid())
   companyCode              String                   @unique
@@ -97,6 +103,8 @@ model Company {
   payDateOffsetDays        Int                      @default(5)
   standardWorkDaysPerMonth Float                    @default(26.0)
   statutoryDeductionTiming StatutoryDeductionTiming @default(SECOND_HALF)
+  basicPayFrequency        PayPeriodFrequency       @default(TWICE_A_MONTH)
+  allowancePayFrequency    PayPeriodFrequency       @default(TWICE_A_MONTH)
   includeOtherCompanyAllowancesInContributions Boolean @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("09:30")
