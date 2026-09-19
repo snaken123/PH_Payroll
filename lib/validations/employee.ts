@@ -259,27 +259,42 @@ export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema
 // point-in-time snapshot, not a value to be blanket-edited.
 export const bulkEmployeeRowSchema = z.object({
   employeeId: z.string().min(1),
+  companyName: z.string().optional(),
   employeeNumber: z.string().min(1, "Required"),
   firstName: z.string().min(1, "Required"),
   lastName: z.string().min(1, "Required"),
   middleName: z.string().optional(),
   birthDate: z.string().min(1, "Required"),
+  dateHired: z.string().optional(),
   sex: z.enum(sexValues),
   civilStatus: z.enum(civilStatusValues),
   positionTitle: z.string().min(1, "Required"),
   departmentName: z.string().optional(),
-  employmentStatus: z.enum(employmentStatusValues),
-  employeeType: z.enum(employeeTypeValues),
+  rank: z.string().optional(),
+  scheduleType: z.string().optional(),
   tin: z.string().optional(),
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
-  payBasis: z.enum(payBasisValues),
-  // 0 means "no rate yet" for an employee who has no CompensationRecord at
-  // all (the grid has to show something) — treated as "leave alone", not
-  // validated as a real rate. See the bulk route: a compensation record is
-  // only created/updated when this is actually greater than 0.
-  basicRate: z.coerce.number().min(0, "Must be 0 or greater"),
+  personalEmail: z.string().optional(),
+  mobileNumber: z.string().optional(),
+  currentAddress: z.string().optional(),
+  permanentAddress: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactRelationship: z.string().optional(),
+  emergencyContactNumber: z.string().optional(),
+  emergencyContactAddress: z.string().optional(),
+  paymentMethod: z.enum(paymentMethodValues).optional(),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankBranch: z.string().optional(),
+  isManagerialExempt: z.boolean().default(false),
+  isDeductSss: z.boolean().default(true),
+  isDeductPhilhealth: z.boolean().default(true),
+  isDeductPagibig: z.boolean().default(true),
+  isDeductWithholdingTax: z.boolean().default(true),
+  payBasis: z.enum(payBasisValues).optional(),
+  basicRate: z.coerce.number().min(0, "Must be 0 or greater").optional(),
 });
 export type BulkEmployeeRow = z.output<typeof bulkEmployeeRowSchema>;
 

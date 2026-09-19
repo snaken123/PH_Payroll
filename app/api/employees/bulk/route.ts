@@ -63,16 +63,34 @@ export async function PATCH(request: Request) {
             lastName: row.lastName,
             middleName: row.middleName || null,
             birthDate: new Date(row.birthDate),
+            dateHired: row.dateHired ? new Date(row.dateHired) : undefined,
             sex: row.sex,
             civilStatus: row.civilStatus,
             positionTitle: row.positionTitle,
             departmentName: row.departmentName || null,
-            employmentStatus: row.employmentStatus,
-            employeeType: row.employeeType,
+            rank: row.rank || null,
+            scheduleType: row.scheduleType || null,
             tin: row.tin || null,
             sssNumber: row.sssNumber || null,
             philhealthNumber: row.philhealthNumber || null,
             pagibigNumber: row.pagibigNumber || null,
+            personalEmail: row.personalEmail || null,
+            mobileNumber: row.mobileNumber || null,
+            currentAddress: row.currentAddress || null,
+            permanentAddress: row.permanentAddress || null,
+            emergencyContactName: row.emergencyContactName || null,
+            emergencyContactRelationship: row.emergencyContactRelationship || null,
+            emergencyContactNumber: row.emergencyContactNumber || null,
+            emergencyContactAddress: row.emergencyContactAddress || null,
+            paymentMethod: row.paymentMethod,
+            bankName: row.bankName || null,
+            bankAccountNumber: row.bankAccountNumber || null,
+            bankBranch: row.bankBranch || null,
+            isManagerialExempt: row.isManagerialExempt,
+            isDeductSss: row.isDeductSss,
+            isDeductPhilhealth: row.isDeductPhilhealth,
+            isDeductPagibig: row.isDeductPagibig,
+            isDeductWithholdingTax: row.isDeductWithholdingTax,
           },
         });
 
@@ -81,9 +99,11 @@ export async function PATCH(request: Request) {
         // CompensationRecord at all — never create one from a bare 0, that
         // would fabricate a real (wrong) rate the moment someone saves the
         // grid without touching this employee's row.
+        const basicRate = row.basicRate ?? 0;
+        const payBasis = row.payBasis ?? "MONTHLY_RATE";
         const rateChanged =
-          row.basicRate > 0 &&
-          (!currentComp || currentComp.payBasis !== row.payBasis || currentComp.basicRate.toNumber() !== row.basicRate);
+          basicRate > 0 &&
+          (!currentComp || currentComp.payBasis !== payBasis || currentComp.basicRate.toNumber() !== basicRate);
 
         if (rateChanged) {
           if (currentComp) {
@@ -96,8 +116,8 @@ export async function PATCH(request: Request) {
             data: {
               employeeId: row.employeeId,
               effectiveFrom,
-              payBasis: row.payBasis,
-              basicRate: row.basicRate,
+              payBasis,
+              basicRate,
               createdByUserId: ctx.userId,
             },
           });
