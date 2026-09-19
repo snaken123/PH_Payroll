@@ -101,7 +101,26 @@ export function BulkEditEmployeesTable({
     });
   }
 
+  // Detect duplicate employee numbers in the table grid
+  const duplicateEmpIds = new Set<string>();
+  const seenEmpIds = new Map<string, string>();
+  for (const row of rows) {
+    const num = row.employeeNumber?.trim();
+    if (!num) continue;
+    if (seenEmpIds.has(num)) {
+      duplicateEmpIds.add(num);
+    } else {
+      seenEmpIds.set(num, `${row.firstName} ${row.lastName}`);
+    }
+  }
+
   async function saveAll() {
+    if (duplicateEmpIds.size > 0) {
+      const dupList = Array.from(duplicateEmpIds).join(", ");
+      toast.error(`Duplicate EMP_ID in table (${dupList}). Each employee must have a unique EMP_ID.`);
+      return;
+    }
+
     setSaving(true);
     const res = await fetch("/api/employees/bulk", {
       method: "PATCH",
@@ -181,12 +200,21 @@ export function BulkEditEmployeesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedRows.map((row) => (
-              <TableRow key={row.employeeId}>
-                {/* 1. EMP_ID */}
-                <TableCell>
-                  <Input className="w-28 font-semibold" value={row.employeeNumber} onChange={(e) => updateCell(row.employeeId, "employeeNumber", e.target.value)} />
-                </TableCell>
+            {sortedRows.map((row) => {
+              const isDuplicate = duplicateEmpIds.has(row.employeeNumber.trim());
+              return (
+                <TableRow key={row.employeeId}>
+                  {/* 1. EMP_ID */}
+                  <TableCell>
+                    <Input
+                      className={`w-28 font-semibold ${
+                        isDuplicate ? "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/40 focus:ring-red-500" : ""
+                      }`}
+                      value={row.employeeNumber}
+                      title={isDuplicate ? `Duplicate EMP_ID "${row.employeeNumber}" detected` : undefined}
+                      onChange={(e) => updateCell(row.employeeId, "employeeNumber", e.target.value)}
+                    />
+                  </TableCell>
 
                 {/* 2. Company */}
                 <TableCell>
@@ -405,7 +433,8 @@ export function BulkEditEmployeesTable({
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            );
+          })}
           </TableBody>
         </Table>
       </div>

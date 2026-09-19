@@ -48,6 +48,48 @@ export async function PATCH(request: Request) {
     }
   }
 
+  // Check for duplicates within the submitted table payload itself
+  const seenNumbers = new Map<string, string>();
+  for (const row of parsed.data.rows) {
+    const num = row.employeeNumber?.trim();
+    if (!num) continue;
+    if (seenNumbers.has(num)) {
+      const firstOccurred = seenNumbers.get(num);
+      return NextResponse.json(
+        {
+          error: `Employee number "${num}" is used more than once in your table (${firstOccurred} and ${row.firstName} ${row.lastName}). Each employee must have a unique EMP_ID.`,
+        },
+        { status: 400 }
+      );
+    }
+    seenNumbers.set(num, `${row.firstName} ${row.lastName}`);
+  }
+
+  // Check for collisions with other employees in DB not included in this bulk update batch
+  const targetCompanyId = existingEmployees[0]?.companyId;
+  if (targetCompanyId) {
+    const submittedNumbers = parsed.data.rows.map((r) => r.employeeNumber.trim()).filter(Boolean);
+    const existingConflicts = await prisma.employee.findMany({
+      where: {
+        companyId: targetCompanyId,
+        employeeNumber: { in: submittedNumbers },
+        id: { notIn: employeeIds },
+      },
+      select: { employeeNumber: true, firstName: true, lastName: true, isDeleted: true },
+    });
+
+    if (existingConflicts.length > 0) {
+      const conflict = existingConflicts[0];
+      const archiveStatus = conflict.isDeleted ? " (archived/deleted record)" : "";
+      return NextResponse.json(
+        {
+          error: `Employee number "${conflict.employeeNumber}" is already in use by ${conflict.firstName} ${conflict.lastName}${archiveStatus}.`,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const effectiveFrom = new Date();
 
   try {
