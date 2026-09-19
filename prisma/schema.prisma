@@ -289,6 +289,7 @@ model Employee {
   pagibigDeductionMode     StatutoryDeductionMode @default(TABLE)
   pagibigCustomAmountEe    Decimal?               @db.Decimal(14, 2)
   pagibigCustomAmountEr    Decimal?               @db.Decimal(14, 2)
+  isDeductWithholdingTax   Boolean                @default(true)
   isDeleted                Boolean                @default(false)
   deletedAt                DateTime?
   deletedByUserId          String?

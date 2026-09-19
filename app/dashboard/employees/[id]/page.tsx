@@ -195,6 +195,7 @@ export default async function EmployeeDetailPage({
                 pagibigDeductionMode: employee.pagibigDeductionMode,
                 pagibigCustomAmountEe: employee.pagibigCustomAmountEe ? Number(employee.pagibigCustomAmountEe) : undefined,
                 pagibigCustomAmountEr: employee.pagibigCustomAmountEr ? Number(employee.pagibigCustomAmountEr) : undefined,
+                isDeductWithholdingTax: employee.isDeductWithholdingTax,
               }}
             />
             <DeleteEmployeeDialog
@@ -427,11 +428,19 @@ export default async function EmployeeDetailPage({
                 </span>
               </div>
             </div>
-            <div className="flex justify-between py-1 items-center">
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
               <span className="text-slate-500 font-medium">Pag-IBIG Contribution</span>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
                   {employee.isDeductPagibig ? (employee.pagibigDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.pagibigCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between py-1 items-center">
+              <span className="text-slate-500 font-medium">Withholding Tax (BIR)</span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductWithholdingTax ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                  {employee.isDeductWithholdingTax ? "Active (Table Rate)" : "Exempt / Off"}
                 </span>
               </div>
             </div>

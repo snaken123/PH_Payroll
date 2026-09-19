@@ -518,6 +518,18 @@ export function EditEmployeeProfileDialog({
                 ) : <></>}
               />
             </div>
+
+            {/* Withholding Tax Group */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                  <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductWithholdingTax")} />
+                  <span>Withholding Tax Deduction</span>
+                </label>
+                <span className="text-[11px] text-slate-500">Standard BIR Table</span>
+              </div>
+              <p className="text-[11px] text-slate-500">Uncheck to disable withholding tax computation for this employee.</p>
+            </div>
           </div>
 
           <DialogFooter className="sm:col-span-2">

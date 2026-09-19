@@ -84,6 +84,7 @@ export const createEmployeeSchema = z.object({
   pagibigDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
   pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
   pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductWithholdingTax: z.boolean().default(true),
   employeeType: z.enum(employeeTypeValues),
   isManagerialExempt: z.boolean().default(false),
   dateHired: z.string().min(1, "Required"),
@@ -183,6 +184,7 @@ export const updateEmployeeSchema = z.object({
   pagibigDeductionMode: z.enum(statutoryDeductionModeValues).optional(),
   pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
   pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductWithholdingTax: z.boolean().optional(),
   positionTitle: z.string().min(1).optional(),
   departmentName: z.string().optional().nullable(),
   rank: z.string().optional().nullable(),
@@ -246,6 +248,7 @@ export const editEmployeeProfileSchema = z.object({
   pagibigDeductionMode: z.enum(statutoryDeductionModeValues).default("TABLE"),
   pagibigCustomAmountEe: optionalCoercedNumber(z.coerce.number().min(0)),
   pagibigCustomAmountEr: optionalCoercedNumber(z.coerce.number().min(0)),
+  isDeductWithholdingTax: z.boolean().default(true),
 });
 export type EditEmployeeProfileFormValues = z.input<typeof editEmployeeProfileSchema>;
 export type EditEmployeeProfileInput = z.output<typeof editEmployeeProfileSchema>;

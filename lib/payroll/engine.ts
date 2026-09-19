@@ -98,6 +98,8 @@ export interface PayrollEngineInput {
   pagibigCustomAmountEe?: Decimal.Value | null;
   pagibigCustomAmountEr?: Decimal.Value | null;
 
+  isDeductWithholdingTax?: boolean;
+
   rates: {
     sssBrackets: SssBracketRow[];
     philhealthConfig: PhilhealthConfigRow;
@@ -398,25 +400,30 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     statutoryEeTotal = sssEe.plus(phEe).plus(pagibigEe);
   }
 
-  // Withholding tax runs every cutoff (it's inherently a per-period concept,
-  // unlike SSS/PhilHealth/Pag-IBIG) on THIS cutoff's actual taxable gross:
+  // Withholding tax runs every cutoff on THIS cutoff's actual taxable gross:
   // gross pay minus non-taxable (de minimis capped) allowances minus whatever
   // SSS/PhilHealth/Pag-IBIG EE share was actually deducted this cutoff.
-  const taxableIncome = Decimal.max(
-    grossPay.minus(nonTaxableAllowances).minus(statutoryEeTotal),
-    0
-  );
-  const withholding = getWithholdingTax(taxableIncome, "SEMI_MONTHLY", input.rates.birBrackets);
-  if (withholding.tax.greaterThan(0)) {
-    lineItems.push({
-      category: "WITHHOLDING_TAX",
-      direction: "DEDUCTION",
-      description: "Withholding tax",
-      amount: withholding.tax,
-    });
+  const isDeductWithholdingTax = input.isDeductWithholdingTax ?? true;
+  let withholdingTaxAmount = zero;
+
+  if (isDeductWithholdingTax) {
+    const taxableIncome = Decimal.max(
+      grossPay.minus(nonTaxableAllowances).minus(statutoryEeTotal),
+      0
+    );
+    const withholding = getWithholdingTax(taxableIncome, "SEMI_MONTHLY", input.rates.birBrackets);
+    if (withholding.tax.greaterThan(0)) {
+      withholdingTaxAmount = withholding.tax;
+      lineItems.push({
+        category: "WITHHOLDING_TAX",
+        direction: "DEDUCTION",
+        description: "Withholding tax",
+        amount: withholding.tax,
+      });
+    }
   }
 
-  const totalStatutoryDeductions = statutoryEeTotal.plus(withholding.tax);
+  const totalStatutoryDeductions = statutoryEeTotal.plus(withholdingTaxAmount);
 
   // 5. Loans/cash advances — never exceed gross minus statutory deductions,
   // so net pay can't go negative from a loan installment.

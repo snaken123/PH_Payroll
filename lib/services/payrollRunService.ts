@@ -248,6 +248,7 @@ export async function computeAndPersistPayrollRun({
         pagibigDeductionMode: emp.pagibigDeductionMode,
         pagibigCustomAmountEe: emp.pagibigCustomAmountEe ? emp.pagibigCustomAmountEe.toString() : null,
         pagibigCustomAmountEr: emp.pagibigCustomAmountEr ? emp.pagibigCustomAmountEr.toString() : null,
+        isDeductWithholdingTax: emp.isDeductWithholdingTax,
         monthlyEquivalentCompensation: monthlyEquivalentCompensation.toString(),
         rates: rateInputs,
         activeLoans,
