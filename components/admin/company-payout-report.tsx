@@ -448,6 +448,64 @@ export function CompanyPayoutReport() {
         <div className="py-12 text-center text-xs text-slate-500">No company payout records found for the selected company, employee, and run filters.</div>
       ) : (
         <div className="space-y-6">
+          {/* Company Net Outlay Summary Table */}
+          <Card className="border-slate-800 bg-slate-900/90 shadow-md">
+            <CardHeader className="border-b border-slate-800 pb-3">
+              <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                <Building2Icon className="size-4 text-blue-400" />
+                Company Net Outlay Summary
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Summary of internal and intercompany net payouts per entity. The total net outlay matches the Total Group Net Payout.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-950/60">
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableHead className="text-xs font-bold text-slate-300">Company Entity</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-300 text-right">Internal Net Payout</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-300 text-right">Intercompany Net Payout</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-300 text-right">Total Net Outlay</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportData.map((company) => (
+                    <TableRow key={company.companyId} className="border-slate-800/60 hover:bg-slate-800/40">
+                      <TableCell className="text-xs font-medium text-slate-200">
+                        {company.companyName}{" "}
+                        <span className="text-slate-400 font-mono">({company.companyCode})</span>
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-mono text-slate-300">
+                        ₱{company.totalInternalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-mono text-blue-300">
+                        ₱{company.totalIntercompanyNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-mono font-semibold text-emerald-400">
+                        ₱{company.grandTotalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-t-2 border-slate-700 bg-slate-950/80 font-bold">
+                    <TableCell className="text-xs font-bold text-white">
+                      Total Group Net Outlay ({reportData.length} Companies)
+                    </TableCell>
+                    <TableCell className="text-xs text-right font-mono font-bold text-slate-200">
+                      ₱{groupTotals.totalInternalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-xs text-right font-mono font-bold text-blue-300">
+                      ₱{groupTotals.totalIntercompanyNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-xs text-right font-mono font-bold text-emerald-400 text-sm">
+                      ₱{groupTotals.grandTotalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {reportData.map((companyReport) => {
             const allInternalSelected = companyReport.internalPayouts.length > 0 &&
               companyReport.internalPayouts.every((i) => selectedEmployeeIds.includes(i.employeeId));

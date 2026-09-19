@@ -240,6 +240,47 @@ export function CompanyPayoutDocument({ data }: { data: CompanyPayoutPdfData }) 
           </View>
         </View>
 
+        {/* Company Net Outlay Summary Table */}
+        <Text style={pdfStyles.sectionSubtitle}>
+          Company Net Outlay Summary ({data.reportData.length} Companies)
+        </Text>
+        <View style={[pdfStyles.table, { marginBottom: 12 }]} wrap={false}>
+          <View style={pdfStyles.headerRow}>
+            <Text style={[pdfStyles.headerCell, { width: "40%" }]}>Company Entity</Text>
+            <Text style={[pdfStyles.headerCell, { width: "20%", textAlign: "right" }]}>Internal Net Payout</Text>
+            <Text style={[pdfStyles.headerCell, { width: "20%", textAlign: "right" }]}>Intercompany Net Payout</Text>
+            <Text style={[pdfStyles.headerCell, { width: "20%", textAlign: "right" }]}>Total Net Outlay</Text>
+          </View>
+          {data.reportData.map((company) => (
+            <View key={company.companyId} style={pdfStyles.row}>
+              <Text style={[pdfStyles.cell, { width: "40%", fontFamily: "Helvetica-Bold" }]}>
+                {company.companyName} ({company.companyCode})
+              </Text>
+              <Text style={[pdfStyles.cell, { width: "20%", textAlign: "right" }]}>
+                PHP {formatMoney(company.totalInternalNet)}
+              </Text>
+              <Text style={[pdfStyles.cell, { width: "20%", textAlign: "right" }]}>
+                PHP {formatMoney(company.totalIntercompanyNet)}
+              </Text>
+              <Text style={[pdfStyles.cell, { width: "20%", textAlign: "right", fontFamily: "Helvetica-Bold" }]}>
+                PHP {formatMoney(company.grandTotalNet)}
+              </Text>
+            </View>
+          ))}
+          <View style={pdfStyles.totalsRow}>
+            <Text style={[pdfStyles.boldCell, { width: "40%" }]}>Total Group Net Outlay</Text>
+            <Text style={[pdfStyles.boldCell, { width: "20%", textAlign: "right" }]}>
+              PHP {formatMoney(data.groupTotals.totalInternalNet)}
+            </Text>
+            <Text style={[pdfStyles.boldCell, { width: "20%", textAlign: "right" }]}>
+              PHP {formatMoney(data.groupTotals.totalIntercompanyNet)}
+            </Text>
+            <Text style={[pdfStyles.boldCell, { width: "20%", textAlign: "right" }]}>
+              PHP {formatMoney(data.groupTotals.grandTotalNet)}
+            </Text>
+          </View>
+        </View>
+
         {/* Company Breakdown List */}
         {data.reportData.map((company) => (
           <View key={company.companyId} wrap={false}>
