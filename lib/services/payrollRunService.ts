@@ -22,6 +22,7 @@ export async function computeAndPersistPayrollRun({
   computedByUserId,
   replacesRunId,
   approvedOtEmployeeIds,
+  targetRunId,
 }: {
   companyId: string;
   cutoffStart: Date;
@@ -31,6 +32,7 @@ export async function computeAndPersistPayrollRun({
   computedByUserId: string;
   replacesRunId?: string;
   approvedOtEmployeeIds?: string[];
+  targetRunId?: string;
 }) {
   const period = await prisma.payrollPeriod.upsert({
     where: { companyId_cutoffStart_cutoffEnd: { companyId, cutoffStart, cutoffEnd } },
@@ -139,6 +141,7 @@ export async function computeAndPersistPayrollRun({
       companyId,
       payrollPeriodId: period.id,
       status: { in: ["DRAFT", "PENDING_APPROVAL"] },
+      ...(targetRunId ? { id: { not: targetRunId } } : {}),
     },
   });
   if (existingActiveRun) {
@@ -147,25 +150,41 @@ export async function computeAndPersistPayrollRun({
     );
   }
 
-  const lastRun = await prisma.payrollRun.findFirst({
-    where: { companyId },
-    orderBy: { runNumber: "desc" },
-  });
-  const runNumber = (lastRun?.runNumber ?? 0) + 1;
-
   const runId = await prisma.$transaction(async (tx) => {
-    const run = await tx.payrollRun.create({
-      data: {
-        companyId,
-        payrollPeriodId: period.id,
-        status: "DRAFT",
-        runNumber,
-        computedAt: new Date(),
-        computedByUserId,
-        replacesRunId: replacesRunId ?? null,
-        statutoryRateSnapshot,
-      },
-    });
+    if (targetRunId) {
+      await tx.payslip.deleteMany({ where: { payrollRunId: targetRunId } });
+      await tx.loanDeduction.deleteMany({ where: { payrollRunId: targetRunId } });
+    }
+
+    let run;
+    if (targetRunId) {
+      run = await tx.payrollRun.update({
+        where: { id: targetRunId },
+        data: {
+          computedAt: new Date(),
+          computedByUserId,
+          statutoryRateSnapshot,
+        },
+      });
+    } else {
+      const lastRun = await tx.payrollRun.findFirst({
+        where: { companyId },
+        orderBy: { runNumber: "desc" },
+      });
+      const runNumber = (lastRun?.runNumber ?? 0) + 1;
+      run = await tx.payrollRun.create({
+        data: {
+          companyId,
+          payrollPeriodId: period.id,
+          status: "DRAFT",
+          runNumber,
+          computedAt: new Date(),
+          computedByUserId,
+          replacesRunId: replacesRunId ?? null,
+          statutoryRateSnapshot,
+        },
+      });
+    }
 
     // Pure computation pass — no DB calls — so the DB writes below can be batched
     // instead of awaited one employee at a time inside the open transaction.

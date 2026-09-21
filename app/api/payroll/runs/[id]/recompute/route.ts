@@ -44,17 +44,15 @@ export async function POST(
 
   try {
     let replacesRunId: string | undefined = undefined;
+    let targetRunId: string | undefined = undefined;
 
     if (existing.status === "APPROVED") {
       // Never delete an approved run — create a new draft replacing it.
       // When the new draft gets approved, the old run's status becomes SUPERSEDED.
       replacesRunId = existing.id;
     } else {
-      // Unapproved drafts can be recalculated by clearing old draft data
-      await prisma.$transaction(async (tx) => {
-        await tx.payslip.deleteMany({ where: { payrollRunId: existing.id } });
-        await tx.payrollRun.delete({ where: { id: existing.id } });
-      });
+      // Unapproved draft/pending runs are recomputed in-place to preserve run ID
+      targetRunId = existing.id;
     }
 
     const newRunId = await computeAndPersistPayrollRun({
@@ -65,6 +63,7 @@ export async function POST(
       periodType: existing.payrollPeriod.periodType,
       computedByUserId: ctx.userId,
       replacesRunId,
+      targetRunId,
       approvedOtEmployeeIds,
     });
 
