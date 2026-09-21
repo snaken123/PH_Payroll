@@ -505,17 +505,32 @@ export function AttendanceGrid() {
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : (
         <>
-          <div className="flex justify-end">
-            <Button onClick={saveAll} disabled={saving}>
+          <div className="flex flex-wrap items-center justify-between gap-3 py-1">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <span className="font-medium text-muted-foreground">Color key:</span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-100 text-red-900 text-[11px] font-medium dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+                <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                Absent (Red)
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-yellow-200 bg-yellow-100 text-yellow-900 text-[11px] font-medium dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-200">
+                <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                Missing Hours (&lt; 8h) (Yellow)
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-cyan-200 bg-cyan-100 text-cyan-900 text-[11px] font-medium dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
+                <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
+                Overtime (&gt; 0h) (Cyan)
+              </div>
+            </div>
+            <Button onClick={saveAll} disabled={saving} size="sm">
               {saving ? "Saving..." : "Save all"}
             </Button>
           </div>
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="sticky left-0 z-10 w-56 whitespace-nowrap bg-background">
-                    <div className="flex items-center gap-2">
+                <TableRow className="bg-slate-50 dark:bg-slate-900">
+                  <TableHead className="sticky left-0 z-10 w-44 min-w-[160px] whitespace-nowrap bg-slate-50 dark:bg-slate-900 px-2 py-1 text-xs border-r">
+                    <div className="flex items-center gap-1.5">
                       <Checkbox
                         checked={filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedEmployees.has(e.id))}
                         onCheckedChange={(checked) => toggleAllEmployees(!!checked)}
@@ -525,21 +540,21 @@ export function AttendanceGrid() {
                     </div>
                   </TableHead>
                   {dates.map((date) => (
-                    <TableHead key={date} className="w-36 min-w-[144px] whitespace-nowrap">
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1">
+                    <TableHead key={date} className="w-[84px] min-w-[84px] px-0.5 py-1 whitespace-nowrap text-center border-r">
+                      <div className="flex items-center justify-between gap-0.5">
+                        <div className="flex items-center gap-0.5">
                           <Checkbox
                             checked={selectedDates.has(date)}
                             onCheckedChange={() => toggleDate(date)}
                             aria-label={`Select column ${date}`}
                           />
-                          <span className="text-xs font-semibold">{date.slice(5)}</span>
+                          <span className="text-[10px] font-bold">{date.slice(5)}</span>
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             render={
-                              <Button variant="ghost" size="icon-xs" title={`Actions for ${date}`}>
-                                <MoreVerticalIcon className="size-3.5 text-muted-foreground" />
+                              <Button variant="ghost" size="icon-xs" className="h-4 w-4 p-0" title={`Actions for ${date}`}>
+                                <MoreVerticalIcon className="size-3 text-muted-foreground" />
                               </Button>
                             }
                           />
@@ -633,49 +648,77 @@ export function AttendanceGrid() {
               </TableHeader>
               <TableBody>
                 {filteredEmployees.map((emp) => (
-                  <TableRow key={emp.id}>
-                    <TableCell className="sticky left-0 z-10 whitespace-nowrap bg-background">
-                      <div className="flex items-center gap-2">
+                  <TableRow key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
+                    <TableCell className="sticky left-0 z-10 whitespace-nowrap bg-background px-2 py-1 border-r">
+                      <div className="flex items-center gap-1.5">
                         <Checkbox
                           checked={selectedEmployees.has(emp.id)}
                           onCheckedChange={() => toggleEmployee(emp.id)}
                           aria-label={`Select ${emp.lastName}, ${emp.firstName}`}
                         />
-                        <span className="text-sm">
-                          {emp.lastName}, {emp.firstName} ({emp.employeeNumber})
-                        </span>
+                        <div className="flex flex-col min-w-0" title={`${emp.lastName}, ${emp.firstName} (${emp.employeeNumber})`}>
+                          <span className="text-xs font-semibold truncate max-w-[130px]">
+                            {emp.lastName}, {emp.firstName}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {emp.employeeNumber}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     {dates.map((date) => {
                       const c = cells[cellKey(emp.id, date)];
-                      if (!c) return <TableCell key={date} />;
+                      if (!c) return <TableCell key={date} className="border-r" />;
+
+                      const isAbsent = c.status === "ABSENT";
+                      const isMissingHours =
+                        !isAbsent &&
+                        !c.isRestDay &&
+                        c.status !== "HOLIDAY" &&
+                        c.regularHours < (c.scheduledHours > 0 ? c.scheduledHours : 8);
+                      const hasOvertime = c.overtimeHours > 0;
+
+                      let bgStyle = "";
+                      let triggerStyle = "bg-background/90";
+
+                      if (isAbsent) {
+                        bgStyle = "bg-red-100/90 dark:bg-red-950/70 border-red-200 dark:border-red-900";
+                        triggerStyle = "bg-red-200/90 dark:bg-red-900/90 text-red-950 dark:text-red-100 border-red-300 dark:border-red-700 font-bold";
+                      } else if (isMissingHours) {
+                        bgStyle = "bg-yellow-100/90 dark:bg-yellow-950/70 border-yellow-200 dark:border-yellow-900";
+                        triggerStyle = "bg-yellow-200/90 dark:bg-yellow-900/90 text-yellow-950 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700 font-bold";
+                      } else if (hasOvertime) {
+                        bgStyle = "bg-cyan-100/90 dark:bg-cyan-950/70 border-cyan-200 dark:border-cyan-900";
+                        triggerStyle = "bg-cyan-200/90 dark:bg-cyan-900/90 text-cyan-950 dark:text-cyan-100 border-cyan-300 dark:border-cyan-700 font-bold";
+                      }
+
                       return (
-                        <TableCell key={date} className="p-1 align-top">
-                          <div className="flex w-32 flex-col gap-1">
+                        <TableCell key={date} className={`p-0.5 align-top border-r transition-colors ${bgStyle}`}>
+                          <div className="flex w-[78px] flex-col gap-0.5 mx-auto">
                             <Select value={c.status} onValueChange={(v) => v && updateCell(emp.id, date, { status: v })}>
-                              <SelectTrigger className="h-7 px-1.5 text-xs">
+                              <SelectTrigger className={`h-5 px-1 py-0 text-[9px] font-bold tracking-tight rounded ${triggerStyle}`}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 {timesheetStatusValues.map((v) => (
-                                  <SelectItem key={v} value={v}>
+                                  <SelectItem key={v} value={v} className="text-[11px] py-1">
                                     {v.replaceAll("_", " ")}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center justify-between gap-0.5">
                               <div
                                 onClick={() => setEditingCell({ employeeId: emp.id, date })}
-                                className="h-7 w-12 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 font-mono text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 cursor-pointer select-none hover:border-slate-300 dark:hover:border-slate-700"
-                                title="Regular hours (read-only, click pencil to edit)"
+                                className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
+                                title="Regular hours (click pencil to edit)"
                               >
                                 {c.regularHours}
                               </div>
                               <div
                                 onClick={() => setEditingCell({ employeeId: emp.id, date })}
-                                className="h-7 w-12 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 font-mono text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 cursor-pointer select-none hover:border-slate-300 dark:hover:border-slate-700"
-                                title="Overtime hours (read-only, click pencil to edit)"
+                                className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
+                                title="Overtime hours (click pencil to edit)"
                               >
                                 {c.overtimeHours}
                               </div>
@@ -683,11 +726,12 @@ export function AttendanceGrid() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-xs"
+                                className="h-5 w-4 p-0 shrink-0 hover:bg-black/10 dark:hover:bg-white/10"
                                 onClick={() => setEditingCell({ employeeId: emp.id, date })}
                                 aria-label={`More details for ${emp.lastName} on ${date}`}
                                 title="Time in/out, late, undertime, night diff, rest day, holiday"
                               >
-                                <PencilIcon />
+                                <PencilIcon className="size-2.5 text-slate-600 dark:text-slate-400" />
                               </Button>
                             </div>
                           </div>
@@ -700,7 +744,7 @@ export function AttendanceGrid() {
             </Table>
           </div>
           <div className="flex justify-end">
-            <Button onClick={saveAll} disabled={saving}>
+            <Button onClick={saveAll} disabled={saving} size="sm">
               {saving ? "Saving..." : "Save all"}
             </Button>
           </div>
