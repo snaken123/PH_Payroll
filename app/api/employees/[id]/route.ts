@@ -41,6 +41,12 @@ export async function PATCH(
 
   try {
     const employee = await prisma.employee.update({ where: { id }, data });
+    if (data.companyId && typeof data.companyId === "string") {
+      await prisma.loan.updateMany({
+        where: { employeeId: id },
+        data: { companyId: data.companyId as string },
+      });
+    }
     return NextResponse.json({ employee });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
