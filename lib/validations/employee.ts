@@ -110,6 +110,7 @@ export type CreateEmployeeInput = z.output<typeof createEmployeeSchema>;
 export const employmentStatusValues = [
   "PROBATIONARY",
   "REGULAR",
+  "RETAINER",
   "RESIGNED",
   "TERMINATED",
   "AWOL",
@@ -201,6 +202,7 @@ export const updateEmployeeSchema = z.object({
   separationReason: z.string().optional().nullable(),
   separationCategory: z.enum(separationCategoryValues).optional(),
   clearanceCompleted: z.boolean().optional(),
+  notes: z.string().optional().nullable(),
 });
 export type UpdateEmployeeInput = z.output<typeof updateEmployeeSchema>;
 

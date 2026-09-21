@@ -22,6 +22,7 @@ export async function computeAndPersistPayrollRun({
   computedByUserId,
   replacesRunId,
   approvedOtEmployeeIds,
+  approvedOtHoursMap,
   targetRunId,
 }: {
   companyId: string;
@@ -32,6 +33,7 @@ export async function computeAndPersistPayrollRun({
   computedByUserId: string;
   replacesRunId?: string;
   approvedOtEmployeeIds?: string[];
+  approvedOtHoursMap?: Record<string, number>;
   targetRunId?: string;
 }) {
   const period = await prisma.payrollPeriod.upsert({
@@ -64,7 +66,7 @@ export async function computeAndPersistPayrollRun({
     where: {
       companyId,
       isDeleted: false,
-      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
+      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
     },
     include: {
       compensationRecords: {
@@ -72,7 +74,7 @@ export async function computeAndPersistPayrollRun({
         include: { allowances: true },
       },
       timesheetEntries: { where: { workDate: { gte: cutoffStart, lte: cutoffEnd } } },
-      loans: { where: { status: LoanStatus.ACTIVE }, orderBy: { startDate: "asc" } },
+      loans: { where: { status: LoanStatus.ACTIVE, startDate: { lte: cutoffEnd } }, orderBy: { startDate: "asc" } },
     },
   });
 
@@ -196,13 +198,24 @@ export async function computeAndPersistPayrollRun({
       ) ?? emp.compensationRecords[0];
       if (!comp) continue; // no compensation record found — skip
 
-      const isOtApproved = !approvedOtEmployeeIds || approvedOtEmployeeIds.includes(emp.id);
+      const totalLoggedOt = emp.timesheetEntries.reduce((sum, t) => sum + Number(t.overtimeHours || 0), 0);
+      let approvedOtRatio = 1;
+      if (approvedOtHoursMap !== undefined) {
+        const customApprovedOt = approvedOtHoursMap[emp.id] ?? 0;
+        if (customApprovedOt <= 0 || totalLoggedOt <= 0) {
+          approvedOtRatio = 0;
+        } else {
+          approvedOtRatio = Math.min(customApprovedOt / totalLoggedOt, 1);
+        }
+      } else if (approvedOtEmployeeIds !== undefined) {
+        approvedOtRatio = approvedOtEmployeeIds.includes(emp.id) ? 1 : 0;
+      }
 
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => ({
         workDate: t.workDate.toISOString(),
         status: t.status,
         regularHours: t.regularHours.toString(),
-        overtimeHours: isOtApproved ? t.overtimeHours.toString() : "0",
+        overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
         nightDiffHours: t.nightDiffHours.toString(),
         lateMinutes: t.lateMinutes,
         undertimeMinutes: t.undertimeMinutes,
@@ -385,39 +398,6 @@ export async function computeAndPersistPayrollRun({
       });
       if (lineItemsData.length > 0) {
         await tx.payrollLineItem.createMany({ data: lineItemsData });
-      }
-
-      // Persist the loan audit trail and update each loan's cached balance —
-      // LoanDeduction rows are the source of truth; Loan.remainingBalance is
-      // always reconcilable by replaying them.
-      const allLoanDeductions = computed.flatMap(({ result }) => result.loanDeductions);
-      if (allLoanDeductions.length > 0) {
-        await tx.loanDeduction.createMany({
-          data: allLoanDeductions.map((ld) => ({
-            loanId: ld.loanId,
-            payrollRunId: run.id,
-            cutoffDate: cutoffEnd,
-            amountDeducted: ld.amountDeducted.toFixed(2),
-            balanceAfter: ld.balanceAfter.toFixed(2),
-          })),
-        });
-
-        await Promise.all(
-          allLoanDeductions.map((ld) =>
-            tx.loan.update({
-              where: { id: ld.loanId },
-              data: {
-                remainingBalance: (ld.hasNoExpiration || ld.endDate) ? "0.00" : ld.balanceAfter.toFixed(2),
-                status:
-                  !ld.hasNoExpiration && !ld.endDate && ld.balanceAfter.lte(0)
-                    ? LoanStatus.COMPLETED
-                    : ld.endDate && cutoffEnd >= new Date(ld.endDate)
-                    ? LoanStatus.COMPLETED
-                    : LoanStatus.ACTIVE,
-              },
-            })
-          )
-        );
       }
     }
 

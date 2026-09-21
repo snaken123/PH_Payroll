@@ -10,7 +10,7 @@ export default async function LeavePage() {
   const [employees, leaveTypes] = await Promise.all([
     prisma.employee.findMany({
       where: withCompanyScope(ctx.companyId, {
-        employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR] },
+        employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
         isDeleted: false,
       }),
       select: { id: true, employeeNumber: true, firstName: true, lastName: true },

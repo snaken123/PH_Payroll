@@ -36,7 +36,7 @@ export function StatusBadge({ status, label, size = "md", className }: StatusBad
     variantStyles = "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
   } else if (["INACTIVE", "TERMINATED", "VOID", "REJECTED", "SUSPENDED"].includes(normalized)) {
     variantStyles = "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
-  } else if (["CONTRACTOR", "INFO"].includes(normalized)) {
+  } else if (["CONTRACTOR", "RETAINER", "INFO"].includes(normalized)) {
     variantStyles = "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
   }
 

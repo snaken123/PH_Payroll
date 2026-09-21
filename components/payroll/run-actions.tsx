@@ -48,6 +48,7 @@ export function RunActions({
   const [otDialogOpen, setOtDialogOpen] = useState(false);
   const [employeesWithOt, setEmployeesWithOt] = useState<EmployeeOtPreview[]>([]);
   const [selectedOtIds, setSelectedOtIds] = useState<string[]>([]);
+  const [otHoursMap, setOtHoursMap] = useState<Record<string, number>>({});
   const [otSearchQuery, setOtSearchQuery] = useState("");
 
   async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute", body?: unknown) {
@@ -112,6 +113,11 @@ export function RunActions({
       if (otList.length > 0) {
         setEmployeesWithOt(otList);
         setSelectedOtIds(otList.map((e) => e.employeeId)); // default all checked
+        const initialMap: Record<string, number> = {};
+        for (const e of otList) {
+          initialMap[e.employeeId] = e.totalOtHours;
+        }
+        setOtHoursMap(initialMap);
         setOtDialogOpen(true);
       } else {
         await callAction("recompute");
@@ -163,7 +169,7 @@ export function RunActions({
                 Recompute — Overtime Approvals
               </DialogTitle>
               <DialogDescription>
-                Select employees whose overtime pay is approved for this cutoff. Unchecked employees will have OT pay excluded from their payslips, but their timesheet logs will remain intact.
+                Select employees whose overtime pay is approved for this cutoff and edit their approved hours if needed. Unchecked employees will receive 0 hrs OT pay.
               </DialogDescription>
             </DialogHeader>
 
@@ -202,6 +208,7 @@ export function RunActions({
                 ) : (
                   filteredOtEmployees.map((emp) => {
                     const isChecked = selectedOtIds.includes(emp.employeeId);
+                    const currentHours = otHoursMap[emp.employeeId] ?? emp.totalOtHours;
                     return (
                       <div
                         key={emp.employeeId}
@@ -212,22 +219,32 @@ export function RunActions({
                             : "bg-muted/40 border-transparent opacity-75"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Checkbox
                             checked={isChecked}
                             onCheckedChange={() => toggleOtEmployee(emp.employeeId)}
                           />
-                          <div>
-                            <div className="text-sm font-medium leading-none">{emp.employeeName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="truncate">
+                            <div className="text-sm font-medium leading-none truncate">{emp.employeeName}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 truncate">
                               #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                            {emp.totalOtHours} hrs OT
-                          </span>
+                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <Input
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            value={currentHours}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              setOtHoursMap((prev) => ({ ...prev, [emp.employeeId]: val }));
+                            }}
+                            className="h-7 w-20 text-xs font-semibold text-right"
+                            disabled={!isChecked}
+                          />
+                          <span className="text-xs text-muted-foreground font-medium">hrs OT</span>
                         </div>
                       </div>
                     );
@@ -256,7 +273,16 @@ export function RunActions({
               <Button
                 type="button"
                 disabled={busy}
-                onClick={() => callAction("recompute", { approvedOtEmployeeIds: selectedOtIds })}
+                onClick={() => {
+                  const finalApprovedOtHoursMap: Record<string, number> = {};
+                  for (const empId of selectedOtIds) {
+                    finalApprovedOtHoursMap[empId] = otHoursMap[empId] ?? 0;
+                  }
+                  callAction("recompute", {
+                    approvedOtEmployeeIds: selectedOtIds,
+                    approvedOtHoursMap: finalApprovedOtHoursMap,
+                  });
+                }}
               >
                 {busy ? "Recomputing..." : "Confirm & Recompute Payslips"}
               </Button>

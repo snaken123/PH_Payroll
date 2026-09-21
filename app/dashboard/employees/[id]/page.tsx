@@ -15,6 +15,7 @@ import { LoanApprovalActions } from "@/components/loans/loan-approval-actions";
 import { MarkSeparatedDialog } from "@/components/employees/mark-separated-dialog";
 import { ClearanceToggle, ComputeFinalPayButton } from "@/components/employees/separation-panel";
 import { EmployeeDocumentsCard } from "@/components/employees/employee-documents-card";
+import { EmployeeNotepadCard } from "@/components/employees/employee-notepad-card";
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
 import type { PayBasis } from "@/lib/payroll/types";
 import { WageSector } from "@/lib/generated/prisma/enums";
@@ -484,6 +485,9 @@ export default async function EmployeeDetailPage({
         employeeName={`${employee.firstName} ${employee.lastName}`}
         initialDocuments={serializedDocuments}
       />
+
+      {/* HR Notepad & References */}
+      <EmployeeNotepadCard employeeId={employee.id} initialNotes={employee.notes} />
 
       {/* Separation & Final Pay Panel */}
       <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
