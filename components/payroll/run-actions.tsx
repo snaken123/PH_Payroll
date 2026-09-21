@@ -51,7 +51,7 @@ export function RunActions({
   const [otHoursMap, setOtHoursMap] = useState<Record<string, number>>({});
   const [otSearchQuery, setOtSearchQuery] = useState("");
 
-  async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute", body?: unknown) {
+  async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute" | "unapprove", body?: unknown) {
     setBusy(true);
     const res = await fetch(`/api/payroll/runs/${runId}/${action}`, {
       method: "POST",
@@ -85,6 +85,8 @@ export function RunActions({
           ? "approved"
           : action === "post"
           ? "posted"
+          : action === "unapprove"
+          ? "reverted to draft"
           : "voided"
       }`
     );
@@ -328,29 +330,34 @@ export function RunActions({
 
   if (status === "APPROVED") {
     return (
-      <Dialog open={postOpen} onOpenChange={setPostOpen}>
-        <DialogTrigger render={<Button disabled={busy} />}>Post (final — locks this run)</DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Post this payroll run?</DialogTitle>
-            <DialogDescription>
-              This locks the run and its payslips permanently — no further edits or voids will be possible.
-              This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              disabled={busy}
-              onClick={() => {
-                callAction("post");
-                setPostOpen(false);
-              }}
-            >
-              {busy ? "Posting..." : "Post run"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => callAction("unapprove")} disabled={busy}>
+          {busy ? "Reverting..." : "Revert to Draft"}
+        </Button>
+        <Dialog open={postOpen} onOpenChange={setPostOpen}>
+          <DialogTrigger render={<Button disabled={busy} />}>Post (final — locks this run)</DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Post this payroll run?</DialogTitle>
+              <DialogDescription>
+                This locks the run and its payslips permanently — no further edits or voids will be possible.
+                This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  callAction("post");
+                  setPostOpen(false);
+                }}
+              >
+                {busy ? "Posting..." : "Post run"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   }
 

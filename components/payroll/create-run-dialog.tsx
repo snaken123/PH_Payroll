@@ -47,6 +47,7 @@ export function CreateRunDialog() {
   const [preset, setPreset] = useState<SchedulePreset>("STANDARD_1_15");
   const [employeesWithOt, setEmployeesWithOt] = useState<EmployeeOtPreview[]>([]);
   const [selectedOtIds, setSelectedOtIds] = useState<string[]>([]);
+  const [otHoursMap, setOtHoursMap] = useState<Record<string, number>>({});
   const [otSearchQuery, setOtSearchQuery] = useState("");
 
   const {
@@ -67,6 +68,7 @@ export function CreateRunDialog() {
     setStep("FORM");
     setEmployeesWithOt([]);
     setSelectedOtIds([]);
+    setOtHoursMap({});
     setOtSearchQuery("");
     setCheckingOt(false);
     setSubmitting(false);
@@ -126,11 +128,16 @@ export function CreateRunDialog() {
     }
   }
 
-  async function executeRunPayroll(values: CreatePayrollRunInput, approvedOtIds?: string[]) {
+  async function executeRunPayroll(
+    values: CreatePayrollRunInput,
+    approvedOtIds?: string[],
+    approvedOtHoursMap?: Record<string, number>
+  ) {
     setSubmitting(true);
     const payload = {
       ...values,
       approvedOtEmployeeIds: approvedOtIds,
+      approvedOtHoursMap: approvedOtHoursMap,
     };
 
     const res = await fetch("/api/payroll/runs", {
@@ -168,6 +175,11 @@ export function CreateRunDialog() {
       if (otList.length > 0) {
         setEmployeesWithOt(otList);
         setSelectedOtIds(otList.map((e) => e.employeeId));
+        const initialMap: Record<string, number> = {};
+        for (const e of otList) {
+          initialMap[e.employeeId] = e.totalOtHours;
+        }
+        setOtHoursMap(initialMap);
         setStep("OT_APPROVAL");
       } else {
         await executeRunPayroll(values);
@@ -336,6 +348,7 @@ export function CreateRunDialog() {
                 ) : (
                   filteredOtEmployees.map((emp) => {
                     const isChecked = selectedOtIds.includes(emp.employeeId);
+                    const currentHours = otHoursMap[emp.employeeId] ?? emp.totalOtHours;
                     return (
                       <div
                         key={emp.employeeId}
@@ -346,22 +359,32 @@ export function CreateRunDialog() {
                             : "bg-muted/40 border-transparent opacity-75"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Checkbox
                             checked={isChecked}
                             onCheckedChange={() => toggleOtEmployee(emp.employeeId)}
                           />
-                          <div>
-                            <div className="text-sm font-medium leading-none">{emp.employeeName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="truncate">
+                            <div className="text-sm font-medium leading-none truncate">{emp.employeeName}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 truncate">
                               #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                            {emp.totalOtHours} hrs OT
-                          </span>
+                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <Input
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            value={currentHours}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              setOtHoursMap((prev) => ({ ...prev, [emp.employeeId]: val }));
+                            }}
+                            className="h-7 w-20 text-xs font-semibold text-right"
+                            disabled={!isChecked}
+                          />
+                          <span className="text-xs text-muted-foreground font-medium">hrs OT</span>
                         </div>
                       </div>
                     );
@@ -390,7 +413,13 @@ export function CreateRunDialog() {
               <Button
                 type="button"
                 disabled={submitting}
-                onClick={() => executeRunPayroll(getValues(), selectedOtIds)}
+                onClick={() => {
+                  const finalApprovedOtHoursMap: Record<string, number> = {};
+                  for (const empId of selectedOtIds) {
+                    finalApprovedOtHoursMap[empId] = otHoursMap[empId] ?? 0;
+                  }
+                  executeRunPayroll(getValues(), selectedOtIds, finalApprovedOtHoursMap);
+                }}
               >
                 {submitting ? "Computing payroll..." : "Confirm & Run Payroll"}
               </Button>
