@@ -24,7 +24,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PencilIcon, MoreVerticalIcon } from "lucide-react";
+import {
+  PencilIcon,
+  MoreVerticalIcon,
+  LayoutGridIcon,
+  BarChart3Icon,
+  CheckCircle2Icon,
+  XCircleIcon,
+  ClockIcon,
+  CalendarIcon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -164,6 +173,7 @@ export function AttendanceGrid() {
   const platformRole = session?.user?.platformRole;
   const canUseGlobalActions = hasPermission(userPermissions, "attendance.global_actions", platformRole);
   const [{ start, end }, setRange] = useState(defaultRange());
+  const [viewMode, setViewMode] = useState<"GRID" | "SUMMARY">("GRID");
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [entries, setEntries] = useState<TimesheetEntryDTO[]>([]);
   const [holidays, setHolidays] = useState<HolidayDTO[]>([]);
@@ -182,6 +192,59 @@ export function AttendanceGrid() {
   const [savingAdHoc, setSavingAdHoc] = useState(false);
 
   const dates = useMemo(() => enumerateDates(start, end), [start, end]);
+
+  const getEmployeeSummary = useCallback(
+    (empId: string) => {
+      let presentCount = 0;
+      let absentCount = 0;
+      let lateMinutes = 0;
+      let undertimeMinutes = 0;
+      let regularHolidayCount = 0;
+      let specialHolidayCount = 0;
+      let otherHolidayCount = 0;
+
+      for (const date of dates) {
+        const c = cells[cellKey(empId, date)];
+        if (!c) continue;
+
+        if (c.status === "ABSENT") {
+          absentCount++;
+        } else if (c.status === "PRESENT") {
+          presentCount++;
+        } else if (c.status === "HOLIDAY") {
+          if (c.holidayType === "REGULAR_HOLIDAY") regularHolidayCount++;
+          else if (c.holidayType === "SPECIAL_NON_WORKING") specialHolidayCount++;
+          else otherHolidayCount++;
+          if (c.regularHours > 0) presentCount++;
+        } else if (c.status === "REST_DAY") {
+          if (c.regularHours > 0) presentCount++;
+        } else {
+          if (c.regularHours > 0) presentCount++;
+        }
+
+        lateMinutes += c.lateMinutes || 0;
+        undertimeMinutes += c.undertimeMinutes || 0;
+      }
+
+      const totalLateUndertimeMinutes = lateMinutes + undertimeMinutes;
+      const totalLateUndertimeHours = (totalLateUndertimeMinutes / 60).toFixed(2);
+      const totalHolidays = regularHolidayCount + specialHolidayCount + otherHolidayCount;
+
+      return {
+        presentCount,
+        absentCount,
+        lateMinutes,
+        undertimeMinutes,
+        totalLateUndertimeMinutes,
+        totalLateUndertimeHours: Number(totalLateUndertimeHours),
+        totalHolidays,
+        regularHolidayCount,
+        specialHolidayCount,
+        otherHolidayCount,
+      };
+    },
+    [dates, cells]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -506,243 +569,385 @@ export function AttendanceGrid() {
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 py-1">
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <span className="font-medium text-muted-foreground">Color key:</span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-100 text-red-900 text-[11px] font-medium dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-                <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                Absent (Red)
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-yellow-200 bg-yellow-100 text-yellow-900 text-[11px] font-medium dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-200">
-                <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-                Missing Hours (&lt; 8h) (Yellow)
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-cyan-200 bg-cyan-100 text-cyan-900 text-[11px] font-medium dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
-                <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
-                Overtime (&gt; 0h) (Cyan)
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">View Mode:</span>
+              <div className="inline-flex items-center rounded-lg border bg-slate-100 p-1 dark:bg-slate-900">
+                <Button
+                  type="button"
+                  variant={viewMode === "GRID" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("GRID")}
+                  className={`h-7 px-2.5 text-xs font-medium gap-1.5 ${
+                    viewMode === "GRID"
+                      ? "bg-white dark:bg-slate-800 shadow-xs text-foreground font-bold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <LayoutGridIcon className="size-3.5" /> Spreadsheet Cutoff Grid
+                </Button>
+                <Button
+                  type="button"
+                  variant={viewMode === "SUMMARY" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("SUMMARY")}
+                  className={`h-7 px-2.5 text-xs font-medium gap-1.5 ${
+                    viewMode === "SUMMARY"
+                      ? "bg-white dark:bg-slate-800 shadow-xs text-foreground font-bold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <BarChart3Icon className="size-3.5" /> Cutoff Summary Totals
+                </Button>
               </div>
             </div>
+
+            {viewMode === "GRID" && (
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <span className="font-medium text-muted-foreground">Color key:</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-100 text-red-900 text-[11px] font-medium dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+                  <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                  Absent (Red)
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-yellow-200 bg-yellow-100 text-yellow-900 text-[11px] font-medium dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-200">
+                  <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                  Missing Hours (&lt; 8h) (Yellow)
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-cyan-200 bg-cyan-100 text-cyan-900 text-[11px] font-medium dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
+                  Overtime (&gt; 0h) (Cyan)
+                </div>
+              </div>
+            )}
+
             <Button onClick={saveAll} disabled={saving} size="sm">
               {saving ? "Saving..." : "Save all"}
             </Button>
           </div>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 dark:bg-slate-900">
-                  <TableHead className="sticky left-0 z-10 w-44 min-w-[160px] whitespace-nowrap bg-slate-50 dark:bg-slate-900 px-2 py-1 text-xs border-r">
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        checked={filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedEmployees.has(e.id))}
-                        onCheckedChange={(checked) => toggleAllEmployees(!!checked)}
-                        aria-label="Select all visible employees"
-                      />
+
+          {viewMode === "SUMMARY" ? (
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 dark:bg-slate-900">
+                    <TableHead className="w-56 min-w-[200px] whitespace-nowrap bg-slate-50 dark:bg-slate-900 px-3 py-2 text-xs font-bold border-r">
                       Employee
-                    </div>
-                  </TableHead>
-                  {dates.map((date) => (
-                    <TableHead key={date} className="w-[84px] min-w-[84px] px-0.5 py-1 whitespace-nowrap text-center border-r">
-                      <div className="flex items-center justify-between gap-0.5">
-                        <div className="flex items-center gap-0.5">
-                          <Checkbox
-                            checked={selectedDates.has(date)}
-                            onCheckedChange={() => toggleDate(date)}
-                            aria-label={`Select column ${date}`}
-                          />
-                          <span className="text-[10px] font-bold">{date.slice(5)}</span>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button variant="ghost" size="icon-xs" className="h-4 w-4 p-0" title={`Actions for ${date}`}>
-                                <MoreVerticalIcon className="size-3 text-muted-foreground" />
-                              </Button>
-                            }
-                          />
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                applyToColumn(date, {
-                                  status: "HOLIDAY",
-                                  holidayType: "SPECIAL_NON_WORKING",
-                                  scheduledHours: 8,
-                                  regularHours: 0,
-                                  isRestDay: false,
-                                })
-                              }
-                            >
-                              Set as Special Holiday
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                applyToColumn(date, {
-                                  status: "HOLIDAY",
-                                  holidayType: "REGULAR_HOLIDAY",
-                                  scheduledHours: 8,
-                                  regularHours: 0,
-                                  isRestDay: false,
-                                })
-                              }
-                            >
-                              Set as Regular Holiday
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setAdHocHolidayDate(date);
-                                setAdHocHolidayName("Ad-hoc Special Holiday");
-                                setAdHocHolidayType("SPECIAL_NON_WORKING");
-                              }}
-                            >
-                              Save to Company Calendar & Apply...
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                applyToColumn(date, {
-                                  status: "PRESENT",
-                                  scheduledHours: 8,
-                                  regularHours: 8,
-                                  overtimeHours: 0,
-                                  lateMinutes: 0,
-                                  undertimeMinutes: 0,
-                                  isRestDay: false,
-                                  holidayType: "",
-                                })
-                              }
-                            >
-                              Set as Present
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                applyToColumn(date, {
-                                  status: "ABSENT",
-                                  scheduledHours: 8,
-                                  regularHours: 0,
-                                  overtimeHours: 0,
-                                  lateMinutes: 0,
-                                  undertimeMinutes: 0,
-                                  isRestDay: false,
-                                  holidayType: "",
-                                })
-                              }
-                            >
-                              Set as Absent
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                applyToColumn(date, {
-                                  status: "REST_DAY",
-                                  scheduledHours: 0,
-                                  regularHours: 0,
-                                  isRestDay: true,
-                                  holidayType: "",
-                                })
-                              }
-                            >
-                              Set as Rest Day
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
                     </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.map((emp) => (
-                  <TableRow key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
-                    <TableCell className="sticky left-0 z-10 whitespace-nowrap bg-background px-2 py-1 border-r">
-                      <div className="flex items-center gap-1.5">
-                        <Checkbox
-                          checked={selectedEmployees.has(emp.id)}
-                          onCheckedChange={() => toggleEmployee(emp.id)}
-                          aria-label={`Select ${emp.lastName}, ${emp.firstName}`}
-                        />
-                        <div className="flex flex-col min-w-0" title={`${emp.lastName}, ${emp.firstName} (${emp.employeeNumber})`}>
-                          <span className="text-xs font-semibold truncate max-w-[130px]">
-                            {emp.lastName}, {emp.firstName}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {emp.employeeNumber}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    {dates.map((date) => {
-                      const c = cells[cellKey(emp.id, date)];
-                      if (!c) return <TableCell key={date} className="border-r" />;
-
-                      const isAbsent = c.status === "ABSENT";
-                      const isMissingHours =
-                        !isAbsent &&
-                        !c.isRestDay &&
-                        c.status !== "HOLIDAY" &&
-                        c.regularHours < (c.scheduledHours > 0 ? c.scheduledHours : 8);
-                      const hasOvertime = c.overtimeHours > 0;
-
-                      let bgStyle = "";
-                      let triggerStyle = "bg-background/90";
-
-                      if (isAbsent) {
-                        bgStyle = "bg-red-100/90 dark:bg-red-950/70 border-red-200 dark:border-red-900";
-                        triggerStyle = "bg-red-200/90 dark:bg-red-900/90 text-red-950 dark:text-red-100 border-red-300 dark:border-red-700 font-bold";
-                      } else if (isMissingHours) {
-                        bgStyle = "bg-yellow-100/90 dark:bg-yellow-950/70 border-yellow-200 dark:border-yellow-900";
-                        triggerStyle = "bg-yellow-200/90 dark:bg-yellow-900/90 text-yellow-950 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700 font-bold";
-                      } else if (hasOvertime) {
-                        bgStyle = "bg-cyan-100/90 dark:bg-cyan-950/70 border-cyan-200 dark:border-cyan-900";
-                        triggerStyle = "bg-cyan-200/90 dark:bg-cyan-900/90 text-cyan-950 dark:text-cyan-100 border-cyan-300 dark:border-cyan-700 font-bold";
-                      }
-
-                      return (
-                        <TableCell key={date} className={`p-0.5 align-top border-r transition-colors ${bgStyle}`}>
-                          <div className="flex w-[78px] flex-col gap-0.5 mx-auto">
-                            <Select value={c.status} onValueChange={(v) => v && updateCell(emp.id, date, { status: v })}>
-                              <SelectTrigger className={`h-5 px-1 py-0 text-[9px] font-bold tracking-tight rounded ${triggerStyle}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {timesheetStatusValues.map((v) => (
-                                  <SelectItem key={v} value={v} className="text-[11px] py-1">
-                                    {v.replaceAll("_", " ")}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex items-center justify-between gap-0.5">
-                              <div
-                                onClick={() => setEditingCell({ employeeId: emp.id, date })}
-                                className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
-                                title="Regular hours (click pencil to edit)"
-                              >
-                                {c.regularHours}
-                              </div>
-                              <div
-                                onClick={() => setEditingCell({ employeeId: emp.id, date })}
-                                className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
-                                title="Overtime hours (click pencil to edit)"
-                              >
-                                {c.overtimeHours}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                className="h-5 w-4 p-0 shrink-0 hover:bg-black/10 dark:hover:bg-white/10"
-                                onClick={() => setEditingCell({ employeeId: emp.id, date })}
-                                aria-label={`More details for ${emp.lastName} on ${date}`}
-                                title="Time in/out, late, undertime, night diff, rest day, holiday"
-                              >
-                                <PencilIcon className="size-2.5 text-slate-600 dark:text-slate-400" />
-                              </Button>
-                            </div>
+                    <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-bold text-center border-r">
+                      Total No. of Present
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-bold text-center border-r">
+                      Total No. of Absent
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-bold text-center border-r">
+                      Total Hours Late / Undertime
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-bold text-center border-r">
+                      Holidays
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees.map((emp) => {
+                    const summary = getEmployeeSummary(emp.id);
+                    return (
+                      <TableRow key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
+                        <TableCell className="whitespace-nowrap px-3 py-2 border-r font-medium text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                              {emp.lastName}, {emp.firstName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              #{emp.employeeNumber}
+                            </span>
                           </div>
                         </TableCell>
-                      );
-                    })}
+                        <TableCell className="text-center px-3 py-2 border-r">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 border border-green-200 dark:border-green-800">
+                            <CheckCircle2Icon className="size-3.5 text-green-600 dark:text-green-400" />
+                            {summary.presentCount} Days
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center px-3 py-2 border-r">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${
+                              summary.absentCount > 0
+                                ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            <XCircleIcon
+                              className={`size-3.5 ${
+                                summary.absentCount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-400"
+                              }`}
+                            />
+                            {summary.absentCount} Days
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center px-3 py-2 border-r">
+                          <div className="flex flex-col items-center">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${
+                                summary.totalLateUndertimeMinutes > 0
+                                  ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                              }`}
+                            >
+                              <ClockIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                              {summary.totalLateUndertimeHours.toFixed(2)} hrs
+                            </span>
+                            {summary.totalLateUndertimeMinutes > 0 && (
+                              <span className="text-[10px] text-muted-foreground mt-0.5">
+                                Late: {summary.lateMinutes}m · Undertime: {summary.undertimeMinutes}m
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center px-3 py-2 border-r">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                            <CalendarIcon className="size-3.5 text-purple-600 dark:text-purple-400" />
+                            {summary.totalHolidays > 0
+                              ? `${summary.totalHolidays} Day${summary.totalHolidays > 1 ? "s" : ""} (${
+                                  summary.regularHolidayCount > 0
+                                    ? `${summary.regularHolidayCount} Reg`
+                                    : ""
+                                }${
+                                  summary.regularHolidayCount > 0 && summary.specialHolidayCount > 0
+                                    ? ", "
+                                    : ""
+                                }${
+                                  summary.specialHolidayCount > 0
+                                    ? `${summary.specialHolidayCount} Special`
+                                    : ""
+                                })`
+                              : "0 Days"}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 dark:bg-slate-900">
+                    <TableHead className="sticky left-0 z-10 w-44 min-w-[160px] whitespace-nowrap bg-slate-50 dark:bg-slate-900 px-2 py-1 text-xs border-r">
+                      <div className="flex items-center gap-1.5">
+                        <Checkbox
+                          checked={filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedEmployees.has(e.id))}
+                          onCheckedChange={(checked) => toggleAllEmployees(!!checked)}
+                          aria-label="Select all visible employees"
+                        />
+                        Employee
+                      </div>
+                    </TableHead>
+                    {dates.map((date) => (
+                      <TableHead key={date} className="w-[84px] min-w-[84px] px-0.5 py-1 whitespace-nowrap text-center border-r">
+                        <div className="flex items-center justify-between gap-0.5">
+                          <div className="flex items-center gap-0.5">
+                            <Checkbox
+                              checked={selectedDates.has(date)}
+                              onCheckedChange={() => toggleDate(date)}
+                              aria-label={`Select column ${date}`}
+                            />
+                            <span className="text-[10px] font-bold">{date.slice(5)}</span>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button variant="ghost" size="icon-xs" className="h-4 w-4 p-0" title={`Actions for ${date}`}>
+                                  <MoreVerticalIcon className="size-3 text-muted-foreground" />
+                                </Button>
+                              }
+                            />
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  applyToColumn(date, {
+                                    status: "HOLIDAY",
+                                    holidayType: "SPECIAL_NON_WORKING",
+                                    scheduledHours: 8,
+                                    regularHours: 0,
+                                    isRestDay: false,
+                                  })
+                                }
+                              >
+                                Set as Special Holiday
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  applyToColumn(date, {
+                                    status: "HOLIDAY",
+                                    holidayType: "REGULAR_HOLIDAY",
+                                    scheduledHours: 8,
+                                    regularHours: 0,
+                                    isRestDay: false,
+                                  })
+                                }
+                              >
+                                Set as Regular Holiday
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setAdHocHolidayDate(date);
+                                  setAdHocHolidayName("Ad-hoc Special Holiday");
+                                  setAdHocHolidayType("SPECIAL_NON_WORKING");
+                                }}
+                              >
+                                Save to Company Calendar & Apply...
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  applyToColumn(date, {
+                                    status: "PRESENT",
+                                    scheduledHours: 8,
+                                    regularHours: 8,
+                                    overtimeHours: 0,
+                                    lateMinutes: 0,
+                                    undertimeMinutes: 0,
+                                    isRestDay: false,
+                                    holidayType: "",
+                                  })
+                                }
+                              >
+                                Set as Present
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  applyToColumn(date, {
+                                    status: "ABSENT",
+                                    scheduledHours: 8,
+                                    regularHours: 0,
+                                    overtimeHours: 0,
+                                    lateMinutes: 0,
+                                    undertimeMinutes: 0,
+                                    isRestDay: false,
+                                    holidayType: "",
+                                  })
+                                }
+                              >
+                                Set as Absent
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  applyToColumn(date, {
+                                    status: "REST_DAY",
+                                    scheduledHours: 0,
+                                    regularHours: 0,
+                                    isRestDay: true,
+                                    holidayType: "",
+                                  })
+                                }
+                              >
+                                Set as Rest Day
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableHead>
+                    ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees.map((emp) => (
+                    <TableRow key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
+                      <TableCell className="sticky left-0 z-10 whitespace-nowrap bg-background px-2 py-1 border-r">
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox
+                            checked={selectedEmployees.has(emp.id)}
+                            onCheckedChange={() => toggleEmployee(emp.id)}
+                            aria-label={`Select ${emp.lastName}, ${emp.firstName}`}
+                          />
+                          <div className="flex flex-col min-w-0" title={`${emp.lastName}, ${emp.firstName} (${emp.employeeNumber})`}>
+                            <span className="text-xs font-semibold truncate max-w-[130px]">
+                              {emp.lastName}, {emp.firstName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {emp.employeeNumber}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      {dates.map((date) => {
+                        const c = cells[cellKey(emp.id, date)];
+                        if (!c) return <TableCell key={date} className="border-r" />;
+
+                        const isAbsent = c.status === "ABSENT";
+                        const isMissingHours =
+                          !isAbsent &&
+                          !c.isRestDay &&
+                          c.status !== "HOLIDAY" &&
+                          c.regularHours < (c.scheduledHours > 0 ? c.scheduledHours : 8);
+                        const hasOvertime = c.overtimeHours > 0;
+
+                        let bgStyle = "";
+                        let triggerStyle = "bg-background/90";
+
+                        if (isAbsent) {
+                          bgStyle = "bg-red-100/90 dark:bg-red-950/70 border-red-200 dark:border-red-900";
+                          triggerStyle = "bg-red-200/90 dark:bg-red-900/90 text-red-950 dark:text-red-100 border-red-300 dark:border-red-700 font-bold";
+                        } else if (isMissingHours) {
+                          bgStyle = "bg-yellow-100/90 dark:bg-yellow-950/70 border-yellow-200 dark:border-yellow-900";
+                          triggerStyle = "bg-yellow-200/90 dark:bg-yellow-900/90 text-yellow-950 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700 font-bold";
+                        } else if (hasOvertime) {
+                          bgStyle = "bg-cyan-100/90 dark:bg-cyan-950/70 border-cyan-200 dark:border-cyan-900";
+                          triggerStyle = "bg-cyan-200/90 dark:bg-cyan-900/90 text-cyan-950 dark:text-cyan-100 border-cyan-300 dark:border-cyan-700 font-bold";
+                        }
+
+                        return (
+                          <TableCell key={date} className={`p-0.5 align-top border-r transition-colors ${bgStyle}`}>
+                            <div className="flex w-[78px] flex-col gap-0.5 mx-auto">
+                              <Select value={c.status} onValueChange={(v) => v && updateCell(emp.id, date, { status: v })}>
+                                <SelectTrigger className={`h-5 px-1 py-0 text-[9px] font-bold tracking-tight rounded ${triggerStyle}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {timesheetStatusValues.map((v) => (
+                                    <SelectItem key={v} value={v} className="text-[11px] py-1">
+                                      {v.replaceAll("_", " ")}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="flex items-center justify-between gap-0.5">
+                                <div
+                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
+                                  title="Regular hours (click pencil to edit)"
+                                >
+                                  {c.regularHours}
+                                </div>
+                                <div
+                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
+                                  title="Overtime hours (click pencil to edit)"
+                                >
+                                  {c.overtimeHours}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="h-5 w-4 p-0 shrink-0 hover:bg-black/10 dark:hover:bg-white/10"
+                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  aria-label={`More details for ${emp.lastName} on ${date}`}
+                                  title="Time in/out, late, undertime, night diff, rest day, holiday"
+                                >
+                                  <PencilIcon className="size-2.5 text-slate-600 dark:text-slate-400" />
+                                </Button>
+                              </div>
+                            </div>
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="flex justify-end">
             <Button onClick={saveAll} disabled={saving} size="sm">
               {saving ? "Saving..." : "Save all"}
