@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { inspectDataUrl } from "@/lib/data-url";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
@@ -24,8 +25,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const photoUrl = typeof body?.photoUrl === "string" ? body.photoUrl : null;
+  if (!photoUrl || !inspectDataUrl(photoUrl, ["image/jpeg", "image/png", "image/webp"], 5 * 1024 * 1024)) {
+    return NextResponse.json({ error: "Photo must be a JPG, PNG, or WEBP image of 5 MB or less." }, { status: 415 });
+  }
 
   const employee = await prisma.employee.update({
     where: { id },

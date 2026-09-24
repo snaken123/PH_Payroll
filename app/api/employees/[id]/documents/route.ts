@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
+import { inspectDataUrl } from "@/lib/data-url";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole, getTenantContext } from "@/lib/db/scoped";
 import { CompanyRole, EmployeeDocumentCategory } from "@/lib/generated/prisma/enums";
 import { createEmployeeDocumentSchema } from "@/lib/validations/employeeDocument";
 
 const MANAGE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
+
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const DOCUMENT_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 export async function GET(
   request: Request,
@@ -82,6 +93,12 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Verify the actual file bytes: allowed type and ≤ 10 MB. Client-declared size/type are not trusted.
+  const file = inspectDataUrl(parsed.data.fileUrl, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
+  if (!file) {
+    return NextResponse.json({ error: "File must be a PDF, image, or Word document of 10 MB or less." }, { status: 415 });
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: ctx.userId },
     select: { name: true, email: true },
@@ -97,9 +114,9 @@ export async function POST(
       category: parsed.data.category,
       description: parsed.data.description || null,
       fileUrl: parsed.data.fileUrl,
-      fileName: parsed.data.fileName,
-      fileSize: parsed.data.fileSize,
-      mimeType: parsed.data.mimeType,
+      fileName: parsed.data.fileName.replace(/[^\w.\- ()]/g, "_").slice(0, 200),
+      fileSize: file.bytes,
+      mimeType: file.mime,
       uploadedById: ctx.userId,
       uploadedByName: uploaderName,
       documentDate: parsed.data.documentDate ? new Date(parsed.data.documentDate) : null,

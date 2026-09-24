@@ -5,7 +5,7 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { CompanyRole, PlatformRole } from "./generated/prisma/enums";
 
-import { checkRateLimit, resetRateLimit } from "./rate-limit";
+import { rateLimit } from "./rate-limit";
 
 import { parsePermissions, ALL_PERMISSIONS } from "./permissions";
 
@@ -38,9 +38,8 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
         const identifier = credentials.email.trim().toLowerCase();
 
-        const rateLimitKey = `auth_login:${identifier}`;
-        const limit = checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000);
-        if (!limit.allowed) {
+        // 10 attempts per 15 minutes per account (Redis-backed when Upstash is configured)
+        if (!(await rateLimit("login", identifier, 10, "15 m"))) {
           throw new Error("Too many failed login attempts. Please try again later.");
         }
 
@@ -51,7 +50,6 @@ export const authOptions: NextAuthOptions = {
         if (user && user.password) {
           const passwordMatch = await bcrypt.compare(credentials.password, user.password);
           if (passwordMatch) {
-            resetRateLimit(rateLimitKey);
             return { id: user.id, email: user.email, name: user.name };
           }
         }
