@@ -24,6 +24,8 @@ export async function computeAndPersistPayrollRun({
   approvedOtEmployeeIds,
   approvedOtHoursMap,
   ignoredUndertimeEmployeeIds,
+  excludeSaturdayTardiness = true,
+  excludeSaturdayUndertime = true,
   targetRunId,
 }: {
   companyId: string;
@@ -36,6 +38,8 @@ export async function computeAndPersistPayrollRun({
   approvedOtEmployeeIds?: string[];
   approvedOtHoursMap?: Record<string, number>;
   ignoredUndertimeEmployeeIds?: string[];
+  excludeSaturdayTardiness?: boolean;
+  excludeSaturdayUndertime?: boolean;
   targetRunId?: string;
 }) {
   const period = await prisma.payrollPeriod.upsert({
@@ -215,17 +219,26 @@ export async function computeAndPersistPayrollRun({
 
       const isUndertimeIgnored = ignoredUndertimeEmployeeIds?.includes(emp.id) ?? false;
 
-      const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => ({
-        workDate: t.workDate.toISOString(),
-        status: t.status,
-        regularHours: t.regularHours.toString(),
-        overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
-        nightDiffHours: t.nightDiffHours.toString(),
-        lateMinutes: isUndertimeIgnored ? 0 : t.lateMinutes,
-        undertimeMinutes: isUndertimeIgnored ? 0 : t.undertimeMinutes,
-        holidayType: (t.holidayType as HolidayType | null) ?? null,
-        isRestDay: t.isRestDay,
-      }));
+      const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => {
+        const isSaturday = new Date(t.workDate).getUTCDay() === 6;
+        const ignoreSatLate = (excludeSaturdayTardiness ?? true) && isSaturday;
+        const ignoreSatUndertime = (excludeSaturdayUndertime ?? true) && isSaturday;
+
+        const effectiveLate = isUndertimeIgnored || ignoreSatLate ? 0 : t.lateMinutes;
+        const effectiveUndertime = isUndertimeIgnored || ignoreSatUndertime ? 0 : t.undertimeMinutes;
+
+        return {
+          workDate: t.workDate.toISOString(),
+          status: t.status,
+          regularHours: t.regularHours.toString(),
+          overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
+          nightDiffHours: t.nightDiffHours.toString(),
+          lateMinutes: effectiveLate,
+          undertimeMinutes: effectiveUndertime,
+          holidayType: (t.holidayType as HolidayType | null) ?? null,
+          isRestDay: t.isRestDay,
+        };
+      });
 
       const allowances: AllowanceInput[] = comp.allowances.map((a) => {
         const ceiling = a.deMinimisCategory ? deMinimisCeilingMap.get(a.deMinimisCategory) : null;

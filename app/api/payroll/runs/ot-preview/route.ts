@@ -49,6 +49,7 @@ export async function GET(request: Request) {
           workDate: { gte: cutoffStart, lte: cutoffEnd },
         },
         select: {
+          workDate: true,
           overtimeHours: true,
           lateMinutes: true,
           undertimeMinutes: true,
@@ -76,8 +77,16 @@ export async function GET(request: Request) {
 
   const employeesWithUndertime = employees
     .map((emp) => {
-      const totalUndertimeMinutes = emp.timesheetEntries.reduce(
-        (sum, t) => sum + (t.lateMinutes || 0) + (t.undertimeMinutes || 0),
+      const entries = emp.timesheetEntries
+        .filter((t) => (t.lateMinutes || 0) + (t.undertimeMinutes || 0) > 0)
+        .map((t) => ({
+          workDate: t.workDate.toISOString(),
+          lateMinutes: t.lateMinutes || 0,
+          undertimeMinutes: t.undertimeMinutes || 0,
+        }));
+
+      const totalUndertimeMinutes = entries.reduce(
+        (sum, t) => sum + t.lateMinutes + t.undertimeMinutes,
         0
       );
       return {
@@ -87,6 +96,7 @@ export async function GET(request: Request) {
         positionTitle: emp.positionTitle ?? "",
         totalUndertimeMinutes,
         totalUndertimeHours: Math.round((totalUndertimeMinutes / 60) * 100) / 100,
+        entries,
       };
     })
     .filter((emp) => emp.totalUndertimeMinutes > 0);

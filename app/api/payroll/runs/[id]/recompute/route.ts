@@ -48,6 +48,14 @@ export async function POST(
   const ignoredUndertimeEmployeeIds = Array.isArray(body?.ignoredUndertimeEmployeeIds)
     ? (body.ignoredUndertimeEmployeeIds as string[])
     : undefined;
+  const excludeSaturdayTardiness =
+    typeof body?.excludeSaturdayTardiness === "boolean"
+      ? body.excludeSaturdayTardiness
+      : true;
+  const excludeSaturdayUndertime =
+    typeof body?.excludeSaturdayUndertime === "boolean"
+      ? body.excludeSaturdayUndertime
+      : true;
 
   try {
     let replacesRunId: string | undefined = undefined;
@@ -74,6 +82,8 @@ export async function POST(
       approvedOtEmployeeIds,
       approvedOtHoursMap,
       ignoredUndertimeEmployeeIds,
+      excludeSaturdayTardiness,
+      excludeSaturdayUndertime,
     });
 
     return NextResponse.json({ success: true, runId: newRunId });

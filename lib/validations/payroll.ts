@@ -8,6 +8,8 @@ export const createPayrollRunSchema = z.object({
   approvedOtEmployeeIds: z.array(z.string()).optional(),
   approvedOtHoursMap: z.record(z.string(), z.number()).optional(),
   ignoredUndertimeEmployeeIds: z.array(z.string()).optional(),
+  excludeSaturdayTardiness: z.boolean().optional(),
+  excludeSaturdayUndertime: z.boolean().optional(),
 });
 
 export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;

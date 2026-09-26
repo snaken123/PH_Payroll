@@ -54,6 +54,8 @@ export async function POST(request: Request) {
       approvedOtEmployeeIds: data.approvedOtEmployeeIds,
       approvedOtHoursMap: data.approvedOtHoursMap,
       ignoredUndertimeEmployeeIds: data.ignoredUndertimeEmployeeIds,
+      excludeSaturdayTardiness: data.excludeSaturdayTardiness,
+      excludeSaturdayUndertime: data.excludeSaturdayUndertime,
     });
 
     return NextResponse.json({ runId }, { status: 201 });
