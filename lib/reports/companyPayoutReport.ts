@@ -227,6 +227,8 @@ export async function generateCompanyPayoutReport(
     return employeeIds.includes(empId);
   };
 
+  const explicitTargetRunIds = new Set(targetRunIds);
+
   // 4. If query runs exist, query payslips
   if (queryRunIds.length > 0) {
     const payslips = await prisma.payslip.findMany({
@@ -272,6 +274,7 @@ export async function generateCompanyPayoutReport(
         continue;
       }
 
+      const isExplicitlySelectedRun = explicitTargetRunIds.has(payslip.payrollRunId);
       const primaryCompanyId = payslip.employee.companyId;
       const runLabel = `Run #${payslip.payrollRun.runNumber} (${payslip.payrollRun.company.companyCode}) [${payslip.payrollRun.status.replace("_", " ")}]`;
 
@@ -345,34 +348,36 @@ export async function generateCompanyPayoutReport(
       const bankNameVal = payslip.employee.paymentMethod === "CASH" ? "CASH" : (payslip.employee.bankName || "N/A");
       const bankAccountVal = payslip.employee.paymentMethod === "CASH" ? "N/A" : (payslip.employee.bankAccountNumber || "N/A");
 
-      // Internal Payout for Primary Employer
-      const primaryCompanyReport = companyReportMap.get(primaryCompanyId);
-      if (primaryCompanyReport) {
-        primaryCompanyReport.internalPayouts.push({
-          employeeId: payslip.employee.id,
-          employeeNumber: payslip.employee.employeeNumber,
-          employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
-          positionTitle: payslip.employee.positionTitle,
-          grossPay: primaryGross,
-          statutoryDeductions: statDeductions,
-          otherDeductions: otherDeductions,
-          netPay: primaryNet,
-          runLabel,
-        });
-        primaryCompanyReport.totalInternalNet += primaryNet;
-
-        if (!consolidatedEmployeeMap.has(payslip.employee.id)) {
-          consolidatedEmployeeMap.set(payslip.employee.id, {
+      // Internal Payout for Primary Employer — ONLY if this run was explicitly selected
+      if (isExplicitlySelectedRun) {
+        const primaryCompanyReport = companyReportMap.get(primaryCompanyId);
+        if (primaryCompanyReport) {
+          primaryCompanyReport.internalPayouts.push({
             employeeId: payslip.employee.id,
             employeeNumber: payslip.employee.employeeNumber,
             employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
-            companyName: payslip.employee.company.legalName,
-            bankName: bankNameVal,
-            bankAccountNumber: bankAccountVal,
-            netAmount: 0,
+            positionTitle: payslip.employee.positionTitle,
+            grossPay: primaryGross,
+            statutoryDeductions: statDeductions,
+            otherDeductions: otherDeductions,
+            netPay: primaryNet,
+            runLabel,
           });
+          primaryCompanyReport.totalInternalNet += primaryNet;
+
+          if (!consolidatedEmployeeMap.has(payslip.employee.id)) {
+            consolidatedEmployeeMap.set(payslip.employee.id, {
+              employeeId: payslip.employee.id,
+              employeeNumber: payslip.employee.employeeNumber,
+              employeeName: `${payslip.employee.lastName}, ${payslip.employee.firstName}`,
+              companyName: payslip.employee.company.legalName,
+              bankName: bankNameVal,
+              bankAccountNumber: bankAccountVal,
+              netAmount: 0,
+            });
+          }
+          consolidatedEmployeeMap.get(payslip.employee.id)!.netAmount += primaryNet;
         }
-        consolidatedEmployeeMap.get(payslip.employee.id)!.netAmount += primaryNet;
       }
 
       // Intercompany Payouts for Funding Companies
