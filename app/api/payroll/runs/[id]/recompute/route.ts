@@ -45,6 +45,9 @@ export async function POST(
     typeof body?.approvedOtHoursMap === "object" && body?.approvedOtHoursMap !== null
       ? (body.approvedOtHoursMap as Record<string, number>)
       : undefined;
+  const ignoredUndertimeEmployeeIds = Array.isArray(body?.ignoredUndertimeEmployeeIds)
+    ? (body.ignoredUndertimeEmployeeIds as string[])
+    : undefined;
 
   try {
     let replacesRunId: string | undefined = undefined;
@@ -70,6 +73,7 @@ export async function POST(
       targetRunId,
       approvedOtEmployeeIds,
       approvedOtHoursMap,
+      ignoredUndertimeEmployeeIds,
     });
 
     return NextResponse.json({ success: true, runId: newRunId });

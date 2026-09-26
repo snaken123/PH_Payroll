@@ -7,6 +7,7 @@ export const createPayrollRunSchema = z.object({
   periodType: z.enum(["FIRST_HALF", "SECOND_HALF"]),
   approvedOtEmployeeIds: z.array(z.string()).optional(),
   approvedOtHoursMap: z.record(z.string(), z.number()).optional(),
+  ignoredUndertimeEmployeeIds: z.array(z.string()).optional(),
 });
 
 export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;

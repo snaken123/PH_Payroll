@@ -50,6 +50,8 @@ export async function GET(request: Request) {
         },
         select: {
           overtimeHours: true,
+          lateMinutes: true,
+          undertimeMinutes: true,
         },
       },
     },
@@ -72,5 +74,22 @@ export async function GET(request: Request) {
     })
     .filter((emp) => emp.totalOtHours > 0);
 
-  return NextResponse.json({ employeesWithOt });
+  const employeesWithUndertime = employees
+    .map((emp) => {
+      const totalUndertimeMinutes = emp.timesheetEntries.reduce(
+        (sum, t) => sum + (t.lateMinutes || 0) + (t.undertimeMinutes || 0),
+        0
+      );
+      return {
+        employeeId: emp.id,
+        employeeNumber: emp.employeeNumber,
+        employeeName: `${emp.lastName}, ${emp.firstName}`,
+        positionTitle: emp.positionTitle ?? "",
+        totalUndertimeMinutes,
+        totalUndertimeHours: Math.round((totalUndertimeMinutes / 60) * 100) / 100,
+      };
+    })
+    .filter((emp) => emp.totalUndertimeMinutes > 0);
+
+  return NextResponse.json({ employeesWithOt, employeesWithUndertime });
 }

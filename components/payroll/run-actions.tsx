@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, Clock, ShieldAlert } from "lucide-react";
+import { Search, Clock, ShieldAlert, AlertTriangle } from "lucide-react";
 
 interface EmployeeOtPreview {
   employeeId: string;
@@ -24,6 +24,15 @@ interface EmployeeOtPreview {
   employeeName: string;
   positionTitle: string;
   totalOtHours: number;
+}
+
+interface EmployeeUndertimePreview {
+  employeeId: string;
+  employeeNumber: string;
+  employeeName: string;
+  positionTitle: string;
+  totalUndertimeMinutes: number;
+  totalUndertimeHours: number;
 }
 
 export function RunActions({
@@ -44,12 +53,18 @@ export function RunActions({
   const [voidOpen, setVoidOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
 
-  // OT Approval modal state for Recompute
+  // Attendance Approval modal state for Recompute
   const [otDialogOpen, setOtDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"OVERTIME" | "UNDERTIME">("OVERTIME");
+
   const [employeesWithOt, setEmployeesWithOt] = useState<EmployeeOtPreview[]>([]);
   const [selectedOtIds, setSelectedOtIds] = useState<string[]>([]);
   const [otHoursMap, setOtHoursMap] = useState<Record<string, number>>({});
   const [otSearchQuery, setOtSearchQuery] = useState("");
+
+  const [employeesWithUndertime, setEmployeesWithUndertime] = useState<EmployeeUndertimePreview[]>([]);
+  const [ignoredUndertimeIds, setIgnoredUndertimeIds] = useState<string[]>([]);
+  const [undertimeSearchQuery, setUndertimeSearchQuery] = useState("");
 
   async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute" | "unapprove", body?: unknown) {
     setBusy(true);
@@ -111,15 +126,25 @@ export function RunActions({
       }
       const data = await res.json();
       const otList: EmployeeOtPreview[] = data.employeesWithOt ?? [];
+      const undertimeList: EmployeeUndertimePreview[] = data.employeesWithUndertime ?? [];
 
-      if (otList.length > 0) {
+      if (otList.length > 0 || undertimeList.length > 0) {
         setEmployeesWithOt(otList);
-        setSelectedOtIds(otList.map((e) => e.employeeId)); // default all checked
+        setSelectedOtIds(otList.map((e) => e.employeeId));
         const initialMap: Record<string, number> = {};
         for (const e of otList) {
           initialMap[e.employeeId] = e.totalOtHours;
         }
         setOtHoursMap(initialMap);
+
+        setEmployeesWithUndertime(undertimeList);
+        setIgnoredUndertimeIds([]);
+
+        if (otList.length > 0) {
+          setActiveTab("OVERTIME");
+        } else {
+          setActiveTab("UNDERTIME");
+        }
         setOtDialogOpen(true);
       } else {
         await callAction("recompute");
@@ -145,8 +170,32 @@ export function RunActions({
     setSelectedOtIds([]);
   }
 
+  function toggleIgnoreUndertime(id: string) {
+    setIgnoredUndertimeIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }
+
+  function handleIgnoreAllUndertime() {
+    setIgnoredUndertimeIds(employeesWithUndertime.map((e) => e.employeeId));
+  }
+
+  function handleDeductAllUndertime() {
+    setIgnoredUndertimeIds([]);
+  }
+
   const filteredOtEmployees = employeesWithOt.filter((emp) => {
     const q = otSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      emp.employeeName.toLowerCase().includes(q) ||
+      emp.employeeNumber.toLowerCase().includes(q) ||
+      emp.positionTitle.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredUndertimeEmployees = employeesWithUndertime.filter((emp) => {
+    const q = undertimeSearchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
       emp.employeeName.toLowerCase().includes(q) ||
@@ -159,108 +208,226 @@ export function RunActions({
     return (
       <div className="flex gap-2">
         <Button variant="outline" onClick={handleRecomputeClick} disabled={busy || checkingOt}>
-          {checkingOt ? "Checking Overtime..." : busy ? "Recomputing..." : "Recompute Payslips"}
+          {checkingOt ? "Checking Attendance..." : busy ? "Recomputing..." : "Recompute Payslips"}
         </Button>
 
-        {/* OT Approval Modal for Recompute */}
+        {/* Attendance Review Modal for Recompute */}
         <Dialog open={otDialogOpen} onOpenChange={setOtDialogOpen}>
           <DialogContent className="max-w-md md:max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Clock className="size-5 text-amber-600" />
-                Recompute — Overtime Approvals
+                Recompute — Attendance &amp; Hours Review
               </DialogTitle>
               <DialogDescription>
-                Select employees whose overtime pay is approved for this cutoff and edit their approved hours if needed. Unchecked employees will receive 0 hrs OT pay.
+                Review overtime approvals and undertime deductions before recomputing payslips.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 py-1">
-              <div className="flex items-center justify-between gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Filter employee name or number..."
-                    value={otSearchQuery}
-                    onChange={(e) => setOtSearchQuery(e.target.value)}
-                    className="pl-8 text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="outline" size="sm" onClick={handleSelectAllOt} className="text-xs">
-                    Select All
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleDeselectAllOt} className="text-xs">
-                    Clear All
-                  </Button>
-                </div>
+            {(employeesWithOt.length > 0 && employeesWithUndertime.length > 0) && (
+              <div className="flex border-b text-xs font-medium gap-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("OVERTIME")}
+                  className={`pb-2 border-b-2 transition-colors ${
+                    activeTab === "OVERTIME"
+                      ? "border-primary text-primary font-semibold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Overtime Approval ({employeesWithOt.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("UNDERTIME")}
+                  className={`pb-2 border-b-2 transition-colors ${
+                    activeTab === "UNDERTIME"
+                      ? "border-primary text-primary font-semibold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Undertime / Tardiness ({employeesWithUndertime.length})
+                </button>
               </div>
+            )}
 
-              <div className="text-xs text-muted-foreground flex justify-between items-center px-1">
-                <span>
-                  Approved: <strong className="text-foreground">{selectedOtIds.length}</strong> of {employeesWithOt.length} employees
-                </span>
-              </div>
+            {activeTab === "OVERTIME" && employeesWithOt.length > 0 && (
+              <div className="space-y-3 py-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter employee name or number..."
+                      value={otSearchQuery}
+                      onChange={(e) => setOtSearchQuery(e.target.value)}
+                      className="pl-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="outline" size="sm" onClick={handleSelectAllOt} className="text-xs">
+                      Select All
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDeselectAllOt} className="text-xs">
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
 
-              <div className="max-h-[260px] overflow-y-auto border rounded-md p-2 space-y-1.5 bg-muted/20">
-                {filteredOtEmployees.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-4">
-                    No matching employees found.
-                  </p>
-                ) : (
-                  filteredOtEmployees.map((emp) => {
-                    const isChecked = selectedOtIds.includes(emp.employeeId);
-                    const currentHours = otHoursMap[emp.employeeId] ?? emp.totalOtHours;
-                    return (
-                      <div
-                        key={emp.employeeId}
-                        onClick={() => toggleOtEmployee(emp.employeeId)}
-                        className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors ${
-                          isChecked
-                            ? "bg-background border-primary/40 shadow-2xs"
-                            : "bg-muted/40 border-transparent opacity-75"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Checkbox
-                            checked={isChecked}
-                            onCheckedChange={() => toggleOtEmployee(emp.employeeId)}
-                          />
-                          <div className="truncate">
-                            <div className="text-sm font-medium leading-none truncate">{emp.employeeName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                              #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
+                <div className="text-xs text-muted-foreground flex justify-between items-center px-1">
+                  <span>
+                    Approved: <strong className="text-foreground">{selectedOtIds.length}</strong> of {employeesWithOt.length} employees
+                  </span>
+                </div>
+
+                <div className="max-h-[240px] overflow-y-auto border rounded-md p-2 space-y-1.5 bg-muted/20">
+                  {filteredOtEmployees.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      No matching employees found.
+                    </p>
+                  ) : (
+                    filteredOtEmployees.map((emp) => {
+                      const isChecked = selectedOtIds.includes(emp.employeeId);
+                      const currentHours = otHoursMap[emp.employeeId] ?? emp.totalOtHours;
+                      return (
+                        <div
+                          key={emp.employeeId}
+                          onClick={() => toggleOtEmployee(emp.employeeId)}
+                          className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors ${
+                            isChecked
+                              ? "bg-background border-primary/40 shadow-2xs"
+                              : "bg-muted/40 border-transparent opacity-75"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={() => toggleOtEmployee(emp.employeeId)}
+                            />
+                            <div className="truncate">
+                              <div className="text-sm font-medium leading-none truncate">{emp.employeeName}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
+                              </div>
                             </div>
                           </div>
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              type="number"
+                              step="0.25"
+                              min="0"
+                              value={currentHours}
+                              onChange={(e) => {
+                                const val = Math.max(0, Number(e.target.value) || 0);
+                                setOtHoursMap((prev) => ({ ...prev, [emp.employeeId]: val }));
+                              }}
+                              className="h-7 w-20 text-xs font-semibold text-right"
+                              disabled={!isChecked}
+                            />
+                            <span className="text-xs text-muted-foreground font-medium">hrs OT</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Input
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            value={currentHours}
-                            onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value) || 0);
-                              setOtHoursMap((prev) => ({ ...prev, [emp.employeeId]: val }));
-                            }}
-                            className="h-7 w-20 text-xs font-semibold text-right"
-                            disabled={!isChecked}
-                          />
-                          <span className="text-xs text-muted-foreground font-medium">hrs OT</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                      );
+                    })
+                  )}
+                </div>
 
-              <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 p-2.5 border border-amber-200 dark:border-amber-900 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
-                <ShieldAlert className="size-4 shrink-0 mt-0.5" />
-                <span>
-                  Unapproved employees will receive <strong>0.0 hrs OT pay</strong> while retaining their raw timesheet records.
-                </span>
+                <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 p-2.5 border border-amber-200 dark:border-amber-900 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                  <ShieldAlert className="size-4 shrink-0 mt-0.5" />
+                  <span>
+                    Unapproved employees will receive <strong>0.0 hrs OT pay</strong> while retaining their raw timesheet records.
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === "UNDERTIME" && employeesWithUndertime.length > 0 && (
+              <div className="space-y-3 py-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter employee name or number..."
+                      value={undertimeSearchQuery}
+                      onChange={(e) => setUndertimeSearchQuery(e.target.value)}
+                      className="pl-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="outline" size="sm" onClick={handleDeductAllUndertime} className="text-xs">
+                      Deduct All
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleIgnoreAllUndertime} className="text-xs">
+                      Ignore All
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground flex justify-between items-center px-1">
+                  <span>
+                    Deducting undertime: <strong className="text-foreground">{employeesWithUndertime.length - ignoredUndertimeIds.length}</strong> | Ignored: <strong className="text-foreground">{ignoredUndertimeIds.length}</strong>
+                  </span>
+                </div>
+
+                <div className="max-h-[240px] overflow-y-auto border rounded-md p-2 space-y-1.5 bg-muted/20">
+                  {filteredUndertimeEmployees.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      No matching employees found.
+                    </p>
+                  ) : (
+                    filteredUndertimeEmployees.map((emp) => {
+                      const isIgnored = ignoredUndertimeIds.includes(emp.employeeId);
+                      return (
+                        <div
+                          key={emp.employeeId}
+                          onClick={() => toggleIgnoreUndertime(emp.employeeId)}
+                          className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors ${
+                            isIgnored
+                              ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800"
+                              : "bg-background border-border"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Checkbox
+                              checked={isIgnored}
+                              onCheckedChange={() => toggleIgnoreUndertime(emp.employeeId)}
+                            />
+                            <div className="truncate">
+                              <div className="text-sm font-medium leading-none truncate">{emp.employeeName}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                #{emp.employeeNumber} {emp.positionTitle ? `• ${emp.positionTitle}` : ""}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <div className="text-right">
+                              <div className="text-xs font-semibold">{emp.totalUndertimeMinutes} mins</div>
+                              <div className="text-[10px] text-muted-foreground">({emp.totalUndertimeHours} hrs)</div>
+                            </div>
+                            <span
+                              className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+                                isIgnored
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              }`}
+                            >
+                              {isIgnored ? "Ignored (Waived)" : "Deduct"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 p-2.5 border border-amber-200 dark:border-amber-900 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  <span>
+                    Employees marked as <strong>Ignored</strong> will not have undertime deducted from basic pay during this recompute run.
+                  </span>
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
               <Button
@@ -283,6 +450,7 @@ export function RunActions({
                   callAction("recompute", {
                     approvedOtEmployeeIds: selectedOtIds,
                     approvedOtHoursMap: finalApprovedOtHoursMap,
+                    ignoredUndertimeEmployeeIds: ignoredUndertimeIds,
                   });
                 }}
               >

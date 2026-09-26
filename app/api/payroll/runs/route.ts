@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       computedByUserId: ctx.userId,
       approvedOtEmployeeIds: data.approvedOtEmployeeIds,
       approvedOtHoursMap: data.approvedOtHoursMap,
+      ignoredUndertimeEmployeeIds: data.ignoredUndertimeEmployeeIds,
     });
 
     return NextResponse.json({ runId }, { status: 201 });

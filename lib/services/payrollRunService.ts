@@ -23,6 +23,7 @@ export async function computeAndPersistPayrollRun({
   replacesRunId,
   approvedOtEmployeeIds,
   approvedOtHoursMap,
+  ignoredUndertimeEmployeeIds,
   targetRunId,
 }: {
   companyId: string;
@@ -34,6 +35,7 @@ export async function computeAndPersistPayrollRun({
   replacesRunId?: string;
   approvedOtEmployeeIds?: string[];
   approvedOtHoursMap?: Record<string, number>;
+  ignoredUndertimeEmployeeIds?: string[];
   targetRunId?: string;
 }) {
   const period = await prisma.payrollPeriod.upsert({
@@ -211,14 +213,16 @@ export async function computeAndPersistPayrollRun({
         approvedOtRatio = approvedOtEmployeeIds.includes(emp.id) ? 1 : 0;
       }
 
+      const isUndertimeIgnored = ignoredUndertimeEmployeeIds?.includes(emp.id) ?? false;
+
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => ({
         workDate: t.workDate.toISOString(),
         status: t.status,
         regularHours: t.regularHours.toString(),
         overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
         nightDiffHours: t.nightDiffHours.toString(),
-        lateMinutes: t.lateMinutes,
-        undertimeMinutes: t.undertimeMinutes,
+        lateMinutes: isUndertimeIgnored ? 0 : t.lateMinutes,
+        undertimeMinutes: isUndertimeIgnored ? 0 : t.undertimeMinutes,
         holidayType: (t.holidayType as HolidayType | null) ?? null,
         isRestDay: t.isRestDay,
       }));
