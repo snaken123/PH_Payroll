@@ -249,8 +249,7 @@ export async function generateCompanyPayoutReport(
             companyId: true,
             company: { select: { id: true, legalName: true, companyCode: true } },
             compensationRecords: {
-              where: { effectiveTo: null },
-              take: 1,
+              orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }],
               include: {
                 allowances: {
                   include: { payingCompany: { select: { id: true, legalName: true, companyCode: true } } },
@@ -288,7 +287,17 @@ export async function generateCompanyPayoutReport(
 
       // Inspect allowance line items on payslip directly
       const allowanceLineItems = payslip.lineItems.filter((li) => li.category === "ALLOWANCE");
-      const currentComp = payslip.employee.compensationRecords[0];
+
+      const cutoffStart = payslip.payrollRun.payrollPeriod.cutoffStart;
+      const cutoffEnd = payslip.payrollRun.payrollPeriod.cutoffEnd;
+      const effectiveComp =
+        payslip.employee.compensationRecords.find(
+          (c) => c.effectiveFrom <= cutoffEnd && (c.effectiveTo === null || c.effectiveTo > cutoffEnd)
+        ) ||
+        payslip.employee.compensationRecords.find(
+          (c) => c.effectiveFrom <= cutoffStart && (c.effectiveTo === null || c.effectiveTo >= cutoffStart)
+        ) ||
+        payslip.employee.compensationRecords[0];
 
       if (allowanceLineItems.length > 0) {
         const usedLineItemIds = new Set<string>();
@@ -308,9 +317,9 @@ export async function generateCompanyPayoutReport(
           }
         }
 
-        // Second pass: for older payslips without sourceRef.payingCompanyId, match using currentComp.allowances
-        if (currentComp && currentComp.allowances) {
-          for (const allowance of currentComp.allowances) {
+        // Second pass: for older payslips without sourceRef.payingCompanyId, match using effectiveComp.allowances
+        if (effectiveComp && effectiveComp.allowances) {
+          for (const allowance of effectiveComp.allowances) {
             if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
               const lineItemMatch = allowanceLineItems.find(
                 (li) =>
