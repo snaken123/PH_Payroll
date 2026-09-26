@@ -313,6 +313,7 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
         isTaxable: allowance.isTaxable,
         isDeMinimis: !!allowance.isDeMinimis,
         nonTaxableAmount: nonTaxableAmount.toString(),
+        payingCompanyId: allowance.payingCompanyId ?? null,
       },
     });
   }

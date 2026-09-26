@@ -160,6 +160,25 @@ export async function generateCompanyPayoutReport(
     targetRunIds = payrollRuns.map((r) => r.id);
   }
 
+  // Expand target run IDs to include runs from other group companies covering the same cutoff periods
+  const selectedRuns = payrollRuns.filter((r) => targetRunIds.includes(r.id));
+  const cutoffTimeRanges = selectedRuns.map((r) => ({
+    start: r.payrollPeriod.cutoffStart.getTime(),
+    end: r.payrollPeriod.cutoffEnd.getTime(),
+  }));
+
+  const matchingPeriodRunIds = payrollRuns
+    .filter((r) =>
+      cutoffTimeRanges.some(
+        (cr) =>
+          r.payrollPeriod.cutoffStart.getTime() === cr.start &&
+          r.payrollPeriod.cutoffEnd.getTime() === cr.end
+      )
+    )
+    .map((r) => r.id);
+
+  const queryRunIds = Array.from(new Set([...targetRunIds, ...matchingPeriodRunIds]));
+
   // Initialize per-company map
   const companyReportMap = new Map<string, CompanyReportData>();
   for (const c of selectedCompanies) {
@@ -181,7 +200,6 @@ export async function generateCompanyPayoutReport(
   const allEmployees = await prisma.employee.findMany({
     where: {
       isDeleted: false,
-      companyId: { in: filterCompanyIds },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     select: {
@@ -203,22 +221,17 @@ export async function generateCompanyPayoutReport(
     companyName: e.company.legalName,
   }));
 
-  const allEmployeeIds = allEmployees.map((e) => e.id);
   const isEmployeeFiltered = employeeIds && employeeIds.length > 0 && !employeeIds.includes("ALL");
-  const filterEmployeeIds = isEmployeeFiltered
-    ? allEmployeeIds.filter((id) => employeeIds.includes(id))
-    : allEmployeeIds;
-
   const isEmployeeIncluded = (empId: string) => {
     if (!isEmployeeFiltered) return true;
-    return filterEmployeeIds.includes(empId);
+    return employeeIds.includes(empId);
   };
 
-  // 4. If target runs exist, query payslips
-  if (targetRunIds.length > 0) {
+  // 4. If query runs exist, query payslips
+  if (queryRunIds.length > 0) {
     const payslips = await prisma.payslip.findMany({
       where: {
-        payrollRunId: { in: targetRunIds },
+        payrollRunId: { in: queryRunIds },
       },
       include: {
         employee: {
@@ -270,28 +283,57 @@ export async function generateCompanyPayoutReport(
       let totalExternalIntercompanyAllowances = 0;
       const intercompanyItems: Array<{ payingCompanyId: string; label: string; amount: number }> = [];
 
+      // Inspect allowance line items on payslip directly
+      const allowanceLineItems = payslip.lineItems.filter((li) => li.category === "ALLOWANCE");
       const currentComp = payslip.employee.compensationRecords[0];
-      if (currentComp && currentComp.allowances) {
-        for (const allowance of currentComp.allowances) {
-          if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
-            // Match actual calculated allowance line item from payslip
-            const lineItemMatch =
-              payslip.lineItems.find(
-                (li) =>
-                  li.category === "ALLOWANCE" &&
-                  li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
-              ) ||
-              payslip.lineItems.find(
-                (li) => li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
-              );
 
-            const allowanceAmount = lineItemMatch ? Number(lineItemMatch.amount) : Number(allowance.amount);
+      if (allowanceLineItems.length > 0) {
+        const usedLineItemIds = new Set<string>();
+
+        // First pass: match line items that explicitly store payingCompanyId in sourceRef
+        for (const li of allowanceLineItems) {
+          const payingCoId = (li.sourceRef as { payingCompanyId?: string | null } | null)?.payingCompanyId;
+          if (payingCoId && payingCoId !== primaryCompanyId) {
+            usedLineItemIds.add(li.id);
+            const allowanceAmount = Number(li.amount);
             totalExternalIntercompanyAllowances += allowanceAmount;
             intercompanyItems.push({
-              payingCompanyId: allowance.payingCompanyId,
-              label: allowance.label,
+              payingCompanyId: payingCoId,
+              label: li.description,
               amount: allowanceAmount,
             });
+          }
+        }
+
+        // Second pass: for older payslips without sourceRef.payingCompanyId, match using currentComp.allowances
+        if (currentComp && currentComp.allowances) {
+          for (const allowance of currentComp.allowances) {
+            if (allowance.payingCompanyId && allowance.payingCompanyId !== primaryCompanyId) {
+              const lineItemMatch = allowanceLineItems.find(
+                (li) =>
+                  !usedLineItemIds.has(li.id) &&
+                  li.description.toLowerCase().trim() === allowance.label.toLowerCase().trim()
+              );
+
+              if (lineItemMatch) {
+                usedLineItemIds.add(lineItemMatch.id);
+                const allowanceAmount = Number(lineItemMatch.amount);
+                totalExternalIntercompanyAllowances += allowanceAmount;
+                intercompanyItems.push({
+                  payingCompanyId: allowance.payingCompanyId,
+                  label: allowance.label,
+                  amount: allowanceAmount,
+                });
+              } else if (usedLineItemIds.size === 0) {
+                const allowanceAmount = Number(allowance.amount);
+                totalExternalIntercompanyAllowances += allowanceAmount;
+                intercompanyItems.push({
+                  payingCompanyId: allowance.payingCompanyId,
+                  label: allowance.label,
+                  amount: allowanceAmount,
+                });
+              }
+            }
           }
         }
       }
@@ -397,6 +439,9 @@ export async function generateCompanyPayoutReport(
   } else if (targetRunIds.length < payrollRuns.length) {
     payrollRunLabel = `${targetRunIds.length} Selected Payroll Runs`;
   }
+
+  const allEmployeeIds = allEmployees.map((e) => e.id);
+  const filterEmployeeIds = isEmployeeFiltered ? employeeIds : allEmployeeIds;
 
   const includedCompaniesLabel = selectedCompanies.length === allCompanies.length
     ? `All ${allCompanies.length} Group Companies`
