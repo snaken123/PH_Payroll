@@ -6,6 +6,7 @@ export interface CompanyAttendanceConfig {
   attendanceOtGracePeriodMinutes?: number;   // e.g. 15
   attendanceFlexi1WindowStart?: string;      // e.g. "07:00"
   attendanceFlexi1WindowEnd?: string;        // e.g. "10:00"
+  attendanceFlexi1LateGracePeriodMinutes?: number; // e.g. 15
 }
 
 export interface CalculateHoursInput {
@@ -47,6 +48,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
   const otGraceMinutes = config?.attendanceOtGracePeriodMinutes ?? 15;
   const flexiWindowStartStr = config?.attendanceFlexi1WindowStart || "07:00";
   const flexiWindowEndStr = config?.attendanceFlexi1WindowEnd || "10:00";
+  const flexiLateGraceMinutes = config?.attendanceFlexi1LateGracePeriodMinutes ?? 15;
 
   const rawInMins = parseMinutes(timeIn);
   const rawOutMins = parseMinutes(timeOut);
@@ -93,8 +95,8 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     if (inMins < windowStartMins) {
       effectiveStartMins = windowStartMins;
       lateMinutes = 0;
-    } else if (inMins <= windowEndMins) {
-      effectiveStartMins = inMins;
+    } else if (inMins <= windowEndMins + flexiLateGraceMinutes) {
+      effectiveStartMins = inMins <= windowEndMins ? inMins : windowEndMins;
       lateMinutes = 0;
     } else {
       effectiveStartMins = windowEndMins;

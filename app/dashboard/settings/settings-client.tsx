@@ -67,6 +67,7 @@ interface CompanyData {
   attendanceOtGracePeriodMinutes?: number;
   attendanceFlexi1WindowStart?: string;
   attendanceFlexi1WindowEnd?: string;
+  attendanceFlexi1LateGracePeriodMinutes?: number;
 }
 
 interface BankAccountData {
@@ -150,6 +151,7 @@ export function SettingsClient({
     attendanceOtGracePeriodMinutes: company.attendanceOtGracePeriodMinutes ?? 15,
     attendanceFlexi1WindowStart: company.attendanceFlexi1WindowStart ?? "07:00",
     attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd ?? "10:00",
+    attendanceFlexi1LateGracePeriodMinutes: company.attendanceFlexi1LateGracePeriodMinutes ?? 15,
   });
 
   async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent) {
@@ -663,6 +665,19 @@ export function SettingsClient({
                     onChange={(e) => setFormData({ ...formData, attendanceFlexi1WindowEnd: e.target.value })}
                   />
                   <p className="text-[11px] text-muted-foreground">Latest allowed login time before late minutes begin accumulating.</p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="attendanceFlexi1LateGracePeriodMinutes" className="text-xs">Late Grace Period (Minutes)</Label>
+                  <Input
+                    id="attendanceFlexi1LateGracePeriodMinutes"
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={formData.attendanceFlexi1LateGracePeriodMinutes}
+                    onChange={(e) => setFormData({ ...formData, attendanceFlexi1LateGracePeriodMinutes: Number(e.target.value) })}
+                    className="max-w-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground">If time-in &le; window end + grace period, 0 late. If exceeded, full late time is deducted from window end.</p>
                 </div>
               </div>
             </div>

@@ -112,8 +112,9 @@ model Company {
   attendanceLunchBreakMinutes      Int                      @default(60)
   attendanceLateGracePeriodMinutes Int                      @default(15)
   attendanceOtGracePeriodMinutes   Int                      @default(15)
-  attendanceFlexi1WindowStart      String                   @default("07:00")
-  attendanceFlexi1WindowEnd        String                   @default("10:00")
+  attendanceFlexi1WindowStart          String                   @default("07:00")
+  attendanceFlexi1WindowEnd            String                   @default("10:00")
+  attendanceFlexi1LateGracePeriodMinutes Int                    @default(15)
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
 

@@ -10,6 +10,7 @@ describe("calculateTimesheetHours", () => {
     attendanceOtGracePeriodMinutes: 15,
     attendanceFlexi1WindowStart: "07:00",
     attendanceFlexi1WindowEnd: "10:00",
+    attendanceFlexi1LateGracePeriodMinutes: 15,
   };
 
   describe("Regular Schedule", () => {
@@ -157,7 +158,21 @@ describe("calculateTimesheetHours", () => {
       expect(res.overtimeHours).toBe(0);
     });
 
-    it("should count late minutes from window end (10:00) if checking in after 10:00", () => {
+    it("should allow up to Flexi1 grace period without late deduction (e.g. 10:15 check-in for 10:00 window end)", () => {
+      const res = calculateTimesheetHours({
+        scheduleType: "Flexi1",
+        timeIn: "10:15",
+        timeOut: "19:00",
+        config: defaultConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(0);
+      expect(res.regularHours).toBe(8.0);
+      expect(res.overtimeHours).toBe(0);
+    });
+
+    it("should deduct full late minutes from window end (10:00) if checking in after window end + grace period (e.g. 10:30)", () => {
       const res = calculateTimesheetHours({
         scheduleType: "Flexi1",
         timeIn: "10:30",

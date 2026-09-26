@@ -42,6 +42,7 @@ export async function GET(request: Request) {
         attendanceOtGracePeriodMinutes: true,
         attendanceFlexi1WindowStart: true,
         attendanceFlexi1WindowEnd: true,
+        attendanceFlexi1LateGracePeriodMinutes: true,
       },
     }),
   ]);

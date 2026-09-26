@@ -99,6 +99,7 @@ export async function PATCH(request: Request) {
           attendanceOtGracePeriodMinutes: data.attendanceOtGracePeriodMinutes,
           attendanceFlexi1WindowStart: data.attendanceFlexi1WindowStart,
           attendanceFlexi1WindowEnd: data.attendanceFlexi1WindowEnd,
+          attendanceFlexi1LateGracePeriodMinutes: data.attendanceFlexi1LateGracePeriodMinutes,
         },
       });
 
