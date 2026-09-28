@@ -92,9 +92,10 @@ export function AccessTree({
     if (checked) {
       const existing = getCompanyMembership(companyId);
       if (!existing) {
+        const defaultPreset = PERMISSION_PRESETS["PAYROLL_MASTER"]?.permissions || [...ALL_PERMISSIONS];
         onMembershipsChange([
           ...memberships,
-          { companyId, role: "HR_STAFF", permissions: [...ALL_PERMISSIONS] },
+          { companyId, role: "PAYROLL_ADMIN", permissions: [...defaultPreset] },
         ]);
         setExpandedCompanies((prev) => ({ ...prev, [companyId]: true }));
       }
@@ -135,15 +136,34 @@ export function AccessTree({
   const applyPresetToCompany = (companyId: string, presetKey: string) => {
     const preset = PERMISSION_PRESETS[presetKey];
     if (!preset) return;
-    updateCompanyPermissions(companyId, [...preset.permissions]);
+    const roleMapping: Record<string, any> = {
+      APPROVER: "APPROVER",
+      PAYROLL_MASTER: "PAYROLL_ADMIN",
+      EMPLOYEE_USER: "EMPLOYEE",
+      SUPER_ADMIN: "COMPANY_OWNER",
+    };
+    onMembershipsChange(
+      memberships.map((m) =>
+        m.companyId === companyId
+          ? { ...m, role: roleMapping[presetKey] || m.role, permissions: [...preset.permissions] }
+          : m
+      )
+    );
   };
 
   const applyPresetToAllCompanies = (presetKey: string) => {
     const preset = PERMISSION_PRESETS[presetKey];
     if (!preset) return;
+    const roleMapping: Record<string, any> = {
+      APPROVER: "APPROVER",
+      PAYROLL_MASTER: "PAYROLL_ADMIN",
+      EMPLOYEE_USER: "EMPLOYEE",
+      SUPER_ADMIN: "COMPANY_OWNER",
+    };
     onMembershipsChange(
       memberships.map((m) => ({
         ...m,
+        role: roleMapping[presetKey] || m.role,
         permissions: [...preset.permissions],
       }))
     );
