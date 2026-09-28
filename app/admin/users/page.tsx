@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
+import { DeleteUserDialog } from "@/components/admin/users/delete-user-dialog";
 import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, LockIcon } from "lucide-react";
 
 export default async function AdminUsersPage() {
@@ -156,7 +157,10 @@ export default async function AdminUsersPage() {
                       })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <EditUserDialog user={user} companies={companies} />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <EditUserDialog user={user} companies={companies} />
+                        <DeleteUserDialog user={user} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
