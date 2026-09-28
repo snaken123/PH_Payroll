@@ -239,6 +239,18 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
     label: "4. User / Employee (View Own Payslips & Self-Service)",
     permissions: ["overview.view", "employee.view_info"],
   },
+  ENCODER: {
+    label: "5. Encoder (Update Attendance & 201 Files - No Pay/Leave/Loan Info)",
+    permissions: [
+      "overview.view",
+      "employee.view_info",
+      "employee.upload_docs",
+      "employee.manage",
+      "attendance.view",
+      "attendance.manage",
+      "attendance.global_actions",
+    ],
+  },
 };
 
 export function hasPermission(

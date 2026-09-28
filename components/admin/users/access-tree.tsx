@@ -139,6 +139,7 @@ export function AccessTree({
     const roleMapping: Record<string, any> = {
       APPROVER: "APPROVER",
       PAYROLL_MASTER: "PAYROLL_ADMIN",
+      ENCODER: "HR_STAFF",
       EMPLOYEE_USER: "EMPLOYEE",
       SUPER_ADMIN: "COMPANY_OWNER",
     };
@@ -157,6 +158,7 @@ export function AccessTree({
     const roleMapping: Record<string, any> = {
       APPROVER: "APPROVER",
       PAYROLL_MASTER: "PAYROLL_ADMIN",
+      ENCODER: "HR_STAFF",
       EMPLOYEE_USER: "EMPLOYEE",
       SUPER_ADMIN: "COMPANY_OWNER",
     };
@@ -250,6 +252,15 @@ export function AccessTree({
                   onClick={() => applyPresetToAllCompanies("PAYROLL_MASTER")}
                 >
                   Payroll Master
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  className="text-[10px] h-6 px-1.5 border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/50"
+                  onClick={() => applyPresetToAllCompanies("ENCODER")}
+                >
+                  Encoder
                 </Button>
                 <Button
                   type="button"
@@ -351,6 +362,15 @@ export function AccessTree({
                             onClick={() => applyPresetToCompany(company.id, "PAYROLL_MASTER")}
                           >
                             Payroll Master
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            className="text-[9px] h-5 px-1.5 text-cyan-400 hover:text-white"
+                            onClick={() => applyPresetToCompany(company.id, "ENCODER")}
+                          >
+                            Encoder
                           </Button>
                           <Button
                             type="button"
