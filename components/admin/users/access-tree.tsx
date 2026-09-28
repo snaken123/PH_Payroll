@@ -217,28 +217,28 @@ export function AccessTree({
                   type="button"
                   variant="outline"
                   size="xs"
-                  className="text-[10px] h-6 px-1.5 border-slate-700"
-                  onClick={() => applyPresetToAllCompanies("FULL_ADMIN")}
+                  className="text-[10px] h-6 px-1.5 border-amber-500/40 text-amber-300 hover:bg-amber-950/50"
+                  onClick={() => applyPresetToAllCompanies("APPROVER")}
                 >
-                  Full Admin
+                  Approver
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="xs"
-                  className="text-[10px] h-6 px-1.5 border-slate-700"
-                  onClick={() => applyPresetToAllCompanies("HR_ADMIN_NO_PAY")}
+                  className="text-[10px] h-6 px-1.5 border-blue-500/40 text-blue-300 hover:bg-blue-950/50"
+                  onClick={() => applyPresetToAllCompanies("PAYROLL_MASTER")}
                 >
-                  HR (No Pay)
+                  Payroll Master
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="xs"
-                  className="text-[10px] h-6 px-1.5 border-slate-700"
-                  onClick={() => applyPresetToAllCompanies("ATTENDANCE_ONLY")}
+                  className="text-[10px] h-6 px-1.5 border-slate-700 text-slate-300 hover:bg-slate-800"
+                  onClick={() => applyPresetToAllCompanies("EMPLOYEE_USER")}
                 >
-                  Attendance Only
+                  User (Employee)
                 </Button>
               </div>
             )}
@@ -313,33 +313,33 @@ export function AccessTree({
                           Functionality Permissions Tree
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-slate-500">Presets for this company:</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="xs"
-                            className="text-[9px] h-5 px-1.5 text-blue-400 hover:text-white"
-                            onClick={() => applyPresetToCompany(company.id, "FULL_ADMIN")}
-                          >
-                            All Access
-                          </Button>
+                          <span className="text-[9px] text-slate-500">Presets:</span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="xs"
                             className="text-[9px] h-5 px-1.5 text-amber-400 hover:text-white"
-                            onClick={() => applyPresetToCompany(company.id, "HR_ADMIN_NO_PAY")}
+                            onClick={() => applyPresetToCompany(company.id, "APPROVER")}
                           >
-                            HR (No Pay)
+                            Approver
                           </Button>
                           <Button
                             type="button"
                             variant="ghost"
                             size="xs"
-                            className="text-[9px] h-5 px-1.5 text-emerald-400 hover:text-white"
-                            onClick={() => applyPresetToCompany(company.id, "ATTENDANCE_ONLY")}
+                            className="text-[9px] h-5 px-1.5 text-blue-400 hover:text-white"
+                            onClick={() => applyPresetToCompany(company.id, "PAYROLL_MASTER")}
                           >
-                            Attendance Only
+                            Payroll Master
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            className="text-[9px] h-5 px-1.5 text-slate-300 hover:text-white"
+                            onClick={() => applyPresetToCompany(company.id, "EMPLOYEE_USER")}
+                          >
+                            User (Employee)
                           </Button>
                         </div>
                       </div>

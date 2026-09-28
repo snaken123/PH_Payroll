@@ -48,6 +48,16 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
         description: "Upload and download contracts, IDs, certificates, and HR documents",
       },
       {
+        key: "employee.create_recommended",
+        label: "Create Employee Profile & Recommend Salary",
+        description: "Draft new employee profile with recommended compensation (requires Approver activation)",
+      },
+      {
+        key: "employee.approve",
+        label: "Approve & Activate New Employees & Final Salaries",
+        description: "Review recommended salaries and grant final active approval for new employees",
+      },
+      {
         key: "employee.manage",
         label: "Create, Edit & Delete Employees",
         description: "Add new employees, modify profile details, separate or delete roster records",
@@ -126,8 +136,13 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       },
       {
         key: "payroll.approve",
-        label: "Approve, Post & Void Payroll Runs",
-        description: "Finalize payroll runs, lock period data, or void posted runs",
+        label: "Approve Payroll Runs (Approver Only)",
+        description: "Grant formal executive approval on calculated draft payroll runs",
+      },
+      {
+        key: "payroll.post",
+        label: "Post Approved Payroll Runs & Print Payslips (Payroll Master)",
+        description: "Post approved payroll runs to lock period data and print payslip summaries",
       },
       {
         key: "payroll.send_payslips",
@@ -172,42 +187,57 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
 export const ALL_PERMISSIONS: string[] = PERMISSION_CATEGORIES.flatMap((c) => c.items.map((i) => i.key));
 
 export const PERMISSION_PRESETS: Record<string, { label: string; permissions: string[] }> = {
-  FULL_ADMIN: {
-    label: "Full Company Owner / Payroll Admin (All Access)",
+  SUPER_ADMIN: {
+    label: "1. Superadmin (Unrestricted Platform & All Companies)",
     permissions: ALL_PERMISSIONS,
   },
-  HR_ADMIN_NO_PAY: {
-    label: "HR Admin (201 Info & Documents Only - No Pay Information)",
+  APPROVER: {
+    label: "2. Approver (Approve Payroll Runs, OT, Loans, & Employee Creation)",
     permissions: [
       "overview.view",
       "employee.view_info",
+      "employee.view_compensation",
       "employee.upload_docs",
       "employee.manage",
+      "employee.approve",
       "attendance.view",
       "attendance.manage",
       "attendance.global_actions",
       "leave.view",
       "leave.manage",
+      "loans.view",
+      "loans.manage",
+      "payroll.compute",
+      "payroll.approve",
+      "reports.view",
+      "contractors.view",
+      "contractors.manage",
     ],
   },
-  ATTENDANCE_ONLY: {
-    label: "Attendance & Timekeeper Only",
-    permissions: ["overview.view", "attendance.view", "attendance.manage", "attendance.global_actions", "employee.view_info"],
-  },
-  PAYROLL_PROCESSOR: {
-    label: "Payroll & Tax Processor",
+  PAYROLL_MASTER: {
+    label: "3. Payroll Master (Run Payroll, Post Approved, Print/Send Payslips - Cannot Approve)",
     permissions: [
       "overview.view",
       "employee.view_info",
       "employee.view_compensation",
+      "employee.upload_docs",
+      "employee.create_recommended",
       "attendance.view",
+      "attendance.manage",
+      "attendance.global_actions",
       "leave.view",
       "loans.view",
       "payroll.compute",
-      "payroll.approve",
+      "payroll.post",
       "payroll.send_payslips",
       "reports.view",
+      "contractors.view",
+      "contractors.manage",
     ],
+  },
+  EMPLOYEE_USER: {
+    label: "4. User / Employee (View Own Payslips & Self-Service)",
+    permissions: ["overview.view", "employee.view_info"],
   },
 };
 
@@ -234,3 +264,4 @@ export function parsePermissions(raw: unknown): string[] {
   }
   return [];
 }
+
