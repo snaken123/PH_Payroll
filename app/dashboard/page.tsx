@@ -22,6 +22,9 @@ import {
   UserCheckIcon,
 } from "lucide-react";
 
+import { getSuperUserTodoList } from "@/lib/services/todoService";
+import { SuperUserTodo } from "@/components/dashboard/super-user-todo";
+
 export default async function DashboardPage() {
   const ctx = await getTenantContext();
 
@@ -52,7 +55,7 @@ export default async function DashboardPage() {
   const canViewReports = ctx.isSuperAdmin || ctx.permissions.includes("reports.view");
   const canViewLoans = ctx.isSuperAdmin || ctx.permissions.includes("loans.view");
 
-  const [company, employeeCount, branchCount, activeLoansCount, latestRun, recentRuns] = await Promise.all([
+  const [company, employeeCount, branchCount, activeLoansCount, latestRun, recentRuns, todoSummary] = await Promise.all([
     prisma.company.findUniqueOrThrow({ where: { id: ctx.companyId } }),
     prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) }),
     prisma.companyBranch.count({ where: withCompanyScope(ctx.companyId) }),
@@ -68,6 +71,7 @@ export default async function DashboardPage() {
       orderBy: { runNumber: "desc" },
       take: 5,
     }),
+    getSuperUserTodoList(ctx.companyId),
   ]);
 
   const formattedDate = new Date().toLocaleDateString("en-US", {
@@ -129,6 +133,11 @@ export default async function DashboardPage() {
           icon={Building2Icon}
         />
       </div>
+
+      {/* Super User To-Do List & Pending Approvals Widget */}
+      {(canComputePayroll || canViewLoans || canViewCompensation || ctx.isSuperAdmin) && (
+        <SuperUserTodo summary={todoSummary} />
+      )}
 
       {/* Operational Highlights / Quick Access Grid */}
       <div className="grid gap-4 md:grid-cols-3">
