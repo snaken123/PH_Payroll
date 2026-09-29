@@ -68,6 +68,12 @@ export function estimateMonthlyEquivalentCompensation(
   let totalAllowancesMonthly = new Decimal(0);
 
   for (const allowance of allowances) {
+    // Non-taxable allowances (e.g. de minimis, non-taxable miscellaneous allowances)
+    // are excluded from SSS, PhilHealth, and Pag-IBIG statutory contribution bases.
+    if (allowance.isTaxable === false) {
+      continue;
+    }
+
     const isOtherCompany = !!(
       allowance.payingCompanyId &&
       currentCompanyId &&
