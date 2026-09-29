@@ -198,8 +198,8 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
       "employee.view_info",
       "employee.view_compensation",
       "employee.upload_docs",
-      "employee.manage",
       "employee.approve",
+      "employee.manage",
       "attendance.view",
       "attendance.manage",
       "attendance.global_actions",
@@ -217,7 +217,6 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
   PAYROLL_MASTER: {
     label: "3. Payroll Master (Run Payroll, Post Approved, Print/Send Payslips - Cannot Approve)",
     permissions: [
-      "overview.view",
       "employee.view_info",
       "employee.view_compensation",
       "employee.upload_docs",
@@ -233,14 +232,11 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
       "reports.view",
       "contractors.view",
       "contractors.manage",
+      "overview.view",
     ],
   },
-  EMPLOYEE_USER: {
-    label: "4. User / Employee (View Own Payslips & Self-Service)",
-    permissions: ["overview.view", "employee.view_info"],
-  },
   ENCODER: {
-    label: "5. Encoder (Update Attendance & 201 Files - No Pay/Leave/Loan Info)",
+    label: "4. Encoder (Update Attendance & 201 Files - No Pay/Leave/Loan Info)",
     permissions: [
       "overview.view",
       "employee.view_info",
@@ -250,6 +246,10 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
       "attendance.manage",
       "attendance.global_actions",
     ],
+  },
+  EMPLOYEE_USER: {
+    label: "5. User / Employee (View Own Payslips & Self-Service)",
+    permissions: ["employee.view_info"],
   },
 };
 
