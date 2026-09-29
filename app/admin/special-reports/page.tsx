@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
-import { CompanyPayoutReport } from "@/components/admin/company-payout-report";
+import { SpecialReportsContainer } from "@/components/admin/special-reports-container";
 
 export default async function AdminSpecialReportsPage() {
   const session = await getAuthSession();
@@ -9,7 +9,7 @@ export default async function AdminSpecialReportsPage() {
 
   return (
     <div className="space-y-6">
-      <CompanyPayoutReport />
+      <SpecialReportsContainer />
     </div>
   );
 }
