@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 
 describe("BDO BOB Special Report Excel Population Module", () => {
   it("verifies template file exists in public directory and contains Sheet1 with expected header structure", () => {

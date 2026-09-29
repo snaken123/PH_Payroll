@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 
 interface EmployeeSelection {
   employeeId: string;
