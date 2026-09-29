@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
+import os from "os";
+import { execFileSync } from "child_process";
 import * as XLSX from "xlsx";
 
 interface EmployeeSelection {
@@ -62,90 +64,93 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No matching employees selected" }, { status: 400 });
     }
 
-    // 2. Read template .xls file while preserving cell styles & VBA project
     const templatePath = path.join(process.cwd(), "public", "BDO ATM Payroll Converter for BOB -.GPFRESH COMPANY INC.xls");
     if (!fs.existsSync(templatePath)) {
       return NextResponse.json({ error: "BDO BOB template spreadsheet not found in public directory" }, { status: 500 });
     }
 
-    const templateBuffer = fs.readFileSync(templatePath);
-    const wb = XLSX.read(templateBuffer, { cellStyles: true, cellFormula: true, bookVBA: true, cellDates: true });
-
-    const sheetName = wb.SheetNames[0] || "Sheet1";
-    const sheet = wb.Sheets[sheetName];
-
-    // 3. Set Metadata Cells
-    // Upload Date (Cell B2)
-    const formattedUploadDate = uploadDate ? new Date(uploadDate) : new Date();
-    sheet["B2"] = {
-      v: formattedUploadDate,
-      t: "d",
-      z: "d-mmm-yy",
-    };
-
-    // Company Code (Cell B3)
-    sheet["B3"] = {
-      v: companyCode || run.company.companyCode || "C86I",
-      t: "s",
-    };
-
-    // Batch (Cell B5)
-    sheet["B5"] = {
-      v: String(batch || "1"),
-      t: "s",
-    };
-
-    // 4. Populate Employee Data Rows starting at Row 7 (A7, B7, C7, D7)
-    targetPayslips.forEach((ps, idx) => {
-      const rowIdx = 7 + idx;
+    // Build standard payload rows
+    const rows = targetPayslips.map((ps) => {
       const emp = ps.employee;
       const remarks = selectionMap.get(emp.id) || "";
-
-      // Format Name: "First Name", " ", "Middle Name", " ", "Last Name"
       const middle = emp.middleName?.trim() ? ` ${emp.middleName.trim()} ` : " ";
       const formattedName = `${emp.firstName.trim()}${middle}${emp.lastName.trim()}`.toUpperCase();
-
-      // Account # (Col A)
-      sheet[`A${rowIdx}`] = {
-        v: emp.bankAccountNumber || "",
-        t: "s",
-      };
-
-      // Amount (Col B) - Computed Net Pay
-      sheet[`B${rowIdx}`] = {
-        v: Number(ps.netPay),
-        t: "n",
-        z: "#,##0.00",
-      };
-
-      // Name (Col C)
-      sheet[`C${rowIdx}`] = {
-        v: formattedName,
-        t: "s",
-      };
-
-      // Remarks (Col D)
-      sheet[`D${rowIdx}`] = {
-        v: remarks,
-        t: "s",
+      return {
+        account: emp.bankAccountNumber || "",
+        amount: Number(ps.netPay),
+        name: formattedName,
+        remarks,
       };
     });
 
-    // Update sheet reference bounds
-    sheet["!ref"] = `A1:D${6 + targetPayslips.length}`;
+    let outputBuffer: Buffer | null = null;
 
-    // 5. Generate XLS buffer with bookVBA: true
-    const outputBuffer = XLSX.write(wb, { type: "buffer", bookType: "xls", bookVBA: true });
+    // 2. Attempt Python Excel COM population (preserves ActiveX CommandButton1, macros, and formatting 100%)
+    const tempDir = os.tmpdir();
+    const jsonPath = path.join(tempDir, `bdo_bob_input_${Date.now()}.json`);
+    const outputPath = path.join(tempDir, `bdo_bob_output_${Date.now()}.xls`);
 
-    const fileNameDate = uploadDate ? uploadDate.replace(/-/g, "") : new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const safeCompanyCode = (companyCode || "BDO_BOB").replace(/[^a-z0-9]/gi, "_");
-    const filename = `BDO_BOB_Converter_${safeCompanyCode}_${fileNameDate}.xls`;
+    try {
+      const payload = {
+        templatePath,
+        outputPath,
+        uploadDate: uploadDate || new Date().toISOString().slice(0, 10),
+        companyCode: companyCode || run.company.companyCode || "C86I",
+        batch: String(batch || "1"),
+        rows,
+      };
 
-    return new NextResponse(outputBuffer, {
+      fs.writeFileSync(jsonPath, JSON.stringify(payload), "utf-8");
+      const scriptPath = path.join(process.cwd(), "scripts", "populate_bdo_bob.py");
+      
+      execFileSync("python", [scriptPath, jsonPath], { stdio: "pipe", timeout: 15000 });
+      if (fs.existsSync(outputPath)) {
+        outputBuffer = fs.readFileSync(outputPath);
+      }
+    } catch (pyErr) {
+      console.warn("Python Excel COM populator unavailable or failed, falling back to SheetJS:", pyErr);
+    } finally {
+      if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    }
+
+    // 3. Fallback to SheetJS if Python COM was unavailable
+    if (!outputBuffer) {
+      const templateBuffer = fs.readFileSync(templatePath);
+      const wb = XLSX.read(templateBuffer, { cellStyles: true, cellFormula: true, bookVBA: true, cellDates: true });
+      const sheetName = wb.SheetNames[0] || "Sheet1";
+      const sheet = wb.Sheets[sheetName];
+
+      const formattedUploadDate = uploadDate ? new Date(uploadDate) : new Date();
+      sheet["B2"] = { v: formattedUploadDate, t: "d", z: "d-mmm-yy" };
+      sheet["B3"] = { v: companyCode || run.company.companyCode || "C86I", t: "s" };
+      sheet["B5"] = { v: String(batch || "1"), t: "s" };
+
+      rows.forEach((r, idx) => {
+        const rowIdx = 7 + idx;
+        sheet[`A${rowIdx}`] = { v: r.account, t: "s" };
+        sheet[`B${rowIdx}`] = { v: r.amount, t: "n", z: "#,##0.00" };
+        sheet[`C${rowIdx}`] = { v: r.name, t: "s" };
+        sheet[`D${rowIdx}`] = { v: r.remarks, t: "s" };
+      });
+
+      sheet["!ref"] = `A1:D${6 + rows.length}`;
+      outputBuffer = XLSX.write(wb, { type: "buffer", bookType: "xls", bookVBA: true });
+    }
+
+    if (!outputBuffer) {
+      return NextResponse.json({ error: "Failed to generate Excel output" }, { status: 500 });
+    }
+
+    // 4. Preserve original filename style (e.g. BDO ATM Payroll Converter for BOB - GPFRESH COMPANY INC.xls)
+    const companyNameClean = (run.company.legalName || "COMPANY").replace(/[/\\?%*:|"<>]/g, "");
+    const filename = `BDO ATM Payroll Converter for BOB - ${companyNameClean}.xls`;
+
+    return new NextResponse(new Uint8Array(outputBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.ms-excel",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
       },
     });
   } catch (err: any) {
