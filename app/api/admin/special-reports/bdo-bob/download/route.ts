@@ -145,12 +145,13 @@ export async function POST(request: Request) {
     // 4. Preserve original filename style (e.g. BDO ATM Payroll Converter for BOB - GPFRESH COMPANY INC.xls)
     const companyNameClean = (run.company.legalName || "COMPANY").replace(/[/\\?%*:|"<>]/g, "");
     const filename = `BDO ATM Payroll Converter for BOB - ${companyNameClean}.xls`;
+    const encodedFilename = encodeURIComponent(filename);
 
     return new NextResponse(new Uint8Array(outputBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.ms-excel",
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
+        "Content-Disposition": `attachment; filename="${filename.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodedFilename}`,
       },
     });
   } catch (err: any) {
