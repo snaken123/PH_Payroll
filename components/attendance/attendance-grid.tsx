@@ -320,8 +320,30 @@ export function AttendanceGrid() {
 
       if (patch.status === "HOLIDAY" && !nextCell.holidayType) {
         nextCell.holidayType = "REGULAR_HOLIDAY";
+        if (patch.regularHours === undefined && !nextCell.timeIn && !nextCell.timeOut) {
+          nextCell.regularHours = 0;
+        }
       } else if (patch.status && patch.status !== "HOLIDAY" && patch.holidayType === undefined) {
         nextCell.holidayType = "";
+      }
+
+      if (patch.status === "REST_DAY") {
+        nextCell.isRestDay = true;
+        if (patch.regularHours === undefined && !nextCell.timeIn && !nextCell.timeOut) {
+          nextCell.regularHours = 0;
+          nextCell.scheduledHours = 0;
+        }
+      } else if (patch.status === "ABSENT") {
+        nextCell.isRestDay = false;
+        if (patch.regularHours === undefined && !nextCell.timeIn && !nextCell.timeOut) {
+          nextCell.regularHours = 0;
+        }
+      } else if (patch.status === "PRESENT") {
+        nextCell.isRestDay = false;
+        if (patch.regularHours === undefined && !nextCell.timeIn && !nextCell.timeOut && nextCell.regularHours === 0) {
+          nextCell.regularHours = 8;
+          nextCell.scheduledHours = 8;
+        }
       }
 
       if (patch.timeIn !== undefined || patch.timeOut !== undefined) {
