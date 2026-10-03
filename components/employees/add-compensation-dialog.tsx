@@ -75,6 +75,7 @@ export function AddCompensationDialog({
 
   const [allowanceTypes, setAllowanceTypes] = useState<string[]>(INITIAL_ALLOWANCES);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [bossKeyPayingCompanyAllowance, setBossKeyPayingCompanyAllowance] = useState(false);
   const [customLabels, setCustomLabels] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -94,6 +95,9 @@ export function AddCompensationDialog({
       .then((data) => {
         if (data.companies) {
           setCompanies(data.companies);
+        }
+        if (data.bossKeyPayingCompanyAllowance !== undefined) {
+          setBossKeyPayingCompanyAllowance(data.bossKeyPayingCompanyAllowance);
         }
       })
       .catch(() => {});
@@ -363,33 +367,35 @@ export function AddCompensationDialog({
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <Label htmlFor={`allowances.${index}.payingCompanyId`}>Paying Company</Label>
-                        <Controller
-                          control={control}
-                          name={`allowances.${index}.payingCompanyId` as const}
-                          render={({ field: compField }) => (
-                            <Select value={compField.value ?? ""} onValueChange={compField.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Current Employee Company (Default)">
-                                  {(value: string) =>
-                                    companies.find((c) => c.id === value)?.legalName ??
-                                    "Current Employee Company (Default)"
-                                  }
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="CURRENT_COMPANY">Current Employee Company (Default)</SelectItem>
-                                {companies.map((c) => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.legalName} ({c.companyCode})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
+                      {bossKeyPayingCompanyAllowance && (
+                        <div className="space-y-1">
+                          <Label htmlFor={`allowances.${index}.payingCompanyId`}>Paying Company</Label>
+                          <Controller
+                            control={control}
+                            name={`allowances.${index}.payingCompanyId` as const}
+                            render={({ field: compField }) => (
+                              <Select value={compField.value ?? ""} onValueChange={compField.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Current Employee Company (Default)">
+                                    {(value: string) =>
+                                      companies.find((c) => c.id === value)?.legalName ??
+                                      "Current Employee Company (Default)"
+                                    }
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="CURRENT_COMPANY">Current Employee Company (Default)</SelectItem>
+                                  {companies.map((c) => (
+                                    <SelectItem key={c.id} value={c.id}>
+                                      {c.legalName} ({c.companyCode})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {isCustom && (

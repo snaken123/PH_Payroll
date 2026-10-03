@@ -67,6 +67,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
 
   const [allowanceTypes, setAllowanceTypes] = useState<string[]>(INITIAL_ALLOWANCES);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [bossKeyPayingCompanyAllowance, setBossKeyPayingCompanyAllowance] = useState(false);
   const [customLabels, setCustomLabels] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -86,6 +87,9 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
       .then((data) => {
         if (data.companies) {
           setCompanies(data.companies);
+        }
+        if (data.bossKeyPayingCompanyAllowance !== undefined) {
+          setBossKeyPayingCompanyAllowance(data.bossKeyPayingCompanyAllowance);
         }
       })
       .catch(() => {});
@@ -545,31 +549,33 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor={`create_allowances.${index}.payingCompanyId`}>Paying Company</Label>
-                      <Controller
-                        control={control}
-                        name={`allowances.${index}.payingCompanyId` as const}
-                        render={({ field: companyField }) => (
-                          <Select
-                            value={companyField.value || "CURRENT_COMPANY"}
-                            onValueChange={(val) => companyField.onChange(val === "CURRENT_COMPANY" ? null : val)}
-                          >
-                            <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
-                              <SelectValue placeholder="Current Company (Default)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="CURRENT_COMPANY">Current Company (Default)</SelectItem>
-                              {companies.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.legalName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
+                    {bossKeyPayingCompanyAllowance && (
+                      <div className="space-y-1">
+                        <Label htmlFor={`create_allowances.${index}.payingCompanyId`}>Paying Company</Label>
+                        <Controller
+                          control={control}
+                          name={`allowances.${index}.payingCompanyId` as const}
+                          render={({ field: companyField }) => (
+                            <Select
+                              value={companyField.value || "CURRENT_COMPANY"}
+                              onValueChange={(val) => companyField.onChange(val === "CURRENT_COMPANY" ? null : val)}
+                            >
+                              <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
+                                <SelectValue placeholder="Current Company (Default)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="CURRENT_COMPANY">Current Company (Default)</SelectItem>
+                                {companies.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.legalName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {isCustom && (

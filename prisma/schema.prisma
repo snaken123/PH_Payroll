@@ -107,6 +107,10 @@ model Company {
   allowancePayFrequency    PayPeriodFrequency       @default(TWICE_A_MONTH)
   includeOtherCompanyAllowancesInContributions Boolean @default(false)
   waiveMandatoryMpfWisp    Boolean                  @default(false)
+  // Superadmin "Boss Keys" Feature Visibility Flags (Off by default for all companies)
+  bossKeyIncludeOtherCompanyAllowances Boolean      @default(false)
+  bossKeyWaiveMandatoryMpfWisp         Boolean      @default(false)
+  bossKeyPayingCompanyAllowance        Boolean      @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("09:30")
   attendanceStandardTimeOut        String                   @default("18:30")

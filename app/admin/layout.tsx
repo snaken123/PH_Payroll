@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getAuthSession } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CompanySwitcher } from "@/components/company-switcher";
-import { ShieldAlertIcon, Building2Icon, UsersIcon, BookOpenIcon, ArrowRightIcon, UserCogIcon, FileSpreadsheetIcon } from "lucide-react";
+import { ShieldAlertIcon, Building2Icon, UsersIcon, BookOpenIcon, ArrowRightIcon, UserCogIcon, FileSpreadsheetIcon, KeyIcon } from "lucide-react";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();
@@ -40,6 +40,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </Link>
               <Link href="/admin/special-reports" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors">
                 <FileSpreadsheetIcon className="size-3.5 text-blue-400" /> Special Reports
+              </Link>
+              <Link href="/admin/boss-keys" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-amber-300 hover:bg-slate-700/80 hover:text-white transition-colors">
+                <KeyIcon className="size-3.5 text-amber-400" /> Boss Keys
               </Link>
             </nav>
           </div>

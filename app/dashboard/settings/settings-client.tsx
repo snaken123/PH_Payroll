@@ -61,6 +61,8 @@ interface CompanyData {
   allowancePayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
   includeOtherCompanyAllowancesInContributions?: boolean;
   waiveMandatoryMpfWisp?: boolean;
+  bossKeyIncludeOtherCompanyAllowances?: boolean;
+  bossKeyWaiveMandatoryMpfWisp?: boolean;
   attendanceStandardTimeIn?: string;
   attendanceStandardTimeOut?: string;
   attendanceLunchBreakMinutes?: number;
@@ -547,47 +549,51 @@ export function SettingsClient({
                 </p>
               </div>
 
-              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
-                <div className="space-y-0.5 max-w-md">
-                  <Label htmlFor="includeOtherCompanyAllowancesInContributions" className="text-xs font-semibold cursor-pointer">
-                    Include allowances paid by other companies in statutory contribution computations
-                  </Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    When unselected (default), allowances paid by a different company will be excluded when calculating SSS, Pag-IBIG, and PhilHealth contribution bases for {company.legalName}.
-                  </p>
+              {company.bossKeyIncludeOtherCompanyAllowances && (
+                <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+                  <div className="space-y-0.5 max-w-md">
+                    <Label htmlFor="includeOtherCompanyAllowancesInContributions" className="text-xs font-semibold cursor-pointer">
+                      Include allowances paid by other companies in statutory contribution computations
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      When unselected (default), allowances paid by a different company will be excluded when calculating SSS, Pag-IBIG, and PhilHealth contribution bases for {company.legalName}.
+                    </p>
+                  </div>
+                  <Switch
+                    id="includeOtherCompanyAllowancesInContributions"
+                    checked={formData.includeOtherCompanyAllowancesInContributions}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        includeOtherCompanyAllowancesInContributions: checked,
+                      }))
+                    }
+                  />
                 </div>
-                <Switch
-                  id="includeOtherCompanyAllowancesInContributions"
-                  checked={formData.includeOtherCompanyAllowancesInContributions}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      includeOtherCompanyAllowancesInContributions: checked,
-                    }))
-                  }
-                />
-              </div>
+              )}
 
-              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
-                <div className="space-y-0.5 max-w-md">
-                  <Label htmlFor="waiveMandatoryMpfWisp" className="text-xs font-semibold cursor-pointer">
-                    Waive Mandatory SSS MPF / WISP Contribution
-                  </Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    When enabled, the SSS Mandatory Provident Fund (MPF/WISP) portion for salary credits above ₱14,750 is waived, calculating only regular SSS contributions for {company.legalName}. Off by default.
-                  </p>
+              {company.bossKeyWaiveMandatoryMpfWisp && (
+                <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+                  <div className="space-y-0.5 max-w-md">
+                    <Label htmlFor="waiveMandatoryMpfWisp" className="text-xs font-semibold cursor-pointer">
+                      Waive Mandatory SSS MPF / WISP Contribution
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      When enabled, the SSS Mandatory Provident Fund (MPF/WISP) portion for salary credits above ₱14,750 is waived, calculating only regular SSS contributions for {company.legalName}. Off by default.
+                    </p>
+                  </div>
+                  <Switch
+                    id="waiveMandatoryMpfWisp"
+                    checked={formData.waiveMandatoryMpfWisp}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        waiveMandatoryMpfWisp: checked,
+                      }))
+                    }
+                  />
                 </div>
-                <Switch
-                  id="waiveMandatoryMpfWisp"
-                  checked={formData.waiveMandatoryMpfWisp}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      waiveMandatoryMpfWisp: checked,
-                    }))
-                  }
-                />
-              </div>
+              )}
             </div>
           </CardContent>
           <CardFooter>

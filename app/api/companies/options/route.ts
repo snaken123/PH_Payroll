@@ -6,6 +6,14 @@ export async function GET() {
   const session = await getAuthSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const activeCompanyId = session.user.companyId;
+  const currentCompany = activeCompanyId
+    ? await prisma.company.findUnique({
+        where: { id: activeCompanyId },
+        select: { bossKeyPayingCompanyAllowance: true },
+      })
+    : null;
+
   const companies = await prisma.company.findMany({
     select: {
       id: true,
@@ -16,5 +24,8 @@ export async function GET() {
     orderBy: { legalName: "asc" },
   });
 
-  return NextResponse.json({ companies });
+  return NextResponse.json({
+    companies,
+    bossKeyPayingCompanyAllowance: currentCompany?.bossKeyPayingCompanyAllowance ?? false,
+  });
 }
