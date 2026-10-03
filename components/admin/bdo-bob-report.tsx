@@ -21,6 +21,9 @@ import {
   CheckSquareIcon,
   SquareIcon,
   LandmarkIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 interface PostedRunOption {
@@ -82,6 +85,57 @@ export function BdoBobReport() {
   const [loadingRunDetails, setLoadingRunDetails] = useState<boolean>(false);
   const [generating, setGenerating] = useState<boolean>(false);
   const [searchFilter, setSearchFilter] = useState<string>("");
+
+  // Payroll Runs Sort & Search State
+  type RunSortField = "runNumber" | "companyName" | "cutoffStart" | "cutoffEnd" | "payDate" | "employeeCount";
+  const [runSortField, setRunSortField] = useState<RunSortField>("runNumber");
+  const [runSortDir, setRunSortDir] = useState<"asc" | "desc">("desc");
+  const [runSearchQuery, setRunSearchQuery] = useState<string>("");
+
+  const sortedAndFilteredRuns = useMemo(() => {
+    let list = [...postedRuns];
+
+    if (runSearchQuery.trim()) {
+      const q = runSearchQuery.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.companyName.toLowerCase().includes(q) ||
+          r.companyCode.toLowerCase().includes(q) ||
+          `run #${r.runNumber}`.toLowerCase().includes(q) ||
+          r.runNumber.toString().includes(q) ||
+          r.cutoffStart.includes(q) ||
+          r.cutoffEnd.includes(q) ||
+          r.payDate.toLowerCase().includes(q)
+      );
+    }
+
+    list.sort((a, b) => {
+      let aVal: any = a[runSortField];
+      let bVal: any = b[runSortField];
+
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return runSortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      const strA = String(aVal).toLowerCase();
+      const strB = String(bVal).toLowerCase();
+
+      if (strA < strB) return runSortDir === "asc" ? -1 : 1;
+      if (strA > strB) return runSortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return list;
+  }, [postedRuns, runSortField, runSortDir, runSearchQuery]);
+
+  const handleSortRuns = (field: RunSortField) => {
+    if (runSortField === field) {
+      setRunSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setRunSortField(field);
+      setRunSortDir("asc");
+    }
+  };
 
   // Fetch initial list of posted runs
   useEffect(() => {
@@ -320,37 +374,163 @@ export function BdoBobReport() {
               No posted payroll runs found. Only payroll runs in <strong>POSTED</strong> status can be used for BDO BOB converter reports.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {postedRuns.map((run) => {
-                const isSelected = selectedRunId === run.id;
-                return (
-                  <button
-                    key={run.id}
-                    type="button"
-                    onClick={() => setSelectedRunId(run.id)}
-                    className={`flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
-                      isSelected
-                        ? "bg-blue-950/60 border-blue-500/80 ring-1 ring-blue-500/50 text-white shadow-md"
-                        : "bg-slate-950/40 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="text-xs font-bold text-blue-300 font-mono">Run #{run.runNumber}</span>
-                      <Badge variant="outline" className="text-[10px] bg-emerald-950/80 border-emerald-500/50 text-emerald-300 font-mono">
-                        POSTED
-                      </Badge>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-100">{run.companyName}</span>
-                    <span className="text-[11px] text-slate-400 mt-1">
-                      Cutoff: {run.cutoffStart} to {run.cutoffEnd}
-                    </span>
-                    <div className="flex items-center justify-between w-full text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-800/80">
-                      <span>Pay Date: {run.payDate}</span>
-                      <span className="font-mono font-semibold text-slate-300">{run.employeeCount} employees</span>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="space-y-3">
+              {/* Search filter for runs */}
+              <div className="relative max-w-sm">
+                <SearchIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+                <Input
+                  placeholder="Search payroll runs by company, run #, cutoff..."
+                  value={runSearchQuery}
+                  onChange={(e) => setRunSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs bg-slate-950/60 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                />
+              </div>
+
+              {/* Details Table view with column sorters */}
+              <div className="rounded-xl border border-slate-800 overflow-hidden bg-slate-950/40">
+                <Table className="text-xs">
+                  <TableHeader className="bg-slate-950/80 border-b border-slate-800">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-10 text-center py-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Select
+                      </TableHead>
+
+                      <TableHead
+                        onClick={() => handleSortRuns("runNumber")}
+                        className="cursor-pointer select-none py-3 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Run #</span>
+                          {runSortField === "runNumber" ? (
+                            runSortDir === "asc" ? <ArrowUp className="size-3.5 text-blue-400" /> : <ArrowDown className="size-3.5 text-blue-400" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 text-slate-600" />
+                          )}
+                        </div>
+                      </TableHead>
+
+                      <TableHead
+                        onClick={() => handleSortRuns("companyName")}
+                        className="cursor-pointer select-none py-3 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Company</span>
+                          {runSortField === "companyName" ? (
+                            runSortDir === "asc" ? <ArrowUp className="size-3.5 text-blue-400" /> : <ArrowDown className="size-3.5 text-blue-400" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 text-slate-600" />
+                          )}
+                        </div>
+                      </TableHead>
+
+                      <TableHead
+                        onClick={() => handleSortRuns("cutoffStart")}
+                        className="cursor-pointer select-none py-3 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Cutoff Period</span>
+                          {runSortField === "cutoffStart" ? (
+                            runSortDir === "asc" ? <ArrowUp className="size-3.5 text-blue-400" /> : <ArrowDown className="size-3.5 text-blue-400" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 text-slate-600" />
+                          )}
+                        </div>
+                      </TableHead>
+
+                      <TableHead
+                        onClick={() => handleSortRuns("payDate")}
+                        className="cursor-pointer select-none py-3 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Pay Date</span>
+                          {runSortField === "payDate" ? (
+                            runSortDir === "asc" ? <ArrowUp className="size-3.5 text-blue-400" /> : <ArrowDown className="size-3.5 text-blue-400" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 text-slate-600" />
+                          )}
+                        </div>
+                      </TableHead>
+
+                      <TableHead
+                        onClick={() => handleSortRuns("employeeCount")}
+                        className="cursor-pointer select-none py-3 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors text-right"
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>Employees</span>
+                          {runSortField === "employeeCount" ? (
+                            runSortDir === "asc" ? <ArrowUp className="size-3.5 text-blue-400" /> : <ArrowDown className="size-3.5 text-blue-400" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 text-slate-600" />
+                          )}
+                        </div>
+                      </TableHead>
+
+                      <TableHead className="py-3 text-xs font-bold uppercase tracking-wider text-slate-300 text-center">
+                        Status
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAndFilteredRuns.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-6 text-slate-400">
+                          No payroll runs match your search query.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      sortedAndFilteredRuns.map((run) => {
+                        const isSelected = selectedRunId === run.id;
+                        return (
+                          <TableRow
+                            key={run.id}
+                            onClick={() => setSelectedRunId(run.id)}
+                            className={`cursor-pointer transition-colors ${
+                              isSelected
+                                ? "bg-blue-950/70 border-l-4 border-l-blue-500 font-semibold text-white"
+                                : "hover:bg-slate-800/50 text-slate-300 border-b border-slate-800/60"
+                            }`}
+                          >
+                            <TableCell className="text-center py-3">
+                              <div className="flex items-center justify-center">
+                                <div
+                                  className={`size-4 rounded-full border flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? "border-blue-400 bg-blue-600 text-white shadow-xs"
+                                      : "border-slate-600 bg-slate-900"
+                                  }`}
+                                >
+                                  {isSelected && <div className="size-1.5 rounded-full bg-white" />}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono font-bold text-blue-300 py-3">
+                              Run #{run.runNumber}
+                            </TableCell>
+                            <TableCell className="font-medium text-slate-100 py-3">
+                              {run.companyName} <span className="text-[10px] text-slate-400 font-mono">({run.companyCode})</span>
+                            </TableCell>
+                            <TableCell className="text-slate-300 py-3 font-mono text-[11px]">
+                              {run.cutoffStart} to {run.cutoffEnd}
+                            </TableCell>
+                            <TableCell className="text-slate-300 py-3">{run.payDate}</TableCell>
+                            <TableCell className="text-right font-mono font-semibold text-slate-200 py-3">
+                              {run.employeeCount} employees
+                            </TableCell>
+                            <TableCell className="text-center py-3">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-emerald-950/80 border-emerald-500/50 text-emerald-300 font-mono"
+                              >
+                                POSTED
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>
