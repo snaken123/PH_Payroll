@@ -21,7 +21,8 @@ export interface SssContributionResult {
  */
 export function getSssContribution(
   monthlyCompensation: Decimal.Value,
-  brackets: SssBracketRow[]
+  brackets: SssBracketRow[],
+  waiveMandatoryMpfWisp: boolean = false
 ): SssContributionResult {
   const comp = new Decimal(monthlyCompensation);
   const bracket = brackets.find((b) => comp.gte(b.mscFloor) && comp.lte(b.mscCeiling));
@@ -34,8 +35,8 @@ export function getSssContribution(
 
   const eeShare = new Decimal(bracket.eeShare);
   const erShare = new Decimal(bracket.erShare);
-  const mpfEeShare = new Decimal(bracket.mpfEeShare);
-  const mpfErShare = new Decimal(bracket.mpfErShare);
+  const mpfEeShare = waiveMandatoryMpfWisp ? new Decimal(0) : new Decimal(bracket.mpfEeShare);
+  const mpfErShare = waiveMandatoryMpfWisp ? new Decimal(0) : new Decimal(bracket.mpfErShare);
   const ecAmount = new Decimal(bracket.ecAmount);
 
   return {

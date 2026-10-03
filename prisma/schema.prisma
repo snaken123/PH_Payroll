@@ -106,6 +106,7 @@ model Company {
   basicPayFrequency        PayPeriodFrequency       @default(TWICE_A_MONTH)
   allowancePayFrequency    PayPeriodFrequency       @default(TWICE_A_MONTH)
   includeOtherCompanyAllowancesInContributions Boolean @default(false)
+  waiveMandatoryMpfWisp    Boolean                  @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("09:30")
   attendanceStandardTimeOut        String                   @default("18:30")

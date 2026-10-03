@@ -69,6 +69,16 @@ describe("getSssContribution", () => {
     expect(result.totalEmployerContribution.toNumber()).toBe(3530);
   });
 
+  it("waives MPF/WISP shares when waiveMandatoryMpfWisp is true", () => {
+    const result = getSssContribution(20500, brackets, true);
+    expect(result.eeShare.toNumber()).toBe(1000);
+    expect(result.mpfEeShare.toNumber()).toBe(0);
+    expect(result.erShare.toNumber()).toBe(2000);
+    expect(result.mpfErShare.toNumber()).toBe(0);
+    expect(result.totalEmployeeContribution.toNumber()).toBe(1000);
+    expect(result.totalEmployerContribution.toNumber()).toBe(2030);
+  });
+
   it("throws when compensation falls outside every seeded bracket", () => {
     const sparseBrackets: SssBracketRow[] = [bracket(20000, 19751, 20250)];
     expect(() => getSssContribution(5000, sparseBrackets)).toThrow();

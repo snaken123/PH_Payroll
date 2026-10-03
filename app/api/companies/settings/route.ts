@@ -92,6 +92,7 @@ export async function PATCH(request: Request) {
           basicPayFrequency: data.basicPayFrequency,
           allowancePayFrequency: data.allowancePayFrequency,
           includeOtherCompanyAllowancesInContributions: data.includeOtherCompanyAllowancesInContributions,
+          waiveMandatoryMpfWisp: data.waiveMandatoryMpfWisp,
           attendanceStandardTimeIn: data.attendanceStandardTimeIn,
           attendanceStandardTimeOut: data.attendanceStandardTimeOut,
           attendanceLunchBreakMinutes: data.attendanceLunchBreakMinutes,

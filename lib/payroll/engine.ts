@@ -90,6 +90,7 @@ export interface PayrollEngineInput {
   monthlyEquivalentCompensation: Decimal.Value;
   /** Per-employee statutory deduction opt-in/opt-out flags. Default to true. */
   isDeductSss?: boolean;
+  waiveMandatoryMpfWisp?: boolean;
   sssDeductionMode?: "TABLE" | "MANUAL";
   sssCustomAmountEe?: Decimal.Value | null;
   sssCustomAmountEr?: Decimal.Value | null;
@@ -348,7 +349,11 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
         unscaledEe = new Decimal(input.sssCustomAmountEe ?? 0);
         unscaledEr = new Decimal(input.sssCustomAmountEr ?? 0);
       } else {
-        const sss = getSssContribution(input.monthlyEquivalentCompensation, input.rates.sssBrackets);
+        const sss = getSssContribution(
+          input.monthlyEquivalentCompensation,
+          input.rates.sssBrackets,
+          input.waiveMandatoryMpfWisp ?? false
+        );
         unscaledEe = sss.totalEmployeeContribution;
         unscaledEr = sss.totalEmployerContribution;
       }

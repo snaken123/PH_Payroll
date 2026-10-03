@@ -22,6 +22,7 @@ export const updateCompanySettingsSchema = z.object({
   basicPayFrequency: z.nativeEnum(PayPeriodFrequency).default(PayPeriodFrequency.TWICE_A_MONTH),
   allowancePayFrequency: z.nativeEnum(PayPeriodFrequency).default(PayPeriodFrequency.TWICE_A_MONTH),
   includeOtherCompanyAllowancesInContributions: z.boolean().optional().default(false),
+  waiveMandatoryMpfWisp: z.boolean().optional().default(false),
   attendanceStandardTimeIn: z.string().default("09:30"),
   attendanceStandardTimeOut: z.string().default("18:30"),
   attendanceLunchBreakMinutes: z.number().int().min(0).max(480).default(60),

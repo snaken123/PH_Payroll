@@ -60,6 +60,7 @@ interface CompanyData {
   basicPayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
   allowancePayFrequency?: "TWICE_A_MONTH" | "ONCE_A_MONTH_SECOND_HALF" | "ONCE_A_MONTH_FIRST_HALF";
   includeOtherCompanyAllowancesInContributions?: boolean;
+  waiveMandatoryMpfWisp?: boolean;
   attendanceStandardTimeIn?: string;
   attendanceStandardTimeOut?: string;
   attendanceLunchBreakMinutes?: number;
@@ -144,6 +145,7 @@ export function SettingsClient({
     basicPayFrequency: company.basicPayFrequency ?? "TWICE_A_MONTH",
     allowancePayFrequency: company.allowancePayFrequency ?? "TWICE_A_MONTH",
     includeOtherCompanyAllowancesInContributions: company.includeOtherCompanyAllowancesInContributions ?? false,
+    waiveMandatoryMpfWisp: company.waiveMandatoryMpfWisp ?? false,
     attendanceStandardTimeIn: company.attendanceStandardTimeIn ?? "09:30",
     attendanceStandardTimeOut: company.attendanceStandardTimeOut ?? "18:30",
     attendanceLunchBreakMinutes: company.attendanceLunchBreakMinutes ?? 60,
@@ -561,6 +563,27 @@ export function SettingsClient({
                     setFormData((prev) => ({
                       ...prev,
                       includeOtherCompanyAllowancesInContributions: checked,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+                <div className="space-y-0.5 max-w-md">
+                  <Label htmlFor="waiveMandatoryMpfWisp" className="text-xs font-semibold cursor-pointer">
+                    Waive Mandatory SSS MPF / WISP Contribution
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    When enabled, the SSS Mandatory Provident Fund (MPF/WISP) portion for salary credits above ₱14,750 is waived, calculating only regular SSS contributions for {company.legalName}. Off by default.
+                  </p>
+                </div>
+                <Switch
+                  id="waiveMandatoryMpfWisp"
+                  checked={formData.waiveMandatoryMpfWisp}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      waiveMandatoryMpfWisp: checked,
                     }))
                   }
                 />

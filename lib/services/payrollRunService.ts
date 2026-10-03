@@ -289,6 +289,7 @@ export async function computeAndPersistPayrollRun({
         isStatutoryDeductionCutoff,
         statutoryDeductionScale,
         isDeductSss: emp.isDeductSss,
+        waiveMandatoryMpfWisp: company?.waiveMandatoryMpfWisp ?? false,
         sssDeductionMode: emp.sssDeductionMode,
         sssCustomAmountEe: emp.sssCustomAmountEe ? emp.sssCustomAmountEe.toString() : null,
         sssCustomAmountEr: emp.sssCustomAmountEr ? emp.sssCustomAmountEr.toString() : null,
