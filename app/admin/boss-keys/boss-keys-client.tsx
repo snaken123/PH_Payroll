@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Search, ShieldAlert, Key, Building2, HelpCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Search, Key, Building2, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 
@@ -14,7 +14,7 @@ interface CompanyBossKeyData {
   status: string;
   bossKeyIncludeOtherCompanyAllowances: boolean;
   bossKeyWaiveMandatoryMpfWisp: boolean;
-  bossKeyPayingCompanyAllowance: boolean;
+  bossKeyAllowanceTaxableToggle: boolean;
   includeOtherCompanyAllowancesInContributions: boolean;
   waiveMandatoryMpfWisp: boolean;
   _count: {
@@ -39,7 +39,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
 
   const handleToggle = async (
     companyId: string,
-    field: "bossKeyIncludeOtherCompanyAllowances" | "bossKeyWaiveMandatoryMpfWisp" | "bossKeyPayingCompanyAllowance",
+    field: "bossKeyIncludeOtherCompanyAllowances" | "bossKeyWaiveMandatoryMpfWisp" | "bossKeyAllowanceTaxableToggle",
     newValue: boolean
   ) => {
     setLoadingId(`${companyId}-${field}`);
@@ -64,7 +64,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
       const fieldLabels: Record<string, string> = {
         bossKeyIncludeOtherCompanyAllowances: "Include Other Co. Allowances Toggle",
         bossKeyWaiveMandatoryMpfWisp: "Waive Mandatory MPF/WISP Toggle",
-        bossKeyPayingCompanyAllowance: "Paying Company Dropdown",
+        bossKeyAllowanceTaxableToggle: "'Taxable' Toggle in Allowances",
       };
 
       const targetComp = companies.find((c) => c.id === companyId);
@@ -99,7 +99,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                 </span>
               </div>
               <p className="mt-1 text-sm text-slate-300 max-w-3xl">
-                Control feature toggle visibility per company. When turned <strong>ON</strong>, the specified toggle or dropdown choice is made available to company users in Settings or Employee forms. When turned <strong>OFF</strong>, it remains completely hidden and invisible.
+                Control feature toggle visibility per company. When turned <strong>ON</strong>, the specified toggle button is made available to company users. When turned <strong>OFF</strong>, it remains completely hidden and invisible.
               </p>
             </div>
           </div>
@@ -154,13 +154,13 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                 </th>
                 <th className="py-4 px-5 text-center min-w-[220px]">
                   <div className="flex items-center justify-center gap-1.5">
-                    <span>Paying Company Dropdown</span>
-                    <span title="Controls visibility of 'Paying Company' dropdown in Employee Allowances form">
+                    <span>"Taxable" Toggle in Allowances</span>
+                    <span title="Controls visibility of the 'Taxable' toggle switch in Employee Allowance forms">
                       <HelpCircle className="size-3.5 text-slate-400 cursor-help" />
                     </span>
                   </div>
                   <div className="text-[10px] normal-case text-slate-400 font-normal mt-0.5">
-                    Employee Form Field
+                    Employee Allowance Form Toggle
                   </div>
                 </th>
               </tr>
@@ -265,32 +265,32 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                       </div>
                     </td>
 
-                    {/* Boss Key 3: Paying Company Dropdown */}
+                    {/* Boss Key 3: "Taxable" Toggle in Allowances */}
                     <td className="py-4 px-5 text-center bg-slate-900/30">
                       <div className="flex flex-col items-center justify-center gap-1.5">
                         <Switch
-                          checked={company.bossKeyPayingCompanyAllowance}
+                          checked={company.bossKeyAllowanceTaxableToggle}
                           onCheckedChange={(checked) =>
                             handleToggle(
                               company.id,
-                              "bossKeyPayingCompanyAllowance",
+                              "bossKeyAllowanceTaxableToggle",
                               checked
                             )
                           }
                           disabled={
                             loadingId ===
-                            `${company.id}-bossKeyPayingCompanyAllowance`
+                            `${company.id}-bossKeyAllowanceTaxableToggle`
                           }
                           className="data-[state=checked]:bg-amber-500"
                         />
                         <span
                           className={`text-[11px] font-medium ${
-                            company.bossKeyPayingCompanyAllowance
+                            company.bossKeyAllowanceTaxableToggle
                               ? "text-amber-400 font-semibold"
                               : "text-slate-500"
                           }`}
                         >
-                          {company.bossKeyPayingCompanyAllowance
+                          {company.bossKeyAllowanceTaxableToggle
                             ? "Visible in Form"
                             : "Invisible"}
                         </span>

@@ -6,7 +6,7 @@ import { z } from "zod";
 const updateBossKeysSchema = z.object({
   bossKeyIncludeOtherCompanyAllowances: z.boolean().optional(),
   bossKeyWaiveMandatoryMpfWisp: z.boolean().optional(),
-  bossKeyPayingCompanyAllowance: z.boolean().optional(),
+  bossKeyAllowanceTaxableToggle: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -43,7 +43,7 @@ export async function PATCH(
       legalName: true,
       bossKeyIncludeOtherCompanyAllowances: true,
       bossKeyWaiveMandatoryMpfWisp: true,
-      bossKeyPayingCompanyAllowance: true,
+      bossKeyAllowanceTaxableToggle: true,
     },
   });
 

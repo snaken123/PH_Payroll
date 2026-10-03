@@ -10,7 +10,7 @@ export async function GET() {
   const currentCompany = activeCompanyId
     ? await prisma.company.findUnique({
         where: { id: activeCompanyId },
-        select: { bossKeyPayingCompanyAllowance: true },
+        select: { bossKeyAllowanceTaxableToggle: true },
       })
     : null;
 
@@ -26,6 +26,6 @@ export async function GET() {
 
   return NextResponse.json({
     companies,
-    bossKeyPayingCompanyAllowance: currentCompany?.bossKeyPayingCompanyAllowance ?? false,
+    bossKeyAllowanceTaxableToggle: currentCompany?.bossKeyAllowanceTaxableToggle ?? false,
   });
 }

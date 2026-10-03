@@ -67,7 +67,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
 
   const [allowanceTypes, setAllowanceTypes] = useState<string[]>(INITIAL_ALLOWANCES);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
-  const [bossKeyPayingCompanyAllowance, setBossKeyPayingCompanyAllowance] = useState(false);
+  const [bossKeyAllowanceTaxableToggle, setBossKeyAllowanceTaxableToggle] = useState(false);
   const [customLabels, setCustomLabels] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -88,8 +88,8 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
         if (data.companies) {
           setCompanies(data.companies);
         }
-        if (data.bossKeyPayingCompanyAllowance !== undefined) {
-          setBossKeyPayingCompanyAllowance(data.bossKeyPayingCompanyAllowance);
+        if (data.bossKeyAllowanceTaxableToggle !== undefined) {
+          setBossKeyAllowanceTaxableToggle(data.bossKeyAllowanceTaxableToggle);
         }
       })
       .catch(() => {});
@@ -549,33 +549,31 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                       />
                     </div>
 
-                    {bossKeyPayingCompanyAllowance && (
-                      <div className="space-y-1">
-                        <Label htmlFor={`create_allowances.${index}.payingCompanyId`}>Paying Company</Label>
-                        <Controller
-                          control={control}
-                          name={`allowances.${index}.payingCompanyId` as const}
-                          render={({ field: companyField }) => (
-                            <Select
-                              value={companyField.value || "CURRENT_COMPANY"}
-                              onValueChange={(val) => companyField.onChange(val === "CURRENT_COMPANY" ? null : val)}
-                            >
-                              <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
-                                <SelectValue placeholder="Current Company (Default)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="CURRENT_COMPANY">Current Company (Default)</SelectItem>
-                                {companies.map((c) => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.legalName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <Label htmlFor={`create_allowances.${index}.payingCompanyId`}>Paying Company</Label>
+                      <Controller
+                        control={control}
+                        name={`allowances.${index}.payingCompanyId` as const}
+                        render={({ field: companyField }) => (
+                          <Select
+                            value={companyField.value || "CURRENT_COMPANY"}
+                            onValueChange={(val) => companyField.onChange(val === "CURRENT_COMPANY" ? null : val)}
+                          >
+                            <SelectTrigger id={`create_allowances.${index}.payingCompanyId`}>
+                              <SelectValue placeholder="Current Company (Default)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CURRENT_COMPANY">Current Company (Default)</SelectItem>
+                              {companies.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.legalName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
                   </div>
 
                   {isCustom && (
@@ -624,22 +622,24 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
                       />
                     </div>
 
-                    <div className="flex items-center gap-1.5 pt-5">
-                      <Controller
-                        control={control}
-                        name={`allowances.${index}.isTaxable` as const}
-                        render={({ field: taxableField }) => (
-                          <Switch
-                            checked={taxableField.value}
-                            onCheckedChange={taxableField.onChange}
-                            id={`create_allowances.${index}.isTaxable`}
-                          />
-                        )}
-                      />
-                      <Label htmlFor={`create_allowances.${index}.isTaxable`} className="text-xs">
-                        Taxable
-                      </Label>
-                    </div>
+                    {bossKeyAllowanceTaxableToggle && (
+                      <div className="flex items-center gap-1.5 pt-5">
+                        <Controller
+                          control={control}
+                          name={`allowances.${index}.isTaxable` as const}
+                          render={({ field: taxableField }) => (
+                            <Switch
+                              checked={taxableField.value}
+                              onCheckedChange={taxableField.onChange}
+                              id={`create_allowances.${index}.isTaxable`}
+                            />
+                          )}
+                        />
+                        <Label htmlFor={`create_allowances.${index}.isTaxable`} className="text-xs">
+                          Taxable
+                        </Label>
+                      </div>
+                    )}
 
                     <div className="ml-auto pt-5">
                       <Button

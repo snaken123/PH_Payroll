@@ -17,7 +17,7 @@ export default async function AdminBossKeysPage() {
       status: true,
       bossKeyIncludeOtherCompanyAllowances: true,
       bossKeyWaiveMandatoryMpfWisp: true,
-      bossKeyPayingCompanyAllowance: true,
+      bossKeyAllowanceTaxableToggle: true,
       includeOtherCompanyAllowancesInContributions: true,
       waiveMandatoryMpfWisp: true,
       _count: {
