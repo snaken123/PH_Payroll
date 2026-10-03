@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { AddCompensationDialog } from "@/components/employees/add-compensation-dialog";
+import { DeleteCompensationDialog } from "@/components/employees/delete-compensation-dialog";
 import { EditEmployeeProfileDialog } from "@/components/employees/edit-employee-profile-dialog";
 import { DeleteEmployeeDialog } from "@/components/employees/delete-employee-dialog";
 import { EmployeePhotoDialog } from "@/components/employees/employee-photo-dialog";
@@ -587,6 +588,9 @@ export default async function EmployeeDetailPage({
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Basis</TableHead>
                   <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Allowances</TableHead>
+                  {ctx.isSuperAdmin && (
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500 w-16">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -610,6 +614,16 @@ export default async function EmployeeDetailPage({
                             })
                             .join(", ")}
                     </TableCell>
+                    {ctx.isSuperAdmin && (
+                      <TableCell className="text-right py-1">
+                        <DeleteCompensationDialog
+                          employeeId={employee.id}
+                          recordId={c.id}
+                          effectiveFrom={c.effectiveFrom.toLocaleDateString()}
+                          basicRate={Number(c.basicRate)}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

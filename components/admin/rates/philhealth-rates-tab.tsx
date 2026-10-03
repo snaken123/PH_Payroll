@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DeleteStatutoryRateButton } from "@/components/admin/rates/delete-statutory-rate-button";
 
 interface PhilhealthConfigItem {
   id: string;
@@ -217,6 +218,7 @@ export function PhilhealthRatesTab({
                 <TableHead>Salary Floor</TableHead>
                 <TableHead>Salary Ceiling</TableHead>
                 <TableHead>Source Reference</TableHead>
+                <TableHead className="text-right w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -241,6 +243,12 @@ export function PhilhealthRatesTab({
                     <TableCell>₱{Number(c.ceilingSalary).toLocaleString()}</TableCell>
                     <TableCell className="max-w-xs text-xs text-muted-foreground truncate" title={c.sourceReference}>
                       {c.sourceReference}
+                    </TableCell>
+                    <TableCell className="text-right py-1">
+                      <DeleteStatutoryRateButton
+                        apiEndpoint={`/api/admin/rates/philhealth/${c.id}`}
+                        onSuccess={onRefresh}
+                      />
                     </TableCell>
                   </TableRow>
                 );
