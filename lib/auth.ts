@@ -9,6 +9,21 @@ import { rateLimit } from "./rate-limit";
 
 import { parsePermissions, ALL_PERMISSIONS } from "./permissions";
 
+function sanitizeUrl(rawUrl?: string): string {
+  if (!rawUrl) return "https://payroll.salazar-group.net";
+  let cleaned = rawUrl
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^NEXTAUTH_URL\s*=\s*/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+
+  if (cleaned.startsWith("//")) {
+    cleaned = `https:${cleaned}`;
+  }
+  return cleaned;
+}
+
 export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
@@ -60,21 +75,30 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      const cleanBaseUrl = sanitizeUrl(baseUrl || process.env.NEXTAUTH_URL);
+      const cleanUrl = url ? url.trim().replace(/^["']|["']$/g, "") : "/login";
+
+      if (cleanUrl.startsWith("/")) {
+        const base = cleanBaseUrl.replace(/\/+$/, "");
+        return `${base}${cleanUrl}`;
+      }
+
       try {
-        const urlObj = new URL(url);
-        const baseUrlObj = new URL(baseUrl);
+        const urlObj = new URL(cleanUrl);
+        const baseUrlObj = new URL(cleanBaseUrl);
         if (
           urlObj.origin === baseUrlObj.origin ||
           urlObj.hostname.endsWith("salazar-group.net") ||
-          urlObj.hostname.endsWith("vercel.app")
+          urlObj.hostname.endsWith("vercel.app") ||
+          urlObj.hostname === "localhost"
         ) {
-          return url;
+          return urlObj.toString();
         }
       } catch {
         // Ignore invalid URLs
       }
-      return baseUrl;
+
+      return `${cleanBaseUrl.replace(/\/+$/, "")}/login`;
     },
     async jwt({ token, user, trigger, session }) {
       if (user) {
