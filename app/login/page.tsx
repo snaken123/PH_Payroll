@@ -44,7 +44,6 @@ function LoginForm() {
   const [forgotSubmitting, setForgotSubmitting] = useState(false);
   const [forgotError, setForgotError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
-  const [forgotResetUrl, setForgotResetUrl] = useState("");
 
   const {
     register,
@@ -95,7 +94,6 @@ function LoginForm() {
     e.preventDefault();
     setForgotError("");
     setForgotSuccess("");
-    setForgotResetUrl("");
 
     if (!forgotEmail || !forgotEmail.trim()) {
       setForgotError("Please enter your email address.");
@@ -116,9 +114,6 @@ function LoginForm() {
       if (!res.ok) {
         const errorMsg = data.error || "There is no such email in the system.";
         setForgotError(errorMsg);
-        if (data.resetUrl) {
-          setForgotResetUrl(data.resetUrl);
-        }
         toast.error(errorMsg);
         setForgotSubmitting(false);
         return;
@@ -126,9 +121,6 @@ function LoginForm() {
 
       const successMsg = data.message || "Password reset link sent! Check your inbox.";
       setForgotSuccess(successMsg);
-      if (data.resetUrl) {
-        setForgotResetUrl(data.resetUrl);
-      }
       toast.success(successMsg);
       setForgotSubmitting(false);
     } catch (err) {
@@ -234,35 +226,15 @@ function LoginForm() {
           </DialogHeader>
 
           {forgotError && (
-            <div className="p-2.5 rounded-md bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-medium space-y-2">
-              <p>{forgotError}</p>
-              {forgotResetUrl && (
-                <div className="pt-1">
-                  <a
-                    href={forgotResetUrl}
-                    className="inline-block w-full text-center bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1.5 px-3 rounded text-xs transition-colors"
-                  >
-                    Click Here to Set New Password Now →
-                  </a>
-                </div>
-              )}
+            <div className="p-2.5 rounded-md bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-medium">
+              {forgotError}
             </div>
           )}
 
           {forgotSuccess ? (
             <div className="space-y-4">
-              <div className="p-3 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-medium space-y-2">
-                <p>{forgotSuccess}</p>
-                {forgotResetUrl && (
-                  <div className="pt-1">
-                    <a
-                      href={forgotResetUrl}
-                      className="inline-block w-full text-center bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1.5 px-3 rounded text-xs transition-colors"
-                    >
-                      Click Here to Set New Password Now →
-                    </a>
-                  </div>
-                )}
+              <div className="p-3 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-medium">
+                {forgotSuccess}
               </div>
               <Button
                 type="button"

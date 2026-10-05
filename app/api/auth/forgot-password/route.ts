@@ -65,18 +65,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: `Email delivery error: ${emailResult.error || "Failed to deliver reset email."}`,
-          resetUrl,
         },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      message: emailResult.simulated
-        ? "Password reset link generated (Email Simulation Mode)."
-        : "Password reset instructions have been sent to your email address.",
-      simulated: emailResult.simulated ?? false,
-      resetUrl,
+      message: "Password reset instructions have been sent to your email address.",
     });
   } catch (error) {
     console.error("Forgot password error:", error);
