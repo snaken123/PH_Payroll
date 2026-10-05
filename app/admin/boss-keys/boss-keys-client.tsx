@@ -15,6 +15,7 @@ interface CompanyBossKeyData {
   bossKeyIncludeOtherCompanyAllowances: boolean;
   bossKeyWaiveMandatoryMpfWisp: boolean;
   bossKeyAllowanceTaxableToggle: boolean;
+  bossKeyWithholdingTaxToggle: boolean;
   includeOtherCompanyAllowancesInContributions: boolean;
   waiveMandatoryMpfWisp: boolean;
   _count: {
@@ -39,7 +40,11 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
 
   const handleToggle = async (
     companyId: string,
-    field: "bossKeyIncludeOtherCompanyAllowances" | "bossKeyWaiveMandatoryMpfWisp" | "bossKeyAllowanceTaxableToggle",
+    field:
+      | "bossKeyIncludeOtherCompanyAllowances"
+      | "bossKeyWaiveMandatoryMpfWisp"
+      | "bossKeyAllowanceTaxableToggle"
+      | "bossKeyWithholdingTaxToggle",
     newValue: boolean
   ) => {
     setLoadingId(`${companyId}-${field}`);
@@ -65,6 +70,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
         bossKeyIncludeOtherCompanyAllowances: "Include Other Co. Allowances Toggle",
         bossKeyWaiveMandatoryMpfWisp: "Waive Mandatory MPF/WISP Toggle",
         bossKeyAllowanceTaxableToggle: "'Taxable' Toggle in Allowances",
+        bossKeyWithholdingTaxToggle: "Withholding Tax Deduction Checkbox",
       };
 
       const targetComp = companies.find((c) => c.id === companyId);
@@ -163,12 +169,23 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                     Employee Allowance Form Toggle
                   </div>
                 </th>
+                <th className="py-4 px-5 text-center min-w-[220px]">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Withholding Tax Checkbox</span>
+                    <span title="Controls visibility of the 'Withholding Tax Deduction' checkbox in Update 201 file">
+                      <HelpCircle className="size-3.5 text-slate-400 cursor-help" />
+                    </span>
+                  </div>
+                  <div className="text-[10px] normal-case text-slate-400 font-normal mt-0.5">
+                    Update 201 File Toggle
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-200">
               {filteredCompanies.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400">
+                  <td colSpan={5} className="py-8 text-center text-slate-400">
                     No companies match your search criteria.
                   </td>
                 </tr>
@@ -291,6 +308,38 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                           }`}
                         >
                           {company.bossKeyAllowanceTaxableToggle
+                            ? "Visible in Form"
+                            : "Invisible"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Boss Key 4: Withholding Tax Deduction Checkbox */}
+                    <td className="py-4 px-5 text-center bg-slate-900/30">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <Switch
+                          checked={company.bossKeyWithholdingTaxToggle}
+                          onCheckedChange={(checked) =>
+                            handleToggle(
+                              company.id,
+                              "bossKeyWithholdingTaxToggle",
+                              checked
+                            )
+                          }
+                          disabled={
+                            loadingId ===
+                            `${company.id}-bossKeyWithholdingTaxToggle`
+                          }
+                          className="data-[state=checked]:bg-amber-500"
+                        />
+                        <span
+                          className={`text-[11px] font-medium ${
+                            company.bossKeyWithholdingTaxToggle
+                              ? "text-amber-400 font-semibold"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {company.bossKeyWithholdingTaxToggle
                             ? "Visible in Form"
                             : "Invisible"}
                         </span>

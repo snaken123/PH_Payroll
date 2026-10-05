@@ -7,6 +7,7 @@ const updateBossKeysSchema = z.object({
   bossKeyIncludeOtherCompanyAllowances: z.boolean().optional(),
   bossKeyWaiveMandatoryMpfWisp: z.boolean().optional(),
   bossKeyAllowanceTaxableToggle: z.boolean().optional(),
+  bossKeyWithholdingTaxToggle: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -44,6 +45,7 @@ export async function PATCH(
       bossKeyIncludeOtherCompanyAllowances: true,
       bossKeyWaiveMandatoryMpfWisp: true,
       bossKeyAllowanceTaxableToggle: true,
+      bossKeyWithholdingTaxToggle: true,
     },
   });
 

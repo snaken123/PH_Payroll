@@ -18,6 +18,7 @@ export async function GET() {
       bossKeyIncludeOtherCompanyAllowances: true,
       bossKeyWaiveMandatoryMpfWisp: true,
       bossKeyAllowanceTaxableToggle: true,
+      bossKeyWithholdingTaxToggle: true,
       includeOtherCompanyAllowancesInContributions: true,
       waiveMandatoryMpfWisp: true,
       _count: {

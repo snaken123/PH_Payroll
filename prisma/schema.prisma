@@ -112,6 +112,7 @@ model Company {
   bossKeyWaiveMandatoryMpfWisp         Boolean      @default(false)
   bossKeyPayingCompanyAllowance        Boolean      @default(false)
   bossKeyAllowanceTaxableToggle        Boolean      @default(false)
+  bossKeyWithholdingTaxToggle          Boolean      @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("09:30")
   attendanceStandardTimeOut        String                   @default("18:30")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +47,19 @@ export function EditEmployeeProfileDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [bossKeyWithholdingTaxToggle, setBossKeyWithholdingTaxToggle] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/companies/options")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.bossKeyWithholdingTaxToggle !== undefined) {
+          setBossKeyWithholdingTaxToggle(data.bossKeyWithholdingTaxToggle);
+        }
+      })
+      .catch(() => {});
+  }, [open]);
 
   const {
     register,
@@ -520,16 +533,18 @@ export function EditEmployeeProfileDialog({
             </div>
 
             {/* Withholding Tax Group */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
-                  <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductWithholdingTax")} />
-                  <span>Withholding Tax Deduction</span>
-                </label>
-                <span className="text-[11px] text-slate-500">Standard BIR Table</span>
+            {bossKeyWithholdingTaxToggle && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                    <input type="checkbox" className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {...register("isDeductWithholdingTax")} />
+                    <span>Withholding Tax Deduction</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500">Standard BIR Table</span>
+                </div>
+                <p className="text-[11px] text-slate-500">Uncheck to disable withholding tax computation for this employee.</p>
               </div>
-              <p className="text-[11px] text-slate-500">Uncheck to disable withholding tax computation for this employee.</p>
-            </div>
+            )}
           </div>
 
           <DialogFooter className="sm:col-span-2">
