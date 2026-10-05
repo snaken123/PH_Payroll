@@ -3,33 +3,63 @@
 import { useEffect, useRef } from "react";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes of inactivity
+// 1 hour = 60 minutes = 3,600,000 ms
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const STORAGE_KEY = "ph_payroll_last_activity";
 
 function SessionTimeoutListener() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !session?.user) return;
+
+    // Superadmin users DO NOT time out due to inactivity during an open browser session.
+    if (session.user.platformRole === "SUPER_ADMIN") {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      return;
+    }
+
+    // Standard users: 1-hour inactivity timeout
+    const updateActivity = () => {
+      const now = Date.now();
+      localStorage.setItem(STORAGE_KEY, now.toString());
+      resetTimer();
+    };
 
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        signOut({ callbackUrl: "/login?reason=idle" });
-      }, IDLE_TIMEOUT_MS);
+        const last = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+        const elapsed = Date.now() - last;
+        if (elapsed >= ONE_HOUR_MS) {
+          localStorage.removeItem(STORAGE_KEY);
+          signOut({ callbackUrl: "/login?expired=1" });
+        } else {
+          // Reset timer for remaining time
+          timerRef.current = setTimeout(resetTimer, Math.max(1000, ONE_HOUR_MS - elapsed));
+        }
+      }, ONE_HOUR_MS);
     };
 
     const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
-    events.forEach((event) => window.addEventListener(event, resetTimer, { passive: true }));
+    const handleUserActivity = () => {
+      const last = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+      if (Date.now() - last > 10000) {
+        updateActivity();
+      }
+    };
 
-    // Start timer on initial mount
-    resetTimer();
+    events.forEach((event) => window.addEventListener(event, handleUserActivity, { passive: true }));
+
+    // Start timer & initial activity stamp
+    updateActivity();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      events.forEach((event) => window.removeEventListener(event, resetTimer));
+      events.forEach((event) => window.removeEventListener(event, handleUserActivity));
     };
-  }, [status]);
+  }, [session, status]);
 
   return null;
 }

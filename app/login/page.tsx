@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   ShieldAlertIcon,
@@ -18,6 +25,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   ShieldCheckIcon,
+  KeyRoundIcon,
 } from "lucide-react";
 
 function LoginForm() {
@@ -25,8 +33,17 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl");
   const authError = searchParams.get("error");
   const reason = searchParams.get("reason");
+  const expired = searchParams.get("expired");
+
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Forgot password dialog state
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState("");
 
   const {
     register,
@@ -35,14 +52,14 @@ function LoginForm() {
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
   useEffect(() => {
-    if (reason === "idle") {
-      toast.info("Your session expired due to 30 minutes of inactivity. Please sign in again.");
+    if (expired === "1" || reason === "idle") {
+      toast.info("Your session expired due to inactivity. Please sign in again.");
     } else if (authError === "CredentialsSignin") {
       toast.error("Invalid email address or password");
     } else if (authError) {
       toast.error("Authentication failed. Please verify your credentials.");
     }
-  }, [authError, reason]);
+  }, [authError, reason, expired]);
 
   async function onSubmit(values: LoginInput) {
     setSubmitting(true);
@@ -73,71 +90,202 @@ function LoginForm() {
     window.location.replace(targetUrl);
   }
 
+  async function handleForgotPasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotError("");
+    setForgotSuccess("");
+
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotError("Please enter your email address.");
+      return;
+    }
+
+    setForgotSubmitting(true);
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorMsg = data.error || "There is no such email in the system.";
+        setForgotError(errorMsg);
+        toast.error(errorMsg);
+        setForgotSubmitting(false);
+        return;
+      }
+
+      const successMsg = data.message || "Password reset link sent! Check your inbox.";
+      setForgotSuccess(successMsg);
+      toast.success(successMsg);
+      setForgotSubmitting(false);
+    } catch (err) {
+      console.error(err);
+      const errText = "An unexpected error occurred. Please try again.";
+      setForgotError(errText);
+      toast.error(errText);
+      setForgotSubmitting(false);
+    }
+  }
+
   return (
-    <Card className="border-slate-800 bg-slate-900/90 shadow-2xl backdrop-blur-xl rounded-2xl">
-      <CardHeader className="space-y-1.5 pb-3">
-        <CardTitle className="text-lg font-bold text-slate-100">
-          Sign in to your workspace
-        </CardTitle>
-        <CardDescription className="text-xs text-slate-400">
-          Enter your registered email address and password to access company payroll administration.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs font-semibold text-slate-300">
-              Email Address / Username
-            </Label>
-            <div className="relative">
-              <MailIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
-              <Input
-                id="email"
-                type="text"
-                placeholder="name@company.com"
-                autoComplete="email"
-                className="pl-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500 focus:ring-blue-500/20"
-                {...register("email")}
-              />
+    <>
+      <Card className="border-slate-800 bg-slate-900/90 shadow-2xl backdrop-blur-xl rounded-2xl">
+        <CardHeader className="space-y-1.5 pb-3">
+          <CardTitle className="text-lg font-bold text-slate-100">
+            Sign in to your workspace
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-400">
+            Enter your registered email address and password to access company payroll administration.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-semibold text-slate-300">
+                Email Address / Username
+              </Label>
+              <div className="relative">
+                <MailIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+                <Input
+                  id="email"
+                  type="text"
+                  placeholder="name@company.com"
+                  autoComplete="email"
+                  className="pl-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500 focus:ring-blue-500/20"
+                  {...register("email")}
+                />
+              </div>
+              {errors.email && <p className="text-[11px] font-medium text-rose-400">{errors.email.message}</p>}
             </div>
-            {errors.email && <p className="text-[11px] font-medium text-rose-400">{errors.email.message}</p>}
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-xs font-semibold text-slate-300">
-              Password
-            </Label>
-            <div className="relative">
-              <LockIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••••••"
-                autoComplete="current-password"
-                className="pl-9 pr-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500 focus:ring-blue-500/20"
-                {...register("password")}
-              />
-              <button
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-semibold text-slate-300">
+                  Password
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotOpen(true);
+                    setForgotError("");
+                    setForgotSuccess("");
+                  }}
+                  className="text-[11px] font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative">
+                <LockIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••••••"
+                  autoComplete="current-password"
+                  className="pl-9 pr-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500 focus:ring-blue-500/20"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-[11px] font-medium text-rose-400">{errors.password.message}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs h-9 shadow-md shadow-blue-600/20 transition-all"
+              disabled={submitting}
+            >
+              {submitting ? "Signing in..." : "Sign in to Workspace"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-100 text-base">
+              <KeyRoundIcon className="size-5 text-blue-500" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Enter your account email address below. We will send you instructions to set a new password.
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotError && (
+            <div className="p-2.5 rounded-md bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-medium">
+              {forgotError}
+            </div>
+          )}
+
+          {forgotSuccess ? (
+            <div className="space-y-4">
+              <div className="p-3 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-medium">
+                {forgotSuccess}
+              </div>
+              <Button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
+                onClick={() => setForgotOpen(false)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs h-9"
               >
-                {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-              </button>
+                Close
+              </Button>
             </div>
-            {errors.password && <p className="text-[11px] font-medium text-rose-400">{errors.password.message}</p>}
-          </div>
+          ) : (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-email" className="text-xs font-semibold text-slate-300">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <MailIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="name@company.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    className="pl-9 bg-slate-950/80 border-slate-800 text-slate-100 placeholder:text-slate-600 text-xs h-9 focus:border-blue-500"
+                  />
+                </div>
+              </div>
 
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs h-9 shadow-md shadow-blue-600/20 transition-all"
-            disabled={submitting}
-          >
-            {submitting ? "Signing in..." : "Sign in to Workspace"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setForgotOpen(false)}
+                  className="bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300 text-xs h-9"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={forgotSubmitting}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-9 shadow-md"
+                >
+                  {forgotSubmitting ? "Sending Link..." : "Send Reset Link"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

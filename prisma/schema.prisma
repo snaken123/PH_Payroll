@@ -32,9 +32,11 @@ model User {
   password     String?
   name         String?
   image        String?
-  platformRole PlatformRole @default(STANDARD)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  platformRole         PlatformRole @default(STANDARD)
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   memberships               CompanyMembership[]
   employee                  Employee?

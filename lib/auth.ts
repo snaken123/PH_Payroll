@@ -123,6 +123,16 @@ export const authOptions: NextAuthOptions = {
             token.companyRole = null;
             token.permissions = [];
           }
+
+          // 1-hour inactivity timeout check for standard users
+          const nowInSeconds = Math.floor(Date.now() / 1000);
+          if (dbUser.platformRole !== PlatformRole.SUPER_ADMIN && token.lastActive) {
+            const idleTime = nowInSeconds - (token.lastActive as number);
+            if (idleTime > 3600) {
+              return {};
+            }
+          }
+          token.lastActive = nowInSeconds;
         } catch (error) {
           console.error("NextAuth jwt callback db error:", error);
         }
