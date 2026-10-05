@@ -626,6 +626,10 @@ export function AttendanceGrid() {
             {viewMode === "GRID" && (
               <div className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="font-medium text-muted-foreground">Color key:</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-100 text-emerald-900 text-[11px] font-medium dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  Rest Day / Holiday (Light Green)
+                </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-100 text-red-900 text-[11px] font-medium dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                   <span className="h-2 w-2 rounded-full bg-red-500"></span>
                   Absent (Red)
@@ -765,8 +769,20 @@ export function AttendanceGrid() {
                         Employee
                       </div>
                     </TableHead>
-                    {dates.map((date) => (
-                      <TableHead key={date} className="w-[84px] min-w-[84px] px-0.5 py-1 whitespace-nowrap text-center border-r">
+                    {dates.map((date) => {
+                      const isDateRestDayOrHoliday =
+                        filteredEmployees.length > 0 &&
+                        filteredEmployees.some((emp) => {
+                          const c = cells[cellKey(emp.id, date)];
+                          return c && (c.status === "REST_DAY" || c.isRestDay || c.status === "HOLIDAY" || Boolean(c.holidayType));
+                        });
+
+                      const headerBgClass = isDateRestDayOrHoliday
+                        ? "bg-emerald-100/90 text-emerald-950 dark:bg-emerald-950/80 dark:text-emerald-100 border-emerald-300 dark:border-emerald-800"
+                        : "";
+
+                      return (
+                        <TableHead key={date} className={`w-[84px] min-w-[84px] px-0.5 py-1 whitespace-nowrap text-center border-r transition-colors ${headerBgClass}`}>
                         <div className="flex items-center justify-between gap-0.5">
                           <div className="flex items-center gap-0.5">
                             <Checkbox
@@ -869,7 +885,8 @@ export function AttendanceGrid() {
                           </DropdownMenu>
                         </div>
                       </TableHead>
-                    ))}
+                    );
+                  })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -896,18 +913,22 @@ export function AttendanceGrid() {
                         const c = cells[cellKey(emp.id, date)];
                         if (!c) return <TableCell key={date} className="border-r" />;
 
+                        const isRestDayOrHoliday =
+                          c.status === "REST_DAY" || c.isRestDay || c.status === "HOLIDAY" || Boolean(c.holidayType);
                         const isAbsent = c.status === "ABSENT";
                         const isMissingHours =
                           !isAbsent &&
-                          !c.isRestDay &&
-                          c.status !== "HOLIDAY" &&
+                          !isRestDayOrHoliday &&
                           c.regularHours < (c.scheduledHours > 0 ? c.scheduledHours : 8);
                         const hasOvertime = c.overtimeHours > 0;
 
                         let bgStyle = "";
                         let triggerStyle = "bg-background/90";
 
-                        if (isAbsent) {
+                        if (isRestDayOrHoliday) {
+                          bgStyle = "bg-emerald-100/90 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-900";
+                          triggerStyle = "bg-emerald-200/90 dark:bg-emerald-900/90 text-emerald-950 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700 font-bold";
+                        } else if (isAbsent) {
                           bgStyle = "bg-red-100/90 dark:bg-red-950/70 border-red-200 dark:border-red-900";
                           triggerStyle = "bg-red-200/90 dark:bg-red-900/90 text-red-950 dark:text-red-100 border-red-300 dark:border-red-700 font-bold";
                         } else if (isMissingHours) {
