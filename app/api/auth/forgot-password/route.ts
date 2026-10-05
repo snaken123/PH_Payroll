@@ -54,14 +54,29 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
-    await sendResendEmail({
+    const emailResult = await sendResendEmail({
       to: user.email,
       subject: "Password Reset Request - PH Payroll",
       html: emailHtml,
     });
 
+    if (!emailResult.success) {
+      console.error("[ForgotPassword] Resend Email Error:", emailResult.error);
+      return NextResponse.json(
+        {
+          error: `Email delivery error: ${emailResult.error || "Failed to deliver reset email."}`,
+          resetUrl,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
-      message: "Password reset instructions have been sent to your email address.",
+      message: emailResult.simulated
+        ? "Password reset link generated (Email Simulation Mode)."
+        : "Password reset instructions have been sent to your email address.",
+      simulated: emailResult.simulated ?? false,
+      resetUrl,
     });
   } catch (error) {
     console.error("Forgot password error:", error);
