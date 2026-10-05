@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
+import { assertCompanyId, getTenantContext } from "@/lib/db/scoped";
 import { CompanyRole, LoanStatus } from "@/lib/generated/prisma/enums";
 import { mutationErrorResponse } from "@/lib/api-error";
+import { hasPermission } from "@/lib/permissions";
 
-// Same approval authority as payroll run / final pay posting — a cash
-// advance is a financial commitment, not an HR administrative action.
-const APPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.APPROVER];
+const APPROVE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.APPROVER];
 
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(APPROVE_ROLES);
+    ctx = await getTenantContext();
+    const canApprove =
+      ctx.isSuperAdmin ||
+      (ctx.companyRole !== null && APPROVE_ROLES.includes(ctx.companyRole)) ||
+      hasPermission(ctx.permissions, "loans.approve", ctx.platformRole);
+    if (!canApprove) throw new Error("Forbidden");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

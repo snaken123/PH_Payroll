@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
+import { assertCompanyId, getTenantContext } from "@/lib/db/scoped";
 import { CompanyRole, LoanStatus } from "@/lib/generated/prisma/enums";
 import { updateLoanSchema } from "@/lib/validations/loan";
+import { hasPermission } from "@/lib/permissions";
 
-const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
+const MANAGE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await getTenantContext();
+    const canManage =
+      ctx.isSuperAdmin ||
+      (ctx.companyRole !== null && MANAGE_ROLES.includes(ctx.companyRole)) ||
+      hasPermission(ctx.permissions, "loans.create", ctx.platformRole);
+    if (!canManage) throw new Error("Forbidden");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

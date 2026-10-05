@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireTenantRole, withCompanyScope } from "@/lib/db/scoped";
+import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { createLoanSchema } from "@/lib/validations/loan";
 import { CompanyRole, LoanCategory, LoanStatus } from "@/lib/generated/prisma/enums";
+import { hasPermission } from "@/lib/permissions";
 
-const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
+const MANAGE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
 export async function GET(request: Request) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await getTenantContext();
+    const canView =
+      ctx.isSuperAdmin ||
+      (ctx.companyRole !== null && MANAGE_ROLES.includes(ctx.companyRole)) ||
+      hasPermission(ctx.permissions, "loans.view", ctx.platformRole);
+    if (!canView) throw new Error("Forbidden");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -28,7 +34,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await getTenantContext();
+    const canCreate =
+      ctx.isSuperAdmin ||
+      (ctx.companyRole !== null && MANAGE_ROLES.includes(ctx.companyRole)) ||
+      hasPermission(ctx.permissions, "loans.create", ctx.platformRole);
+    if (!canCreate) throw new Error("Forbidden");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
