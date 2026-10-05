@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { assertCompanyId, getTenantContext } from "@/lib/db/scoped";
+import { CompanyRole } from "@/lib/generated/prisma/enums";
+import { hasPermission } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RunActions } from "@/components/payroll/run-actions";
@@ -45,6 +47,16 @@ export default async function PayrollRunDetailPage({
   const totalStatutory = run.payslips.reduce((sum, p) => sum + Number(p.totalStatutoryDeductions), 0);
   const totalNet = run.payslips.reduce((sum, p) => sum + Number(p.netPay), 0);
 
+  const canApprovePayroll =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "payroll.approve", ctx.platformRole);
+
+  const canPostPayroll =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
+
   return (
     <div className="space-y-6">
       <div>
@@ -72,6 +84,8 @@ export default async function PayrollRunDetailPage({
               status={run.status}
               cutoffStart={run.payrollPeriod.cutoffStart}
               cutoffEnd={run.payrollPeriod.cutoffEnd}
+              canApprove={canApprovePayroll}
+              canPost={canPostPayroll}
             />
           </>
         }

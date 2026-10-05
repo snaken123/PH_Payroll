@@ -19,7 +19,8 @@ import { EmployeeDocumentsCard } from "@/components/employees/employee-documents
 import { EmployeeNotepadCard } from "@/components/employees/employee-notepad-card";
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
 import type { PayBasis } from "@/lib/payroll/types";
-import { WageSector } from "@/lib/generated/prisma/enums";
+import { WageSector, CompanyRole } from "@/lib/generated/prisma/enums";
+import { hasPermission } from "@/lib/permissions";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -122,6 +123,10 @@ export default async function EmployeeDetailPage({
 
   const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
   const canViewLoans = ctx.isSuperAdmin || ctx.permissions.includes("loans.view");
+  const canApproveLoans =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "loans.approve", ctx.platformRole);
 
   return (
     <div className="space-y-6">
@@ -687,7 +692,7 @@ export default async function EmployeeDetailPage({
                       </TableCell>
                       <TableCell className="text-right">
                         {l.status === "ACTIVE" && <CancelLoanButton loanId={l.id} />}
-                        {l.status === "PENDING_APPROVAL" && <LoanApprovalActions loanId={l.id} />}
+                        {l.status === "PENDING_APPROVAL" && canApproveLoans && <LoanApprovalActions loanId={l.id} />}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -47,9 +47,11 @@ interface LeaveRequestRow {
 export function LeaveManager({
   employees,
   leaveTypes,
+  canApprove = true,
 }: {
   employees: EmployeeOption[];
   leaveTypes: LeaveTypeOption[];
+  canApprove?: boolean;
 }) {
   const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -184,7 +186,7 @@ export function LeaveManager({
                       <Badge variant={r.status === "APPROVED" ? "default" : "secondary"}>{r.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      {r.status === "PENDING" && (
+                      {r.status === "PENDING" && canApprove && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"

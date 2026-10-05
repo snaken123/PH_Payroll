@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { LeaveManager } from "@/components/leave/leave-manager";
-import { EmploymentStatus } from "@/lib/generated/prisma/enums";
+import { CompanyRole, EmploymentStatus } from "@/lib/generated/prisma/enums";
 import { PageHeader } from "@/components/ui/page-header";
+import { hasPermission } from "@/lib/permissions";
 
 export default async function LeavePage() {
   const ctx = await getTenantContext();
+
+  const canApproveLeave =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "leave.manage", ctx.platformRole);
 
   const [employees, leaveTypes] = await Promise.all([
     prisma.employee.findMany({
@@ -29,7 +35,7 @@ export default async function LeavePage() {
         title="Leave Management &amp; Approvals"
         description="Process employee leave requests (SIL, Vacation, Sick, Maternity, Paternity) and track annual leave balances."
       />
-      <LeaveManager employees={employees} leaveTypes={leaveTypes} />
+      <LeaveManager employees={employees} leaveTypes={leaveTypes} canApprove={canApproveLeave} />
     </div>
   );
 }
