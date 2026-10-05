@@ -59,8 +59,13 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       },
       {
         key: "employee.manage",
-        label: "Create, Edit & Delete Employees",
-        description: "Add new employees, modify profile details, separate or delete roster records",
+        label: "Create & Edit Employees",
+        description: "Add new employees and modify profile details",
+      },
+      {
+        key: "employee.delete",
+        label: "Delete Employees",
+        description: "Separate employees or delete roster records",
       },
     ],
   },
@@ -117,9 +122,14 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
         description: "Access active loan ledgers and deduction histories",
       },
       {
-        key: "loans.manage",
-        label: "Create & Approve Loans / Cash Advances",
+        key: "loans.create",
+        label: "Create Loans / Cash Advances",
         description: "Issue new company loans and set semi-monthly amortization amounts",
+      },
+      {
+        key: "loans.approve",
+        label: "Approve Loans / Cash Advances",
+        description: "Review and grant final approval for company loans & cash advances",
       },
     ],
   },
@@ -200,13 +210,15 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: st
       "employee.upload_docs",
       "employee.approve",
       "employee.manage",
+      "employee.delete",
       "attendance.view",
       "attendance.manage",
       "attendance.global_actions",
       "leave.view",
       "leave.manage",
       "loans.view",
-      "loans.manage",
+      "loans.create",
+      "loans.approve",
       "payroll.compute",
       "payroll.approve",
       "reports.view",
@@ -260,7 +272,14 @@ export function hasPermission(
 ): boolean {
   if (platformRole === "SUPER_ADMIN") return true;
   if (!grantedPermissions || !Array.isArray(grantedPermissions)) return false;
-  return grantedPermissions.includes(requiredKey) || grantedPermissions.includes("*");
+  if (grantedPermissions.includes("*") || grantedPermissions.includes(requiredKey)) return true;
+
+  // Backward compatibility alias checks for legacy permission keys
+  if (requiredKey === "employee.delete" && grantedPermissions.includes("employee.manage")) return true;
+  if (requiredKey === "loans.create" && grantedPermissions.includes("loans.manage")) return true;
+  if (requiredKey === "loans.approve" && grantedPermissions.includes("loans.manage")) return true;
+
+  return false;
 }
 
 export function parsePermissions(raw: unknown): string[] {
