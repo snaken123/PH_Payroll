@@ -51,7 +51,9 @@ export function SessionTimeoutListener() {
 
       if (elapsed >= INACTIVITY_TIMEOUT_MS) {
         localStorage.removeItem(STORAGE_KEY);
-        signOut({ callbackUrl: "/login?expired=1" });
+        signOut({ redirect: false }).finally(() => {
+          window.location.href = "/login?expired=1";
+        });
       }
     }, 15000);
 

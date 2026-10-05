@@ -34,7 +34,9 @@ function SessionTimeoutListener() {
         const elapsed = Date.now() - last;
         if (elapsed >= ONE_HOUR_MS) {
           localStorage.removeItem(STORAGE_KEY);
-          signOut({ callbackUrl: "/login?expired=1" });
+          signOut({ redirect: false }).finally(() => {
+            window.location.href = "/login?expired=1";
+          });
         } else {
           // Reset timer for remaining time
           timerRef.current = setTimeout(resetTimer, Math.max(1000, ONE_HOUR_MS - elapsed));
