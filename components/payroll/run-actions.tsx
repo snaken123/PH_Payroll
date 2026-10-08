@@ -67,8 +67,8 @@ export function RunActions({
   status,
   cutoffStart,
   cutoffEnd,
-  canApprove = true,
-  canPost = true,
+  canApprove = false,
+  canPost = false,
 }: {
   runId: string;
   status: string;

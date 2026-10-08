@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MetricCard } from "@/components/ui/metric-card";
 import { WalletIcon, CheckCircle2Icon, ClockIcon, ArrowRightIcon } from "lucide-react";
-import { PayrollRunStatus } from "@/lib/generated/prisma/enums";
+import { CompanyRole, PayrollRunStatus } from "@/lib/generated/prisma/enums";
 
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/permissions";
@@ -25,6 +25,16 @@ export default async function PayrollPage({
   if (!hasPermission(ctx.permissions, "payroll.compute", ctx.platformRole)) {
     redirect("/dashboard");
   }
+
+  const canApprovePayroll =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "payroll.approve", ctx.platformRole);
+
+  const canPostPayroll =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
   const page = parsePageParam((await searchParams).page);
   const totalCount = await prisma.payrollRun.count({ where: { companyId: ctx.companyId } });
   const { skip, take, totalPages } = paginationMeta(page, totalCount);
@@ -127,6 +137,8 @@ export default async function PayrollPage({
                           status={r.status}
                           cutoffStart={r.payrollPeriod.cutoffStart}
                           cutoffEnd={r.payrollPeriod.cutoffEnd}
+                          canApprove={canApprovePayroll}
+                          canPost={canPostPayroll}
                         />
                         <Link
                           href={`/dashboard/payroll/${r.id}`}

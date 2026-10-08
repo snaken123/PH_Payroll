@@ -47,7 +47,7 @@ interface LeaveRequestRow {
 export function LeaveManager({
   employees,
   leaveTypes,
-  canApprove = true,
+  canApprove = false,
 }: {
   employees: EmployeeOption[];
   leaveTypes: LeaveTypeOption[];
