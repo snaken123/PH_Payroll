@@ -14,7 +14,7 @@ const SUBMIT_ROLES = [
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(SUBMIT_ROLES);
+    ctx = await requireTenantRole(SUBMIT_ROLES, { permissionKey: "payroll.compute" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -12,7 +12,7 @@ export async function POST(
 ) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: "payroll.compute" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

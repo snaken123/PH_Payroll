@@ -10,7 +10,7 @@ const RUN_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 export async function GET() {
   let ctx;
   try {
-    ctx = await requireTenantRole(RUN_ROLES);
+    ctx = await requireTenantRole(RUN_ROLES, { permissionKey: "payroll.compute" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -31,7 +31,7 @@ export async function GET() {
 export async function POST(request: Request) {
   let ctx;
   try {
-    ctx = await requireTenantRole(RUN_ROLES);
+    ctx = await requireTenantRole(RUN_ROLES, { permissionKey: "payroll.compute" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

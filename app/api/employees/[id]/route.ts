@@ -9,7 +9,10 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const ctx = await requireTenantRole([CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF]);
+  const ctx = await requireTenantRole(
+    [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF],
+    { permissionKey: "employee.manage" }
+  );
   const { id } = await context.params;
 
   const existing = await prisma.employee.findUnique({ where: { id } });
@@ -61,7 +64,10 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const ctx = await requireTenantRole([CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF]);
+  const ctx = await requireTenantRole(
+    [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF],
+    { permissionKey: "employee.delete" }
+  );
   const { id } = await context.params;
 
   const employee = await prisma.employee.findUnique({

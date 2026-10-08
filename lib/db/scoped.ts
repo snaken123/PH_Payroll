@@ -33,14 +33,23 @@ export async function getTenantContext(): Promise<TenantContext> {
 /** Tenant context + company-role check in one call, for API route handlers. */
 export async function requireTenantRole(
   allowedRoles: CompanyRole[],
-  _options?: unknown
+  options?: { permissionKey?: string | string[]; allowAttendanceStaff?: boolean }
 ): Promise<TenantContext> {
   const ctx = await getTenantContext();
   if (ctx.isSuperAdmin) return ctx;
-  if (!ctx.companyRole || !allowedRoles.includes(ctx.companyRole)) {
-    throw new Error("Forbidden");
+  if (ctx.companyRole === CompanyRole.COMPANY_OWNER) return ctx;
+  if (ctx.companyRole && allowedRoles.includes(ctx.companyRole)) return ctx;
+
+  if (options?.permissionKey) {
+    const keys = Array.isArray(options.permissionKey) ? options.permissionKey : [options.permissionKey];
+    for (const key of keys) {
+      if (hasPermission(ctx.permissions, key, ctx.platformRole)) {
+        return ctx;
+      }
+    }
   }
-  return ctx;
+
+  throw new Error("Forbidden");
 }
 
 /** Tenant context + permission check. */
