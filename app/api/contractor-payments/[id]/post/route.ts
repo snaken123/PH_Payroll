@@ -11,7 +11,7 @@ const POST_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(POST_ROLES);
+    ctx = await requireTenantRole(POST_ROLES, { permissionKey: "contractors.manage" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -8,7 +8,7 @@ const VIEW_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(VIEW_ROLES);
+    ctx = await requireTenantRole(VIEW_ROLES, { permissionKey: ["contractors.view", "contractors.manage"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

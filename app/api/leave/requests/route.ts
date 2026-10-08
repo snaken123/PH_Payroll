@@ -9,7 +9,7 @@ const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, Comp
 export async function GET(request: Request) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: ["leave.view", "leave.manage"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: "leave.manage" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -9,7 +9,7 @@ const UNAPPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.APPROVER, Compan
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(UNAPPROVE_ROLES);
+    ctx = await requireTenantRole(UNAPPROVE_ROLES, { permissionKey: ["payroll.approve", "payroll.compute"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

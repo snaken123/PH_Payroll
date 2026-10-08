@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { assertCompanyId, requireTenantRole, getTenantContext } from "@/lib/db/scoped";
 import { CompanyRole, EmployeeDocumentCategory } from "@/lib/generated/prisma/enums";
 import { createEmployeeDocumentSchema } from "@/lib/validations/employeeDocument";
+import { hasPermission } from "@/lib/permissions";
 
 const MANAGE_ROLES: CompanyRole[] = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.HR_STAFF];
 
@@ -33,8 +34,13 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Authorization check: User must either have HR/Admin manage role or be the employee itself
-  const isManager = ctx.platformRole === "SUPER_ADMIN" || (ctx.companyRole && MANAGE_ROLES.includes(ctx.companyRole));
+  // Authorization check: User must either have HR/Admin manage role, employee permission, or be the employee itself
+  const isManager =
+    ctx.platformRole === "SUPER_ADMIN" ||
+    (ctx.companyRole !== null && MANAGE_ROLES.includes(ctx.companyRole)) ||
+    hasPermission(ctx.permissions, "employee.upload_docs", ctx.platformRole) ||
+    hasPermission(ctx.permissions, "employee.view_info", ctx.platformRole) ||
+    hasPermission(ctx.permissions, "employee.manage", ctx.platformRole);
   const isSelf = employee.userId === ctx.userId;
 
   if (!isManager && !isSelf) {
@@ -71,7 +77,7 @@ export async function POST(
 ) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: ["employee.upload_docs", "employee.manage"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

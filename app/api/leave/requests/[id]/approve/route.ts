@@ -13,7 +13,7 @@ const APPROVE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, Com
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(APPROVE_ROLES);
+    ctx = await requireTenantRole(APPROVE_ROLES, { permissionKey: "leave.manage" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -11,7 +11,7 @@ const voidSchema = z.object({ reason: z.string().min(1, "A reason is required") 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(VOID_ROLES);
+    ctx = await requireTenantRole(VOID_ROLES, { permissionKey: "contractors.manage" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

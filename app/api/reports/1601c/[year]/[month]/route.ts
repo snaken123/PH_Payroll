@@ -14,7 +14,7 @@ export async function GET(
 ) {
   let ctx;
   try {
-    ctx = await requireTenantRole(VIEW_ROLES);
+    ctx = await requireTenantRole(VIEW_ROLES, { permissionKey: "reports.view" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -11,7 +11,7 @@ export async function DELETE(
 ) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: ["employee.upload_docs", "employee.manage"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

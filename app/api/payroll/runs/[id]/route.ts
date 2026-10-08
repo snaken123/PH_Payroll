@@ -8,7 +8,7 @@ const RUN_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, Company
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(RUN_ROLES);
+    ctx = await requireTenantRole(RUN_ROLES, { permissionKey: ["payroll.compute", "payroll.approve", "payroll.post"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

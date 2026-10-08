@@ -11,7 +11,7 @@ export async function POST(
   const { id: runId } = await params;
   let ctx;
   try {
-    ctx = await requireTenantRole([CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN]);
+    ctx = await requireTenantRole([CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN], { permissionKey: ["payroll.compute", "employee.manage"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
