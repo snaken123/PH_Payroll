@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ interface DeleteEmployeeDialogProps {
   employeeName: string;
   employeeNumber: string;
   redirectOnSuccess?: boolean;
+  disabled?: boolean;
   trigger?: React.ReactNode;
 }
 
@@ -31,6 +32,7 @@ export function DeleteEmployeeDialog({
   employeeName,
   employeeNumber,
   redirectOnSuccess = false,
+  disabled = false,
   trigger,
 }: DeleteEmployeeDialogProps) {
   const router = useRouter();
@@ -76,9 +78,11 @@ export function DeleteEmployeeDialog({
       <DialogTrigger
         render={
           trigger ? (
-            trigger as React.ReactElement
+            React.cloneElement(trigger as React.ReactElement<{ disabled?: boolean }>, {
+              disabled: disabled || (trigger as React.ReactElement<{ disabled?: boolean }>).props.disabled,
+            })
           ) : (
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40">
+            <Button variant="outline" size="sm" disabled={disabled} className="gap-1.5 text-xs font-semibold border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40">
               <Trash2Icon className="size-3.5 text-rose-600" /> Delete Employee
             </Button>
           )

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   CameraIcon,
@@ -26,6 +26,7 @@ interface EmployeePhotoDialogProps {
   employeeId: string;
   employeeName: string;
   currentPhotoUrl?: string | null;
+  disabled?: boolean;
   trigger?: React.ReactNode;
 }
 
@@ -33,6 +34,7 @@ export function EmployeePhotoDialog({
   employeeId,
   employeeName,
   currentPhotoUrl,
+  disabled = false,
   trigger,
 }: EmployeePhotoDialogProps) {
   const router = useRouter();
@@ -224,7 +226,7 @@ export function EmployeePhotoDialog({
         if (!v) stopCamera();
       }}
     >
-      <DialogTrigger render={trigger ? (trigger as any) : <Button variant="outline" size="sm">Photo</Button>} />
+      <DialogTrigger render={trigger ? (React.isValidElement(trigger) ? React.cloneElement(trigger as React.ReactElement<any>, { disabled }) : (trigger as any)) : <Button variant="outline" size="sm" disabled={disabled}>Photo</Button>} />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Employee Photo</DialogTitle>

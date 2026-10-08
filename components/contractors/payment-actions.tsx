@@ -15,7 +15,15 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-export function PaymentActions({ paymentId, status }: { paymentId: string; status: string }) {
+export function PaymentActions({
+  paymentId,
+  status,
+  disabled,
+}: {
+  paymentId: string;
+  status: string;
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
@@ -44,11 +52,11 @@ export function PaymentActions({ paymentId, status }: { paymentId: string; statu
 
   return (
     <div className="flex gap-2">
-      <Button size="sm" onClick={() => callAction("post")} disabled={busy}>
+      <Button size="sm" onClick={() => callAction("post")} disabled={busy || disabled}>
         Post
       </Button>
       <Dialog open={voidOpen} onOpenChange={setVoidOpen}>
-        <DialogTrigger render={<Button size="sm" variant="outline" />}>Void</DialogTrigger>
+        <DialogTrigger render={<Button size="sm" variant="outline" disabled={disabled} />}>Void</DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Void this payment</DialogTitle>

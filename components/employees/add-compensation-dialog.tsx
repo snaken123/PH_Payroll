@@ -65,9 +65,11 @@ interface CurrentCompProp {
 export function AddCompensationDialog({
   employeeId,
   currentCompensation,
+  disabled = false,
 }: {
   employeeId: string;
   currentCompensation?: CurrentCompProp;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -185,7 +187,7 @@ export function AddCompensationDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>New rate</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" disabled={disabled} />}>New rate</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Update compensation</DialogTitle>

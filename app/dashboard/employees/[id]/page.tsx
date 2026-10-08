@@ -127,6 +127,11 @@ export default async function EmployeeDetailPage({
     ctx.isSuperAdmin ||
     ctx.companyRole === CompanyRole.COMPANY_OWNER ||
     hasPermission(ctx.permissions, "loans.approve", ctx.platformRole);
+  const canManageEmployee = ctx.isSuperAdmin || hasPermission(ctx.permissions, "employee.manage", ctx.platformRole);
+  const canDeleteEmployee = ctx.isSuperAdmin || hasPermission(ctx.permissions, "employee.delete", ctx.platformRole);
+  const canUploadDocs = ctx.isSuperAdmin || hasPermission(ctx.permissions, "employee.upload_docs", ctx.platformRole);
+  const canCreateLoan = ctx.isSuperAdmin || hasPermission(ctx.permissions, "loans.create", ctx.platformRole);
+  const canComputePayroll = ctx.isSuperAdmin || hasPermission(ctx.permissions, "payroll.compute", ctx.platformRole);
 
   return (
     <div className="space-y-6">
@@ -151,6 +156,7 @@ export default async function EmployeeDetailPage({
               employeeId={employee.id}
               employeeName={`${employee.firstName} ${employee.lastName}`}
               currentPhotoUrl={employee.photoUrl}
+              disabled={!canUploadDocs}
               trigger={
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
                   <CameraIcon className="size-3.5 text-blue-600" /> Photo / Camera
@@ -159,6 +165,7 @@ export default async function EmployeeDetailPage({
             />
             <EditEmployeeProfileDialog
               employeeId={employee.id}
+              disabled={!canManageEmployee}
               defaultValues={{
                 employeeNumber: employee.employeeNumber,
                 firstName: employee.firstName,
@@ -209,6 +216,7 @@ export default async function EmployeeDetailPage({
               employeeId={employee.id}
               employeeName={`${employee.firstName} ${employee.lastName}`}
               employeeNumber={employee.employeeNumber}
+              disabled={!canDeleteEmployee}
               redirectOnSuccess={true}
             />
           </>
@@ -331,6 +339,7 @@ export default async function EmployeeDetailPage({
               employeeId={employee.id}
               employeeName={`${employee.firstName} ${employee.lastName}`}
               currentPhotoUrl={employee.photoUrl}
+              disabled={!canUploadDocs}
               trigger={
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
                   <CameraIcon className="size-3.5 text-blue-600" /> Upload / Take Photo
@@ -513,7 +522,7 @@ export default async function EmployeeDetailPage({
             >
               <DownloadIcon className="size-3.5" /> COE Document
             </Button>
-            {!employee.dateSeparated && <MarkSeparatedDialog employeeId={employee.id} />}
+            {!employee.dateSeparated && <MarkSeparatedDialog employeeId={employee.id} disabled={!canDeleteEmployee} />}
           </div>
         </CardHeader>
         <CardContent className="p-4 text-xs space-y-3">
@@ -536,7 +545,7 @@ export default async function EmployeeDetailPage({
                 </div>
               </div>
 
-              <ClearanceToggle employeeId={employee.id} clearanceCompleted={employee.clearanceCompleted} />
+              <ClearanceToggle employeeId={employee.id} clearanceCompleted={employee.clearanceCompleted} disabled={!canDeleteEmployee} />
 
               {(() => {
                 const activeRun = employee.finalPayRuns.find((r) => r.status !== "VOID");
@@ -547,7 +556,7 @@ export default async function EmployeeDetailPage({
                     </Button>
                   );
                 }
-                return <ComputeFinalPayButton employeeId={employee.id} />;
+                return <ComputeFinalPayButton employeeId={employee.id} disabled={!canComputePayroll} />;
               })()}
             </div>
           )}
@@ -564,6 +573,7 @@ export default async function EmployeeDetailPage({
             </div>
             <AddCompensationDialog
               employeeId={employee.id}
+              disabled={!canManageEmployee}
               currentCompensation={
                 currentComp
                   ? {
@@ -645,7 +655,7 @@ export default async function EmployeeDetailPage({
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Loans &amp; Cash Advances</CardTitle>
               <CardDescription className="text-xs">Active loans and automated cutoff deductions.</CardDescription>
             </div>
-            <CreateLoanDialog employeeId={employee.id} />
+            <CreateLoanDialog employeeId={employee.id} disabled={!canCreateLoan} />
           </CardHeader>
           <CardContent className="p-0">
             {employee.loans.length === 0 ? (

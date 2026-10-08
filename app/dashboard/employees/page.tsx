@@ -16,6 +16,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, Edit3Icon, Trash2Icon, FileTextIcon } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
 export default async function EmployeesPage({
@@ -47,6 +48,8 @@ export default async function EmployeesPage({
   );
 
   const canViewCompensation = ctx.isSuperAdmin || ctx.permissions.includes("employee.view_compensation");
+  const canManageEmployee = ctx.isSuperAdmin || hasPermission(ctx.permissions, "employee.manage", ctx.platformRole);
+  const canDeleteEmployee = ctx.isSuperAdmin || hasPermission(ctx.permissions, "employee.delete", ctx.platformRole);
 
   let prismaOrderBy: any = { createdAt: "desc" };
   if (sort === "employeeNumber") {
@@ -105,15 +108,22 @@ export default async function EmployeesPage({
         description="Manage your organization's employee directory, compensation records, and employment statuses."
         actions={
           <>
-            <DeletionAuditDialog />
-            <Link
-              href="/dashboard/employees/bulk-edit"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 text-xs font-semibold")}
-            >
-              <Edit3Icon className="size-3.5 text-slate-500" />
-              Bulk Edit
-            </Link>
-            <CreateEmployeeDialog branches={branches} />
+            <DeletionAuditDialog disabled={!canDeleteEmployee} />
+            {canManageEmployee ? (
+              <Link
+                href="/dashboard/employees/bulk-edit"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 text-xs font-semibold")}
+              >
+                <Edit3Icon className="size-3.5 text-slate-500" />
+                Bulk Edit
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled className="gap-1.5 text-xs font-semibold">
+                <Edit3Icon className="size-3.5 text-slate-500" />
+                Bulk Edit
+              </Button>
+            )}
+            <CreateEmployeeDialog branches={branches} disabled={!canManageEmployee} />
           </>
         }
       />
@@ -293,6 +303,7 @@ export default async function EmployeesPage({
                               employeeId={e.id}
                               employeeName={`${e.firstName} ${e.lastName}`}
                               employeeNumber={e.employeeNumber}
+                              disabled={!canDeleteEmployee}
                               trigger={
                                 <Button
                                   variant="ghost"

@@ -19,7 +19,7 @@ interface AuditRecord {
   createdAt: string;
 }
 
-export function DeletionAuditDialog() {
+export function DeletionAuditDialog({ disabled }: { disabled?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<AuditRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ export function DeletionAuditDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100">
+          <Button disabled={disabled} variant="outline" size="sm" className="gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100">
             <HistoryIcon className="size-3.5 text-slate-500" /> Deletion Audit Log
           </Button>
         }

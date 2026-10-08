@@ -46,7 +46,7 @@ const defaultLoanValues = (empId: string) => ({
   hasNoExpiration: false,
 });
 
-export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
+export function CreateLoanDialog({ employeeId, disabled = false }: { employeeId: string; disabled?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -102,7 +102,7 @@ export function CreateLoanDialog({ employeeId }: { employeeId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>New loan</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" disabled={disabled} />}>New loan</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add loan / cash advance</DialogTitle>

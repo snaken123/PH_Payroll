@@ -60,7 +60,13 @@ const PAY_BASIS_LABELS: Record<(typeof payBasisValues)[number], string> = {
   HOURLY_RATE: "Hourly rate",
 };
 
-export function CreateEmployeeDialog({ branches }: { branches: { id: string; name: string }[] }) {
+export function CreateEmployeeDialog({
+  branches,
+  disabled,
+}: {
+  branches: { id: string; name: string }[];
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -174,7 +180,7 @@ export function CreateEmployeeDialog({ branches }: { branches: { id: string; nam
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>New employee</DialogTrigger>
+      <DialogTrigger render={<Button disabled={disabled} />}>New employee</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add employee</DialogTitle>

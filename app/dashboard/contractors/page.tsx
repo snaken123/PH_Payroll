@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MetricCard } from "@/components/ui/metric-card";
 import { BriefcaseIcon, CheckCircle2Icon, ArrowRightIcon } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
 import { ContractorStatus } from "@/lib/generated/prisma/enums";
 
 export default async function ContractorsPage({
@@ -22,6 +23,9 @@ export default async function ContractorsPage({
   const { page: pageParam, q } = await searchParams;
   const page = parsePageParam(pageParam);
   const search = q?.trim() || undefined;
+
+  const canManageContractors =
+    ctx.isSuperAdmin || hasPermission(ctx.permissions, "contractors.manage", ctx.platformRole);
 
   const where = withCompanyScope(
     ctx.companyId,
@@ -56,7 +60,7 @@ export default async function ContractorsPage({
       <PageHeader
         title="Contractors &amp; Expanded Withholding Tax"
         description="Manage freelancers and independent contractors under BIR Expanded Withholding Tax (BIR Form 2307) — separate from employee payroll."
-        actions={<CreateContractorDialog />}
+        actions={<CreateContractorDialog disabled={!canManageContractors} />}
       />
 
       {/* Summary KPI Cards */}

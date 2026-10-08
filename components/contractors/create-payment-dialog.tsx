@@ -25,9 +25,11 @@ import { toast } from "sonner";
 export function CreatePaymentDialog({
   contractorId,
   defaultEwtRate,
+  disabled,
 }: {
   contractorId: string;
   defaultEwtRate: number;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -66,7 +68,7 @@ export function CreatePaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>Record payment</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" disabled={disabled} />}>Record payment</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record contractor payment</DialogTitle>

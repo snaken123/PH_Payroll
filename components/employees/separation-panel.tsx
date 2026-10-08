@@ -7,7 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export function ClearanceToggle({ employeeId, clearanceCompleted }: { employeeId: string; clearanceCompleted: boolean }) {
+export function ClearanceToggle({
+  employeeId,
+  clearanceCompleted,
+  disabled,
+}: {
+  employeeId: string;
+  clearanceCompleted: boolean;
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -32,13 +40,19 @@ export function ClearanceToggle({ employeeId, clearanceCompleted }: { employeeId
 
   return (
     <div className="flex items-center gap-2">
-      <Switch id="clearance" checked={clearanceCompleted} onCheckedChange={toggle} disabled={busy} />
+      <Switch id="clearance" checked={clearanceCompleted} onCheckedChange={toggle} disabled={busy || disabled} />
       <Label htmlFor="clearance">Clearance completed</Label>
     </div>
   );
 }
 
-export function ComputeFinalPayButton({ employeeId }: { employeeId: string }) {
+export function ComputeFinalPayButton({
+  employeeId,
+  disabled,
+}: {
+  employeeId: string;
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -59,7 +73,7 @@ export function ComputeFinalPayButton({ employeeId }: { employeeId: string }) {
   }
 
   return (
-    <Button onClick={compute} disabled={busy}>
+    <Button onClick={compute} disabled={busy || disabled}>
       {busy ? "Computing..." : "Compute final pay"}
     </Button>
   );

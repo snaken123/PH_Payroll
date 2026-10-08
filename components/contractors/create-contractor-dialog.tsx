@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-export function CreateContractorDialog() {
+export function CreateContractorDialog({ disabled }: { disabled?: boolean } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,7 +63,7 @@ export function CreateContractorDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>New contractor</DialogTrigger>
+      <DialogTrigger render={<Button disabled={disabled} />}>New contractor</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add contractor / freelancer</DialogTitle>

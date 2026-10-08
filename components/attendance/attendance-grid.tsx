@@ -171,6 +171,10 @@ export function AttendanceGrid() {
   const companyId = session?.user?.companyId;
   const userPermissions = session?.user?.permissions ?? [];
   const platformRole = session?.user?.platformRole;
+  const canManageAttendance =
+    platformRole === "SUPER_ADMIN" ||
+    session?.user?.companyRole === "COMPANY_OWNER" ||
+    hasPermission(userPermissions, "attendance.manage", platformRole);
   const canUseGlobalActions = hasPermission(userPermissions, "attendance.global_actions", platformRole);
   const [{ start, end }, setRange] = useState(defaultRange());
   const [viewMode, setViewMode] = useState<"GRID" | "SUMMARY">("GRID");
@@ -550,7 +554,7 @@ export function AttendanceGrid() {
           <Label htmlFor="gridSearch">Search employee</Label>
           <Input id="gridSearch" className="w-48" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name or number…" />
         </div>
-        <Button variant="outline" onClick={generateDefaults} disabled={generating}>
+        <Button variant="outline" onClick={generateDefaults} disabled={generating || !canManageAttendance}>
           {generating ? "Generating..." : "Generate default entries"}
         </Button>
       </div>
@@ -645,7 +649,7 @@ export function AttendanceGrid() {
               </div>
             )}
 
-            <Button onClick={saveAll} disabled={saving} size="sm">
+            <Button onClick={saveAll} disabled={saving || !canManageAttendance} size="sm">
               {saving ? "Saving..." : "Save all"}
             </Button>
           </div>

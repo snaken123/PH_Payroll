@@ -40,9 +40,11 @@ import { PencilIcon } from "lucide-react";
 export function EditEmployeeProfileDialog({
   employeeId,
   defaultValues,
+  disabled = false,
 }: {
   employeeId: string;
   defaultValues: EditEmployeeProfileFormValues;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -108,7 +110,7 @@ export function EditEmployeeProfileDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+        <Button variant="outline" size="sm" disabled={disabled} className="gap-1.5 text-xs font-semibold">
           <PencilIcon className="size-3.5 text-blue-600" /> Update 201 File
         </Button>
       } />

@@ -33,10 +33,12 @@ export function CreateLeaveRequestDialog({
   employeeId,
   leaveTypes,
   onCreated,
+  disabled,
 }: {
   employeeId: string;
   leaveTypes: LeaveTypeOption[];
   onCreated: () => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -75,7 +77,7 @@ export function CreateLeaveRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>New leave request</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" disabled={disabled} />}>New leave request</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>File leave request</DialogTitle>

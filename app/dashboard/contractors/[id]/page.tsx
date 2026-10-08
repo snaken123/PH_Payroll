@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreatePaymentDialog } from "@/components/contractors/create-payment-dialog";
 import { PaymentActions } from "@/components/contractors/payment-actions";
 
+import { hasPermission } from "@/lib/permissions";
+
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   DRAFT: "secondary",
   POSTED: "default",
@@ -21,6 +23,9 @@ export default async function ContractorDetailPage({
 }) {
   const { id } = await params;
   const ctx = await getTenantContext();
+
+  const canManageContractors =
+    ctx.isSuperAdmin || hasPermission(ctx.permissions, "contractors.manage", ctx.platformRole);
 
   const contractor = await prisma.contractor.findUnique({
     where: { id },
@@ -49,7 +54,7 @@ export default async function ContractorDetailPage({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Payments</CardTitle>
-          <CreatePaymentDialog contractorId={contractor.id} defaultEwtRate={Number(contractor.defaultEwtRate)} />
+          <CreatePaymentDialog contractorId={contractor.id} defaultEwtRate={Number(contractor.defaultEwtRate)} disabled={!canManageContractors} />
         </CardHeader>
         <CardContent>
           {contractor.payments.length === 0 ? (
@@ -79,7 +84,7 @@ export default async function ContractorDetailPage({
                       <Badge variant={STATUS_VARIANT[p.status] ?? "secondary"}>{p.status}</Badge>
                     </TableCell>
                     <TableCell className="flex items-center gap-2">
-                      <PaymentActions paymentId={p.id} status={p.status} />
+                      <PaymentActions paymentId={p.id} status={p.status} disabled={!canManageContractors} />
                       {p.status === "POSTED" && (
                         <Button
                           size="sm"

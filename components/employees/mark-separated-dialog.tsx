@@ -45,7 +45,13 @@ const EMPLOYMENT_STATUS_BY_CATEGORY: Record<(typeof separationCategoryValues)[nu
   END_OF_CONTRACT: "TERMINATED",
 };
 
-export function MarkSeparatedDialog({ employeeId }: { employeeId: string }) {
+export function MarkSeparatedDialog({
+  employeeId,
+  disabled,
+}: {
+  employeeId: string;
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +95,7 @@ export function MarkSeparatedDialog({ employeeId }: { employeeId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>Mark as separated</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" disabled={disabled} />}>Mark as separated</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Mark employee as separated</DialogTitle>

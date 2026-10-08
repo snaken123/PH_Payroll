@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/permissions";
 import { createPayrollRunSchema, type CreatePayrollRunInput } from "@/lib/validations/payroll";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +76,13 @@ function getEffectiveUndertime(
   return { minutes, hours };
 }
 
-export function CreateRunDialog() {
+export function CreateRunDialog({ disabled = false }: { disabled?: boolean }) {
+  const { data: session } = useSession();
+  const canCompute =
+    session?.user?.platformRole === "SUPER_ADMIN" ||
+    session?.user?.companyRole === "COMPANY_OWNER" ||
+    hasPermission(session?.user?.permissions ?? [], "payroll.compute", session?.user?.platformRole);
+
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -307,7 +315,7 @@ export function CreateRunDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button />}>Run payroll</DialogTrigger>
+      <DialogTrigger render={<Button disabled={!canCompute || disabled} />}>Run payroll</DialogTrigger>
       <DialogContent className="max-w-md md:max-w-lg">
         {step === "FORM" ? (
           <>
