@@ -42,6 +42,12 @@ export async function computeAndPersistPayrollRun({
   excludeSaturdayUndertime?: boolean;
   targetRunId?: string;
 }) {
+  const cutoffStartStartOfDay = new Date(cutoffStart);
+  cutoffStartStartOfDay.setUTCHours(0, 0, 0, 0);
+
+  const cutoffEndEndOfDay = new Date(cutoffEnd);
+  cutoffEndEndOfDay.setUTCHours(23, 59, 59, 999);
+
   const period = await prisma.payrollPeriod.upsert({
     where: { companyId_cutoffStart_cutoffEnd: { companyId, cutoffStart, cutoffEnd } },
     update: {},
@@ -50,13 +56,13 @@ export async function computeAndPersistPayrollRun({
 
   const [company, sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings] = await Promise.all([
     prisma.company.findUnique({ where: { id: companyId } }),
-    prisma.sssContributionBracket.findMany({ where: asOfWhere(cutoffEnd) }),
-    prisma.philhealthConfig.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
-    prisma.pagibigContributionBracket.findFirst({ where: asOfWhere(cutoffEnd), orderBy: { effectiveFrom: "desc" } }),
+    prisma.sssContributionBracket.findMany({ where: asOfWhere(cutoffEndEndOfDay) }),
+    prisma.philhealthConfig.findFirst({ where: asOfWhere(cutoffEndEndOfDay), orderBy: { effectiveFrom: "desc" } }),
+    prisma.pagibigContributionBracket.findFirst({ where: asOfWhere(cutoffEndEndOfDay), orderBy: { effectiveFrom: "desc" } }),
     prisma.birWithholdingBracket.findMany({
-      where: { ...asOfWhere(cutoffEnd), payPeriodType: "SEMI_MONTHLY" },
+      where: { ...asOfWhere(cutoffEndEndOfDay), payPeriodType: "SEMI_MONTHLY" },
     }),
-    prisma.deMinimisCeiling.findMany({ where: asOfWhere(cutoffEnd) }),
+    prisma.deMinimisCeiling.findMany({ where: asOfWhere(cutoffEndEndOfDay) }),
   ]);
 
   if (!philhealthConfig || !pagibigBracket || sssBrackets.length === 0 || birBrackets.length === 0) {
@@ -79,8 +85,8 @@ export async function computeAndPersistPayrollRun({
         orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }],
         include: { allowances: true },
       },
-      timesheetEntries: { where: { workDate: { gte: cutoffStart, lte: cutoffEnd } } },
-      loans: { where: { status: LoanStatus.ACTIVE, startDate: { lte: cutoffEnd } }, orderBy: { startDate: "asc" } },
+      timesheetEntries: { where: { workDate: { gte: cutoffStartStartOfDay, lte: cutoffEndEndOfDay } } },
+      loans: { where: { status: LoanStatus.ACTIVE, startDate: { lte: cutoffEndEndOfDay } }, orderBy: { startDate: "asc" } },
     },
   });
 
@@ -200,7 +206,7 @@ export async function computeAndPersistPayrollRun({
 
     for (const emp of employees) {
       const comp = emp.compensationRecords.find(
-        (c) => c.effectiveFrom <= cutoffEnd && (c.effectiveTo === null || c.effectiveTo > cutoffEnd)
+        (c) => c.effectiveFrom <= cutoffEndEndOfDay && (c.effectiveTo === null || c.effectiveTo > cutoffEndEndOfDay)
       ) ?? emp.compensationRecords[0];
       if (!comp) continue; // no compensation record found — skip
 

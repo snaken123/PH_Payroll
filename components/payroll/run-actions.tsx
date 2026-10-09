@@ -149,8 +149,8 @@ export function RunActions({
 
     setCheckingOt(true);
     try {
-      const startStr = typeof cutoffStart === "string" ? cutoffStart : cutoffStart.toISOString();
-      const endStr = typeof cutoffEnd === "string" ? cutoffEnd : cutoffEnd.toISOString();
+      const startStr = typeof cutoffStart === "string" ? cutoffStart : new Date(cutoffStart).toISOString();
+      const endStr = typeof cutoffEnd === "string" ? cutoffEnd : new Date(cutoffEnd).toISOString();
       const url = `/api/payroll/runs/ot-preview?cutoffStart=${encodeURIComponent(startStr)}&cutoffEnd=${encodeURIComponent(endStr)}`;
       const res = await fetch(url);
       if (!res.ok) {

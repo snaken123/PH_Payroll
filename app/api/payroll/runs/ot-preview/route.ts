@@ -25,7 +25,10 @@ export async function GET(request: Request) {
   }
 
   const cutoffStart = new Date(cutoffStartStr);
+  cutoffStart.setUTCHours(0, 0, 0, 0);
+
   const cutoffEnd = new Date(cutoffEndStr);
+  cutoffEnd.setUTCHours(23, 59, 59, 999);
 
   if (isNaN(cutoffStart.getTime()) || isNaN(cutoffEnd.getTime())) {
     return NextResponse.json({ error: "Invalid date parameters" }, { status: 400 });
