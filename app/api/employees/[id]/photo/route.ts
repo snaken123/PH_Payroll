@@ -9,7 +9,7 @@ const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, Comp
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: ["employee.manage", "employee.upload_docs"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -42,7 +42,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
-    ctx = await requireTenantRole(MANAGE_ROLES);
+    ctx = await requireTenantRole(MANAGE_ROLES, { permissionKey: ["employee.manage", "employee.upload_docs"] });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

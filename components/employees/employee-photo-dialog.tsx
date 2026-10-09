@@ -189,7 +189,8 @@ export function EmployeePhotoDialog({
     setSaving(false);
 
     if (!res.ok) {
-      toast.error("Failed to save employee photo");
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Failed to save employee photo");
       return;
     }
 
@@ -207,7 +208,8 @@ export function EmployeePhotoDialog({
     setSaving(false);
 
     if (!res.ok) {
-      toast.error("Failed to remove photo");
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Failed to remove photo");
       return;
     }
 
