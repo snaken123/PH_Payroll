@@ -28,6 +28,8 @@ interface PagibigConfigItem {
   sourceReference: string;
 }
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function PagibigRatesTab({
   configs,
   onRefresh,
@@ -44,7 +46,7 @@ export function PagibigRatesTab({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<UpdatePagibigBracketInput>({
     resolver: zodResolver(updatePagibigBracketSchema),
     defaultValues: {
@@ -58,6 +60,40 @@ export function PagibigRatesTab({
       eeCap: activeConfig ? Number(activeConfig.eeCap) : 200,
       erCap: activeConfig ? Number(activeConfig.erCap) : 200,
       sourceReference: activeConfig ? activeConfig.sourceReference : "",
+    },
+  });
+
+  const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
+    isDirty: open && isDirty,
+    onSave: async () => {
+      return new Promise<boolean>((resolve) => {
+        handleSubmit(async (data) => {
+          setSubmitting(true);
+          try {
+            const res = await fetch("/api/admin/rates/pagibig", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+              const body = await res.json();
+              throw new Error(body.error ?? "Failed to update Pag-IBIG rates");
+            }
+
+            toast.success("Pag-IBIG rate config updated");
+            setOpen(false);
+            reset();
+            onRefresh();
+            resolve(true);
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "An error occurred");
+            resolve(false);
+          } finally {
+            setSubmitting(false);
+          }
+        })();
+      });
     },
   });
 
@@ -88,6 +124,7 @@ export function PagibigRatesTab({
 
   return (
     <div className="space-y-6">
+      {UnsavedChangesDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Pag-IBIG (HDMF) Contribution Configuration</h2>
@@ -95,7 +132,7 @@ export function PagibigRatesTab({
             Governs Home Development Mutual Fund contributions under HDMF Circular No. 460.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => !val ? confirmDiscard(() => setOpen(false)) : setOpen(true)}>
           <DialogTrigger render={<Button />}>Update Pag-IBIG Rates</DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

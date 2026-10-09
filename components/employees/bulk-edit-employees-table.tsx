@@ -40,14 +40,18 @@ const COPYABLE_FIELDS = new Set<Field>([
   "isDeductWithholdingTax",
 ]);
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function BulkEditEmployeesTable({
   initialRows,
+  canViewCompensation,
 }: {
   initialRows: BulkEmployeeRow[];
   canViewCompensation?: boolean;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState<BulkEmployeeRow[]>(initialRows);
+  const [initialRowsSnapshot, setInitialRowsSnapshot] = useState<BulkEmployeeRow[]>(initialRows);
   const [saving, setSaving] = useState(false);
 
   // Sorting state
@@ -114,11 +118,11 @@ export function BulkEditEmployeesTable({
     }
   }
 
-  async function saveAll() {
+  async function saveAll(): Promise<boolean> {
     if (duplicateEmpIds.size > 0) {
       const dupList = Array.from(duplicateEmpIds).join(", ");
       toast.error(`Duplicate EMP_ID in table (${dupList}). Each employee must have a unique EMP_ID.`);
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -132,12 +136,23 @@ export function BulkEditEmployeesTable({
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       toast.error(body?.error?.formErrors?.join?.(", ") ?? body?.error ?? "Failed to save changes");
-      return;
+      return false;
     }
 
     toast.success(`Saved ${rows.length} employee${rows.length === 1 ? "" : "s"}`);
+    setInitialRowsSnapshot(rows);
     router.refresh();
+    return true;
   }
+
+  const isDirty = JSON.stringify(rows) !== JSON.stringify(initialRowsSnapshot);
+
+  const { UnsavedChangesDialog } = useUnsavedChanges({
+    isDirty,
+    onSave: async () => {
+      return await saveAll();
+    },
+  });
 
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">No employees to edit.</p>;
@@ -145,6 +160,7 @@ export function BulkEditEmployeesTable({
 
   return (
     <div className="space-y-3">
+      {UnsavedChangesDialog}
       <div className="flex justify-between items-center">
         <div className="text-xs text-muted-foreground">
           {sortField ? (

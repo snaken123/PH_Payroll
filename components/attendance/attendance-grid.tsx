@@ -166,6 +166,8 @@ function defaultRange() {
 
 import { hasPermission } from "@/lib/permissions";
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function AttendanceGrid() {
   const { data: session } = useSession();
   const companyId = session?.user?.companyId;
@@ -183,6 +185,7 @@ export function AttendanceGrid() {
   const [holidays, setHolidays] = useState<HolidayDTO[]>([]);
   const [config, setConfig] = useState<CompanyAttendanceConfig | undefined>(undefined);
   const [cells, setCells] = useState<Record<string, CellState>>({});
+  const [initialCells, setInitialCells] = useState<Record<string, CellState>>({});
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -303,6 +306,7 @@ export function AttendanceGrid() {
     }
     void Promise.resolve().then(() => {
       setCells(next);
+      setInitialCells(next);
       setSelectedEmployees(new Set());
       setSelectedDates(new Set());
     });
@@ -496,7 +500,7 @@ export function AttendanceGrid() {
     load();
   }
 
-  async function saveAll() {
+  async function saveAll(): Promise<boolean> {
     setSaving(true);
     const rows = employees.flatMap((emp) =>
       dates.map((date) => {
@@ -529,18 +533,33 @@ export function AttendanceGrid() {
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       toast.error(body?.error?.formErrors?.join?.(", ") ?? body?.error ?? "Failed to save");
-      return;
+      return false;
     }
 
     toast.success(`Saved ${rows.length} entries`);
+    setInitialCells(cells);
     load();
+    return true;
   }
+
+  const isGridDirty = useMemo(() => {
+    if (!initialCells || Object.keys(initialCells).length === 0) return false;
+    return JSON.stringify(cells) !== JSON.stringify(initialCells);
+  }, [cells, initialCells]);
+
+  const { UnsavedChangesDialog } = useUnsavedChanges({
+    isDirty: isGridDirty,
+    onSave: async () => {
+      return await saveAll();
+    },
+  });
 
   const editingState = editingCell ? cells[cellKey(editingCell.employeeId, editingCell.date)] : null;
   const editingEmployee = editingCell ? employees.find((e) => e.id === editingCell.employeeId) : null;
 
   return (
     <div className="space-y-4">
+      {UnsavedChangesDialog}
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-1">
           <Label htmlFor="gridStart">Start</Label>

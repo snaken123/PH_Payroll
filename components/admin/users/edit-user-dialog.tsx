@@ -36,6 +36,8 @@ interface UserProfile {
   }>;
 }
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function EditUserDialog({
   user,
   companies = [],
@@ -56,6 +58,49 @@ export function EditUserDialog({
 
   const [platformRole, setPlatformRole] = useState<"STANDARD" | "SUPER_ADMIN">(initialPlatformRole);
   const [memberships, setMemberships] = useState<AccessTreeMembership[]>(initialMemberships);
+
+  const isDirty = open && (platformRole !== initialPlatformRole || JSON.stringify(memberships) !== JSON.stringify(initialMemberships));
+
+  const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
+    isDirty,
+    onSave: async () => {
+      // Trigger form submit programmatically or call onSubmit
+      return new Promise<boolean>((resolve) => {
+        handleSubmit(async (values) => {
+          setSubmitting(true);
+          const payload = {
+            ...values,
+            platformRole,
+            memberships: platformRole === "STANDARD" ? memberships : [],
+          };
+          const res = await fetch(`/api/admin/users/${user.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          setSubmitting(false);
+          if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            toast.error(body?.error ?? "Failed to update user account");
+            resolve(false);
+            return;
+          }
+          toast.success("User credentials and access tree updated");
+          setOpen(false);
+          router.refresh();
+          resolve(true);
+        })();
+      });
+    },
+  });
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      confirmDiscard(() => setOpen(false));
+    } else {
+      setOpen(true);
+    }
+  };
 
   const {
     register,
@@ -105,7 +150,9 @@ export function EditUserDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      {UnsavedChangesDialog}
+      <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           <Button variant="outline" size="sm" className="h-7 text-xs border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
@@ -195,6 +242,7 @@ export function EditUserDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }

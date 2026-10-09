@@ -94,6 +94,8 @@ interface EmployeeData {
   isIncludedInAlphalist: boolean;
 }
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function SettingsClient({
   company,
   bankAccounts: initialBankAccounts,
@@ -126,7 +128,7 @@ export function SettingsClient({
   const [confirmWorkDaysDialogOpen, setConfirmWorkDaysDialogOpen] = useState(false);
 
   // Company Pay Period & Details Form State
-  const [formData, setFormData] = useState({
+  const initialFormDataState = {
     legalName: company.legalName,
     tradeName: company.tradeName ?? "",
     tin: company.tin,
@@ -156,15 +158,18 @@ export function SettingsClient({
     attendanceFlexi1WindowStart: company.attendanceFlexi1WindowStart ?? "07:00",
     attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd ?? "10:00",
     attendanceFlexi1LateGracePeriodMinutes: company.attendanceFlexi1LateGracePeriodMinutes ?? 15,
-  });
+  };
 
-  async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent) {
+  const [formData, setFormData] = useState(initialFormDataState);
+  const [initialFormData, setInitialFormData] = useState(initialFormDataState);
+
+  async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent): Promise<boolean> {
     const override = typeof applyToEmployeesOverride === "boolean" ? applyToEmployeesOverride : undefined;
     const hasWorkDaysChanged = formData.standardWorkDaysPerMonth !== company.standardWorkDaysPerMonth;
 
     if (hasWorkDaysChanged && override === undefined) {
       setConfirmWorkDaysDialogOpen(true);
-      return;
+      return false;
     }
 
     const applyToEmployees = override ?? false;
@@ -191,13 +196,25 @@ export function SettingsClient({
       } else {
         toast.success("Company settings updated successfully");
       }
+      setInitialFormData(formData);
       router.refresh();
+      return true;
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "An error occurred");
+      return false;
     } finally {
       setSubmitting(false);
     }
   }
+
+  const isSettingsDirty = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+
+  const { UnsavedChangesDialog } = useUnsavedChanges({
+    isDirty: isSettingsDirty,
+    onSave: async () => {
+      return await handleSaveSettings();
+    },
+  });
 
   async function handleAddBankAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -300,6 +317,7 @@ export function SettingsClient({
 
   return (
     <>
+      {UnsavedChangesDialog}
       <Tabs defaultValue="pay-period" className="space-y-6">
       <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/60 rounded-xl">
         <TabsTrigger value="pay-period" className="flex items-center gap-1.5 text-xs py-2 px-3">

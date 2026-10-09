@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { NotebookIcon, SaveIcon, CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 interface EmployeeNotepadCardProps {
   employeeId: string;
   initialNotes?: string | null;
@@ -16,10 +18,11 @@ interface EmployeeNotepadCardProps {
 export function EmployeeNotepadCard({ employeeId, initialNotes = "" }: EmployeeNotepadCardProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes ?? "");
+  const [savedNotes, setSavedNotes] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     setSaving(true);
     setSaved(false);
 
@@ -34,21 +37,33 @@ export function EmployeeNotepadCard({ employeeId, initialNotes = "" }: EmployeeN
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         toast.error(body?.error ?? "Failed to save notes");
-        return;
+        return false;
       }
 
+      setSavedNotes(notes);
       setSaved(true);
       toast.success("Employee notepad updated successfully");
       router.refresh();
       setTimeout(() => setSaved(false), 3000);
+      return true;
     } catch {
       setSaving(false);
       toast.error("Failed to save notes");
+      return false;
     }
   }
 
+  const isDirty = notes !== savedNotes;
+
+  const { UnsavedChangesDialog } = useUnsavedChanges({
+    isDirty,
+    onSave: handleSave,
+  });
+
   return (
-    <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 col-span-full mt-4">
+    <>
+      {UnsavedChangesDialog}
+      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 col-span-full mt-4">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-3">
         <div>
           <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -96,5 +111,6 @@ export function EmployeeNotepadCard({ employeeId, initialNotes = "" }: EmployeeN
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

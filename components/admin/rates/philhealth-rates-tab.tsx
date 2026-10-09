@@ -26,6 +26,8 @@ interface PhilhealthConfigItem {
   sourceReference: string;
 }
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function PhilhealthRatesTab({
   configs,
   onRefresh,
@@ -42,7 +44,7 @@ export function PhilhealthRatesTab({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<UpdatePhilhealthConfigInput>({
     resolver: zodResolver(updatePhilhealthConfigSchema),
     defaultValues: {
@@ -53,6 +55,40 @@ export function PhilhealthRatesTab({
       floorSalary: activeConfig ? Number(activeConfig.floorSalary) : 10000,
       ceilingSalary: activeConfig ? Number(activeConfig.ceilingSalary) : 100000,
       sourceReference: activeConfig ? activeConfig.sourceReference : "",
+    },
+  });
+
+  const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
+    isDirty: open && isDirty,
+    onSave: async () => {
+      return new Promise<boolean>((resolve) => {
+        handleSubmit(async (data) => {
+          setSubmitting(true);
+          try {
+            const res = await fetch("/api/admin/rates/philhealth", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+              const body = await res.json();
+              throw new Error(body.error ?? "Failed to update PhilHealth rates");
+            }
+
+            toast.success("PhilHealth rate config updated");
+            setOpen(false);
+            reset();
+            onRefresh();
+            resolve(true);
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "An error occurred");
+            resolve(false);
+          } finally {
+            setSubmitting(false);
+          }
+        })();
+      });
     },
   });
 
@@ -83,6 +119,7 @@ export function PhilhealthRatesTab({
 
   return (
     <div className="space-y-6">
+      {UnsavedChangesDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">PhilHealth Premium Rate Configuration</h2>
@@ -90,7 +127,7 @@ export function PhilhealthRatesTab({
             Governs national health insurance employee and employer share rates under RA 11223 (UHC Law).
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => !val ? confirmDiscard(() => setOpen(false)) : setOpen(true)}>
           <DialogTrigger render={<Button />}>Update PhilHealth Rates</DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

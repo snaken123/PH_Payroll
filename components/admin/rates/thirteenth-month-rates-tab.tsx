@@ -21,6 +21,8 @@ interface ThirteenthMonthConfigItem {
   sourceReference: string;
 }
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function ThirteenthMonthRatesTab({
   configs,
   onRefresh,
@@ -37,13 +39,47 @@ export function ThirteenthMonthRatesTab({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<UpdateThirteenthMonthConfigInput>({
     resolver: zodResolver(updateThirteenthMonthConfigSchema),
     defaultValues: {
       effectiveFrom: new Date().toISOString().slice(0, 10),
       exemptionCeiling: activeConfig ? Number(activeConfig.exemptionCeiling) : 90000,
       sourceReference: activeConfig ? activeConfig.sourceReference : "TRAIN law amendment to NIRC Sec. 32(B)(7)(e)",
+    },
+  });
+
+  const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
+    isDirty: open && isDirty,
+    onSave: async () => {
+      return new Promise<boolean>((resolve) => {
+        handleSubmit(async (data) => {
+          setSubmitting(true);
+          try {
+            const res = await fetch("/api/admin/rates/thirteenth-month", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+              const body = await res.json();
+              throw new Error(body.error ?? "Failed to update 13th Month exemption ceiling");
+            }
+
+            toast.success("13th Month Pay exemption ceiling updated");
+            setOpen(false);
+            reset();
+            onRefresh();
+            resolve(true);
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "An error occurred");
+            resolve(false);
+          } finally {
+            setSubmitting(false);
+          }
+        })();
+      });
     },
   });
 
@@ -74,6 +110,7 @@ export function ThirteenthMonthRatesTab({
 
   return (
     <div className="space-y-6">
+      {UnsavedChangesDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">13th Month & Other Benefits Exemption Ceiling</h2>
@@ -81,7 +118,7 @@ export function ThirteenthMonthRatesTab({
             Combined statutory tax-exempt exclusion ceiling under NIRC Sec. 32(B)(7)(e) as amended by TRAIN Law (RA 10963).
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => !val ? confirmDiscard(() => setOpen(false)) : setOpen(true)}>
           <DialogTrigger render={<Button />}>Update Exemption Ceiling</DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

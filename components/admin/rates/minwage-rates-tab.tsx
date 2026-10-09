@@ -31,6 +31,8 @@ const SECTOR_LABELS: Record<WageSector, string> = {
   RETAIL_SERVICE_SMALL: "Retail / Service (Micro & Small)",
 };
 
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 export function MinwageRatesTab({
   rates,
   onRefresh,
@@ -47,7 +49,7 @@ export function MinwageRatesTab({
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<UpdateMinimumWageRateInput>({
     resolver: zodResolver(updateMinimumWageRateSchema),
     defaultValues: {
@@ -56,6 +58,40 @@ export function MinwageRatesTab({
       sector: WageSector.NON_AGRICULTURE,
       dailyRate: 645,
       wageOrderReference: "Wage Order NCR-25",
+    },
+  });
+
+  const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
+    isDirty: open && isDirty,
+    onSave: async () => {
+      return new Promise<boolean>((resolve) => {
+        handleSubmit(async (data) => {
+          setSubmitting(true);
+          try {
+            const res = await fetch("/api/admin/rates/minimum-wage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+              const body = await res.json();
+              throw new Error(body.error ?? "Failed to update Minimum Wage rate");
+            }
+
+            toast.success("Minimum Wage rate updated");
+            setOpen(false);
+            reset();
+            onRefresh();
+            resolve(true);
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "An error occurred");
+            resolve(false);
+          } finally {
+            setSubmitting(false);
+          }
+        })();
+      });
     },
   });
 
@@ -88,6 +124,7 @@ export function MinwageRatesTab({
 
   return (
     <div className="space-y-6">
+      {UnsavedChangesDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Regional Minimum Wage Rates</h2>
@@ -95,7 +132,7 @@ export function MinwageRatesTab({
             Regional tripartite wages and productivity board (RTWPB) daily minimum wage orders (advisory checks).
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => !val ? confirmDiscard(() => setOpen(false)) : setOpen(true)}>
           <DialogTrigger render={<Button />}>Add / Update Wage Order</DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
