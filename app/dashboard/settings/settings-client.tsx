@@ -319,7 +319,7 @@ export function SettingsClient({
     <>
       {UnsavedChangesDialog}
       <Tabs defaultValue="pay-period" className="space-y-6">
-      <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/60 rounded-xl">
+      <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-slate-100/90 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl">
         <TabsTrigger value="pay-period" className="flex items-center gap-1.5 text-xs py-2 px-3">
           <CalendarDaysIcon className="size-3.5" /> Pay Period Rules
         </TabsTrigger>
@@ -348,10 +348,12 @@ export function SettingsClient({
 
       {/* 1. Pay Period Rules Tab */}
       <TabsContent value="pay-period" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Company Pay Period Rules</CardTitle>
-            <CardDescription>
+        <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <CalendarDaysIcon className="size-4 text-blue-600" /> Company Pay Period Rules
+            </CardTitle>
+            <CardDescription className="text-xs">
               Configure default semi-monthly cutoff days and pay dates for {company.legalName}. When computing payroll, the run dialog will automatically apply these defaults.
             </CardDescription>
           </CardHeader>
@@ -624,10 +626,12 @@ export function SettingsClient({
 
       {/* Attendance & Shift Rules Tab */}
       <TabsContent value="attendance" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance &amp; Shift Schedule Rules</CardTitle>
-            <CardDescription>
+        <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <ClockIcon className="size-4 text-blue-600" /> Attendance &amp; Shift Schedule Rules
+            </CardTitle>
+            <CardDescription className="text-xs">
               Configure company-wide shift parameters, grace periods, and flexi windows for {company.legalName}. These parameters drive automated time, late, undertime, and overtime calculations on timesheets.
             </CardDescription>
           </CardHeader>
@@ -753,18 +757,20 @@ export function SettingsClient({
       {/* 2. Payroll Banks Tab */}
       {isSuperAdmin && (
         <TabsContent value="banks" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <CardTitle>Company Payroll Bank Accounts</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <LandmarkIcon className="size-4 text-blue-600" /> Company Payroll Bank Accounts
+                </CardTitle>
+                <CardDescription className="text-xs">
                   Define bank accounts used by {company.legalName} for payroll disbursement. These accounts generate the Bank Advice Report and CSV download per pay period.
                 </CardDescription>
               </div>
 
               <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
-                <DialogTrigger render={<Button />}>
-                  <PlusCircleIcon className="size-4 mr-1.5" /> Add Bank Account
+                <DialogTrigger render={<Button size="sm" className="gap-1.5 text-xs font-semibold" />}>
+                  <PlusCircleIcon className="size-3.5" /> Add Bank Account
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -857,7 +863,7 @@ export function SettingsClient({
                 </DialogContent>
               </Dialog>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {bankAccounts.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
                   <LandmarkIcon className="size-8 mx-auto text-muted-foreground/50" />
@@ -867,13 +873,13 @@ export function SettingsClient({
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Bank Name</TableHead>
-                      <TableHead>Account Number</TableHead>
-                      <TableHead>Account Name</TableHead>
-                      <TableHead>Branch / SWIFT</TableHead>
-                      <TableHead>Default</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Bank Name</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Account Number</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Account Name</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Branch / SWIFT</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Default</TableHead>
+                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -937,14 +943,16 @@ export function SettingsClient({
       {/* 3. Company Details Tab */}
       {isSuperAdmin && (
         <TabsContent value="company-details" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Details &amp; Tax Registration</CardTitle>
-              <CardDescription>
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Building2Icon className="size-4 text-blue-600" /> Company Details &amp; Tax Registration
+              </CardTitle>
+              <CardDescription className="text-xs">
                 Official registration identifiers for BIR Form 1601-C, 2316, Form 2307, SSS R-3, PhilHealth RF-1, and Pag-IBIG filings.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="legalName">Legal Name</Label>
@@ -1028,7 +1036,7 @@ export function SettingsClient({
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="pt-3 border-t border-slate-100 dark:border-slate-800">
               <Button onClick={handleSaveSettings} disabled={submitting}>
                 {submitting ? "Saving..." : "Save Company Details"}
               </Button>
@@ -1040,37 +1048,39 @@ export function SettingsClient({
       {/* 4. BIR Alphalist Employee Selection Tab */}
       {isSuperAdmin && (
         <TabsContent value="alphalist" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>BIR Alphalist (Form 1604-C) Employee Selection</CardTitle>
-              <CardDescription>
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <UsersIcon className="size-4 text-blue-600" /> BIR Alphalist (Form 1604-C) Employee Selection
+              </CardTitle>
+              <CardDescription className="text-xs">
                 Select which employees are included in the annual BIR Alphalist report for {company.legalName}. Employees toggled OFF will be excluded from the generated PDF.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {employees.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">No employees found in directory.</p>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee #</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>TIN</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Include in Alphalist</TableHead>
+                    <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Employee #</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Name</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">TIN</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Status</TableHead>
+                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Include in Alphalist</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {employees.map((emp) => (
-                      <TableRow key={emp.id}>
-                        <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
-                        <TableCell className="font-medium">
+                      <TableRow key={emp.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <TableCell className="font-mono text-xs font-semibold">{emp.employeeNumber}</TableCell>
+                        <TableCell className="font-medium text-xs text-slate-900 dark:text-slate-100">
                           {emp.lastName}, {emp.firstName}
                         </TableCell>
-                        <TableCell>{emp.tin || "—"}</TableCell>
+                        <TableCell className="font-mono text-xs">{emp.tin || "—"}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{emp.employmentStatus}</Badge>
+                          <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">{emp.employmentStatus}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -1078,7 +1088,7 @@ export function SettingsClient({
                               checked={emp.isIncludedInAlphalist}
                               onCheckedChange={() => handleToggleAlphalist(emp.id, emp.isIncludedInAlphalist)}
                             />
-                            <span className="text-xs text-muted-foreground w-12 text-left">
+                            <span className="text-xs text-slate-500 w-14 text-left">
                               {emp.isIncludedInAlphalist ? "Included" : "Excluded"}
                             </span>
                           </div>
@@ -1095,10 +1105,12 @@ export function SettingsClient({
 
       {/* 5. Theme & Appearance Tab */}
       <TabsContent value="theme" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Appearance &amp; Theme Mode</CardTitle>
-            <CardDescription>Customize the visual interface theme of the application.</CardDescription>
+        <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <PaletteIcon className="size-4 text-blue-600" /> Appearance &amp; Theme Mode
+            </CardTitle>
+            <CardDescription className="text-xs">Customize the visual interface theme of the application.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 max-w-md">

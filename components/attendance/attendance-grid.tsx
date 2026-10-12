@@ -579,8 +579,8 @@ export function AttendanceGrid() {
       </div>
 
       {canUseGlobalActions && (
-        <div className="rounded-lg border p-4">
-          <p className="mb-3 text-sm font-medium">Global actions</p>
+        <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Global Attendance Operations</p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => applyToTarget({ status: "PRESENT", scheduledHours: 8, regularHours: 8, overtimeHours: 0, lateMinutes: 0, undertimeMinutes: 0, isRestDay: false, holidayType: "" })}>
               Mark present
@@ -601,7 +601,7 @@ export function AttendanceGrid() {
               Reset to default
             </Button>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-slate-500">
             Check employee rows and/or date columns to target them specifically — actions apply to every visible
             cell if nothing is checked, to a whole employee&apos;s row if only they&apos;re checked, to a whole
             date&apos;s column if only that date is checked, or to the intersection if both are checked.
@@ -615,8 +615,8 @@ export function AttendanceGrid() {
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 py-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground">View Mode:</span>
-              <div className="inline-flex items-center rounded-lg border bg-slate-100 p-1 dark:bg-slate-900">
+              <span className="text-xs font-semibold text-slate-500">View Mode:</span>
+              <div className="inline-flex items-center rounded-lg border border-slate-200/90 bg-slate-100 p-0.5 dark:border-slate-800 dark:bg-slate-900">
                 <Button
                   type="button"
                   variant={viewMode === "GRID" ? "secondary" : "ghost"}
@@ -648,22 +648,22 @@ export function AttendanceGrid() {
 
             {viewMode === "GRID" && (
               <div className="flex flex-wrap items-center gap-3 text-xs">
-                <span className="font-medium text-muted-foreground">Color key:</span>
+                <span className="font-medium text-slate-500">Color key:</span>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-100 text-emerald-900 text-[11px] font-medium dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
                   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  Rest Day / Holiday (Light Green)
+                  Rest Day / Holiday
                 </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-100 text-red-900 text-[11px] font-medium dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                   <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                  Absent (Red)
+                  Absent
                 </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-yellow-200 bg-yellow-100 text-yellow-900 text-[11px] font-medium dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-200">
                   <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-                  Missing Hours (&lt; 8h) (Yellow)
+                  Missing Hours (&lt; 8h)
                 </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-cyan-200 bg-cyan-100 text-cyan-900 text-[11px] font-medium dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
                   <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
-                  Overtime (&gt; 0h) (Cyan)
+                  Overtime (&gt; 0h)
                 </div>
               </div>
             )}
@@ -674,7 +674,7 @@ export function AttendanceGrid() {
           </div>
 
           {viewMode === "SUMMARY" ? (
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-slate-200/90 shadow-xs dark:border-slate-800 bg-white dark:bg-slate-900">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50 dark:bg-slate-900">
@@ -778,7 +778,7 @@ export function AttendanceGrid() {
               </Table>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-slate-200/90 shadow-xs dark:border-slate-800 bg-white dark:bg-slate-900">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50 dark:bg-slate-900">

@@ -86,13 +86,13 @@ export default async function PayrollPage({
       </div>
 
       {/* Main Runs Table Card */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+      <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
         <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <WalletIcon className="size-4 text-blue-600" /> Payroll History
+          <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <WalletIcon className="size-4 text-blue-600" /> Payroll History &amp; Cutoff Runs
           </CardTitle>
           <CardDescription className="text-xs">
-            Chronological list of semi-monthly payroll runs and execution statuses.
+            Chronological register of semi-monthly payroll runs, approval workflows, and posting statuses.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -101,21 +101,24 @@ export default async function PayrollPage({
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                  <TableHead className="w-[100px] text-xs font-bold uppercase tracking-wider text-slate-500">Run #</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employees</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
+                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                  <TableHead className="w-[110px] text-[11px] font-semibold uppercase tracking-wider text-slate-500">Run Number</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Employees</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Status</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {runs.map((r) => (
                   <TableRow key={r.id} className="group hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                    <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                      <Link href={`/dashboard/payroll/${r.id}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                        #{r.runNumber}
+                    <TableCell className="font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
+                      <Link
+                        href={`/dashboard/payroll/${r.id}`}
+                        className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 hover:bg-blue-50 hover:text-blue-600 dark:bg-slate-800 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-colors"
+                      >
+                        Run #{r.runNumber}
                       </Link>
                     </TableCell>
                     <TableCell className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -125,7 +128,7 @@ export default async function PayrollPage({
                       {r.payrollPeriod.payDate.toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                      {r._count.payslips} employees
+                      <span className="font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">{r._count.payslips}</span> employees
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={r.status} />
@@ -142,7 +145,7 @@ export default async function PayrollPage({
                         />
                         <Link
                           href={`/dashboard/payroll/${r.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                         >
                           View <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
                         </Link>

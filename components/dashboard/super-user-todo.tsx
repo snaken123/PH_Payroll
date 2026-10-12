@@ -193,13 +193,13 @@ export function SuperUserTodo({ summary }: { summary: TodoSummary }) {
                 <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
                   {item.amount !== undefined && (
                     <div className="text-right">
-                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                        PHP {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                        ₱{item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">{item.date}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{item.date}</div>
                     </div>
                   )}
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-semibold gap-1.5 hover:bg-primary hover:text-primary-foreground" render={<Link href={item.actionUrl} />}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs font-semibold gap-1.5 hover:bg-primary hover:text-primary-foreground border-slate-200/90 dark:border-slate-700" render={<Link href={item.actionUrl} />}>
                     {item.actionLabel}
                     <ArrowRight className="size-3" />
                   </Button>

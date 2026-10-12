@@ -139,79 +139,80 @@ export default async function DashboardPage() {
         <SuperUserTodo summary={todoSummary} />
       )}
 
-      {/* Operational Highlights / Quick Access Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Operational Modules Navigation Row */}
+      <div className="grid gap-3.5 sm:grid-cols-3">
         {(canComputePayroll || canViewCompensation) && (
-          <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="size-9 rounded-lg bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 flex items-center justify-center font-bold">
-                <WalletIcon className="size-5" />
+          <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                <WalletIcon className="size-4" />
               </div>
-              <div className="space-y-1">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Payroll Computation</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Compute semi-monthly cutoffs, review draft payslips, recompute adjustments, approve and post runs.
-                </p>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Payroll Computation</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Calculate, review &amp; post runs</p>
               </div>
             </div>
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <Link href="/dashboard/payroll" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                Open Payroll Register <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-          </Card>
+            <Link
+              href="/dashboard/payroll"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 shrink-0 ml-2"
+            >
+              Open <ArrowRightIcon className="size-3" />
+            </Link>
+          </div>
         )}
 
         {canViewReports && (
-          <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="size-9 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-slate-800 dark:text-emerald-400 flex items-center justify-center font-bold">
-                <FileTextIcon className="size-5" />
+          <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <FileTextIcon className="size-4" />
               </div>
-              <div className="space-y-1">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Statutory Tax &amp; Government Reports</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Generate official BIR 1601-C, BIR 2316, BIR Alphalist, SSS R-3, and PhilHealth RF-1 statutory PDF reports.
-                </p>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Statutory &amp; Tax Filings</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">BIR 1601-C, 2316, SSS &amp; PhilHealth</p>
               </div>
             </div>
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <Link href="/dashboard/reports" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300">
-                View Reports Library <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-          </Card>
-        )}
-
-        <Card className="group border-slate-200/80 shadow-xs hover:border-slate-300 dark:border-slate-800 transition-all p-5 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="size-9 rounded-lg bg-purple-50 text-purple-600 dark:bg-slate-800 dark:text-purple-400 flex items-center justify-center font-bold">
-              <UserCheckIcon className="size-5" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Employee Self-Service Portal</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Employees can view compensation breakdowns, track leave balances, and download official posted payslip PDFs.
-              </p>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Link href="/dashboard/my-pay" className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300">
-              Launch Portal <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-1" />
+            <Link
+              href="/dashboard/reports"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 shrink-0 ml-2"
+            >
+              Reports <ArrowRightIcon className="size-3" />
             </Link>
           </div>
-        </Card>
+        )}
+
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
+              <UserCheckIcon className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Employee Portal</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Self-service payslips &amp; records</p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/my-pay"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 shrink-0 ml-2"
+          >
+            Portal <ArrowRightIcon className="size-3" />
+          </Link>
+        </div>
       </div>
 
       {/* Recent Payroll Runs Table */}
       {(canComputePayroll || canViewCompensation || canViewReports) && (
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <Card className="border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:border-slate-800">
+          <CardHeader className="py-3.5 px-4.5 border-b border-slate-200/90 dark:border-slate-800 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Recent Payroll Runs</CardTitle>
-              <CardDescription className="text-xs">Calculated and posted semi-monthly payroll periods.</CardDescription>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <WalletIcon className="size-4 text-blue-600 dark:text-blue-400" /> Recent Payroll Runs
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500 mt-0.5">
+                Calculated and posted semi-monthly cutoff periods.
+              </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" className="text-xs font-semibold text-blue-600 dark:text-blue-400" render={<Link href="/dashboard/payroll" />}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400" render={<Link href="/dashboard/payroll" />}>
               View All Runs &rarr;
             </Button>
           </CardHeader>
@@ -224,41 +225,41 @@ export default async function DashboardPage() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                    <TableHead className="w-[100px] text-xs font-bold uppercase tracking-wider text-slate-500">Run #</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Cutoff Period</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Date</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employees</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Action</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Run #</TableHead>
+                    <TableHead>Cutoff Period</TableHead>
+                    <TableHead>Pay Date</TableHead>
+                    <TableHead>Employees</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recentRuns.map((r) => (
-                    <TableRow key={r.id} className="group hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                    <TableRow key={r.id} className="group hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                      <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                         <Link href={`/dashboard/payroll/${r.id}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                           #{r.runNumber}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                         {new Date(r.payrollPeriod.cutoffStart).toLocaleDateString()} – {new Date(r.payrollPeriod.cutoffEnd).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                         {new Date(r.payrollPeriod.payDate).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                         {r._count.payslips} employees
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={r.status} />
+                        <StatusBadge status={r.status} size="sm" />
                       </TableCell>
                       <TableCell className="text-right">
                         <Link
                           href={`/dashboard/payroll/${r.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                         >
-                          Details <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+                          View Details <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
                         </Link>
                       </TableCell>
                     </TableRow>

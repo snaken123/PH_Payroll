@@ -145,13 +145,73 @@ export default async function EmployeeDetailPage({
         </Link>
       </div>
 
-      {/* Header Profile */}
-      <PageHeader
-        title={`${employee.lastName}, ${employee.firstName} ${employee.middleName ?? ""}`}
-        description={`${employee.employeeNumber} · ${employee.positionTitle} · ${employee.branch.name}`}
-        actions={
-          <>
-            <StatusBadge status={employee.employmentStatus} />
+      {/* Monday.com Executive Profile Header Card */}
+      <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start sm:items-center gap-4">
+            {/* Avatar Container */}
+            <div className="relative size-16 sm:size-18 rounded-2xl overflow-hidden border border-slate-200/90 bg-slate-100 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-xs">
+              {employee.photoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={employee.photoUrl}
+                  alt={`${employee.firstName} ${employee.lastName}`}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center bg-blue-50 text-blue-700 font-bold text-lg dark:bg-blue-950 dark:text-blue-300">
+                  {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {employee.lastName}, {employee.firstName} {employee.middleName ?? ""}
+                </h1>
+                <StatusBadge status={employee.employmentStatus} />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 dark:text-slate-400">
+                <span className="font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                  {employee.employeeNumber}
+                </span>
+                <span>•</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{employee.positionTitle}</span>
+                <span>•</span>
+                <span>{employee.branch.name} ({employee.branch.region})</span>
+                {employee.departmentName && (
+                  <>
+                    <span>•</span>
+                    <span className="text-slate-500">{employee.departmentName}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Quick Contact Strip */}
+              <div className="flex items-center gap-3.5 flex-wrap text-xs text-slate-500 pt-0.5">
+                {employee.mobileNumber && (
+                  <span className="inline-flex items-center gap-1 font-mono">
+                    <PhoneIcon className="size-3 text-slate-400" /> {employee.mobileNumber}
+                  </span>
+                )}
+                {employee.personalEmail && (
+                  <span className="inline-flex items-center gap-1">
+                    <MailIcon className="size-3 text-slate-400" /> {employee.personalEmail}
+                  </span>
+                )}
+                {employee.currentAddress && (
+                  <span className="inline-flex items-center gap-1 truncate max-w-sm text-slate-500">
+                    <MapPinIcon className="size-3 text-slate-400 shrink-0" /> {employee.currentAddress}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Toolbar */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
             <EmployeePhotoDialog
               employeeId={employee.id}
               employeeName={`${employee.firstName} ${employee.lastName}`}
@@ -219,9 +279,9 @@ export default async function EmployeeDetailPage({
               disabled={!canDeleteEmployee}
               redirectOnSuccess={true}
             />
-          </>
-        }
-      />
+          </div>
+        </div>
+      </div>
 
       {minimumWageWarning && canViewCompensation && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
@@ -232,7 +292,7 @@ export default async function EmployeeDetailPage({
         </div>
       )}
 
-      {/* Quick Summary Cards */}
+      {/* Quick Summary KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {canViewCompensation && (
           <MetricCard
@@ -249,9 +309,9 @@ export default async function EmployeeDetailPage({
           icon={BriefcaseIcon}
         />
         <MetricCard
-          title="Department"
+          title="Department & Rank"
           value={employee.departmentName || "General"}
-          subtitle={`Branch: ${employee.branch.name}`}
+          subtitle={employee.rank ? `Rank: ${employee.rank}` : `Branch: ${employee.branch.name}`}
           icon={UserIcon}
         />
         <MetricCard
@@ -262,50 +322,99 @@ export default async function EmployeeDetailPage({
         />
       </div>
 
+      {/* 201 File Profile Dossier */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <UserIcon className="size-4 text-blue-600" /> Personal &amp; Contact Dossier (201 File)
-            </CardTitle>
-            <CardDescription className="text-xs">Personal profile, contact numbers, residential addresses, and emergency next-of-kin details.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 grid gap-6 md:grid-cols-2 text-xs">
-            <div className="space-y-2.5">
+        {/* Left Column: Employment Details & Bank Account */}
+        <div className="space-y-6">
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <BriefcaseIcon className="size-4 text-blue-600" /> Employment Dossier
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Employee Type</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.employeeType.replaceAll("_", " ")}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Rank</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.rank || "Unspecified"}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Schedule Type</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.scheduleType || "Standard Fixed"}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Date Hired</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.dateHired.toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">Managerial Exempt</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.isManagerialExempt ? "Yes (Exempt from OT)" : "No"}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500 font-medium">Branch Location</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.branch.name} ({employee.branch.region})</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {canViewCompensation && (
+            <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <BanknoteIcon className="size-4 text-blue-600" /> Payroll Bank Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-2.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+                  <span className="text-slate-500 font-medium">Payment Method</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 inline-block">
+                    {employee.paymentMethod.replaceAll("_", " ")}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                  <span className="text-slate-500 font-medium">Bank Name</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankName || "—"}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                  <span className="text-slate-500 font-medium">Account Number</span>
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.bankAccountNumber || "—"}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Bank Branch</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankBranch || "—"}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column: Personal Details & Statutory IDs */}
+        <div className="space-y-6">
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <UserIcon className="size-4 text-blue-600" /> Personal &amp; Emergency Dossier
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-2.5 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-medium">Birth Date</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.birthDate.toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 font-medium">Sex</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.sex}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 font-medium">Civil Status</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.civilStatus}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 font-medium">Personal Email</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.personalEmail || "—"}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Mobile Number</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.mobileNumber || "—"}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="space-y-0.5 py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 font-medium block">Current Residential Address</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 block">{employee.currentAddress || "—"}</span>
+                <span className="text-slate-500 font-medium">Sex &amp; Civil Status</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.sex} · {employee.civilStatus}</span>
               </div>
               <div className="space-y-0.5 py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-medium block">Permanent Address</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block">{employee.permanentAddress || "—"}</span>
               </div>
-              <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/40 space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-                  <ContactIcon className="size-3.5" /> Emergency Contact Person
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <ContactIcon className="size-3.5 text-blue-600" /> Emergency Contact
                 </span>
                 <div className="text-xs space-y-0.5">
                   <p className="font-bold text-slate-900 dark:text-slate-100">
@@ -324,174 +433,56 @@ export default async function EmployeeDetailPage({
                   )}
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <CameraIcon className="size-4 text-blue-600" /> Employee Photo &amp; Identification
-              </CardTitle>
-              <CardDescription className="text-xs">Official employee badge photo for HR records and biometric identification.</CardDescription>
-            </div>
-            <EmployeePhotoDialog
-              employeeId={employee.id}
-              employeeName={`${employee.firstName} ${employee.lastName}`}
-              currentPhotoUrl={employee.photoUrl}
-              disabled={!canUploadDocs}
-              trigger={
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
-                  <CameraIcon className="size-3.5 text-blue-600" /> Upload / Take Photo
-                </Button>
-              }
-            />
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative size-28 rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-sm">
-                {employee.photoUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={employee.photoUrl} alt={`${employee.firstName} ${employee.lastName}`} className="size-full object-cover" />
-                ) : (
-                  <UserIcon className="size-14 text-slate-400" />
-                )}
-              </div>
-              <div className="space-y-1 text-center sm:text-left">
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {employee.lastName}, {employee.firstName} {employee.middleName ?? ""}
-                </h3>
-                <p className="text-xs text-slate-500 font-mono">
-                  Employee ID: {employee.employeeNumber}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {employee.photoUrl ? "Official photo on file." : "No photo uploaded yet. Click Upload / Take Photo to add an image."}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <BriefcaseIcon className="size-4 text-blue-600" /> Employment Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-2.5 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Employee Type</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.employeeType.replaceAll("_", " ")}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Rank</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.rank || "Unspecified"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Schedule Type</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.scheduleType || "Unspecified"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Date Hired</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.dateHired.toLocaleDateString()}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Managerial Exempt</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.isManagerialExempt ? "Yes (Exempt from OT)" : "No"}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-slate-500 font-medium">Branch Location</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.branch.name} ({employee.branch.region})</span>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <ShieldCheckIcon className="size-4 text-blue-600" /> Government Statutory Numbers
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-2.5 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Tax Identification # (TIN)</span>
-              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.tin ?? "—"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">SSS Number</span>
-              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.sssNumber ?? "—"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">PhilHealth Number</span>
-              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.philhealthNumber ?? "—"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Pag-IBIG (HDMF) Number</span>
-              <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.pagibigNumber ?? "—"}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
-              <span className="text-slate-500 font-medium">SSS Contribution</span>
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductSss ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                  {employee.isDeductSss ? (employee.sssDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.sssCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
-                </span>
+          <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <ShieldCheckIcon className="size-4 text-blue-600" /> Government Statutory Numbers
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-medium">TIN</span>
+                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.tin ?? "—"}</span>
               </div>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
-              <span className="text-slate-500 font-medium">PhilHealth Contribution</span>
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPhilhealth ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                  {employee.isDeductPhilhealth ? (employee.philhealthDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.philhealthCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
-                </span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+                <span className="text-slate-500 font-medium">SSS Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.sssNumber ?? "—"}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductSss ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                    {employee.isDeductSss ? (employee.sssDeductionMode === "MANUAL" ? `Manual (₱${Number(employee.sssCustomAmountEe ?? 0).toFixed(2)})` : "Table") : "Exempt"}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
-              <span className="text-slate-500 font-medium">Pag-IBIG Contribution</span>
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
-                  {employee.isDeductPagibig ? (employee.pagibigDeductionMode === "MANUAL" ? `Manual (EE: ₱${Number(employee.pagibigCustomAmountEe ?? 0).toFixed(2)})` : "Table Rate") : "Exempt / Off"}
-                </span>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+                <span className="text-slate-500 font-medium">PhilHealth Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.philhealthNumber ?? "—"}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPhilhealth ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                    {employee.isDeductPhilhealth ? (employee.philhealthDeductionMode === "MANUAL" ? `Manual (₱${Number(employee.philhealthCustomAmountEe ?? 0).toFixed(2)})` : "Table") : "Exempt"}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between py-1 items-center">
-              <span className="text-slate-500 font-medium">Withholding Tax (BIR)</span>
-              <div className="flex items-center gap-2">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 items-center">
+                <span className="text-slate-500 font-medium">Pag-IBIG Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.pagibigNumber ?? "—"}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductPagibig ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
+                    {employee.isDeductPagibig ? (employee.pagibigDeductionMode === "MANUAL" ? `Manual (₱${Number(employee.pagibigCustomAmountEe ?? 0).toFixed(2)})` : "Table") : "Exempt"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-between py-1 items-center">
+                <span className="text-slate-500 font-medium">BIR Withholding Tax</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${employee.isDeductWithholdingTax ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"}`}>
                   {employee.isDeductWithholdingTax ? "Active (Table Rate)" : "Exempt / Off"}
                 </span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {canViewCompensation && (
-          <Card className="border-slate-200/80 shadow-xs dark:border-slate-800 md:col-span-2">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <BanknoteIcon className="size-4 text-blue-600" /> Payroll Bank Account
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-              <div className="space-y-1">
-                <span className="text-slate-500 font-medium block">Payment Method</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 inline-block">
-                  {employee.paymentMethod.replaceAll("_", " ")}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-500 font-medium block">Bank Name</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankName || "—"}</span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-500 font-medium block">Account Number</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{employee.bankAccountNumber || "—"}</span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-500 font-medium block">Bank Branch</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{employee.bankBranch || "—"}</span>
-              </div>
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
 
       {/* 201 Digital Document Vault & Records */}
@@ -565,7 +556,7 @@ export default async function EmployeeDetailPage({
 
       {/* Compensation History */}
       {canViewCompensation && (
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+        <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Compensation History</CardTitle>
@@ -597,14 +588,14 @@ export default async function EmployeeDetailPage({
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Pay Basis</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Allowances</TableHead>
+                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Effective From</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Effective To</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pay Basis</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Basic Rate</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Allowances</TableHead>
                   {ctx.isSuperAdmin && (
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500 w-16">Actions</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 w-16">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -612,9 +603,9 @@ export default async function EmployeeDetailPage({
                 {employee.compensationRecords.map((c) => (
                   <TableRow key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                     <TableCell className="text-xs font-medium">{c.effectiveFrom.toLocaleDateString()}</TableCell>
-                    <TableCell className="text-xs font-medium">{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current Active"}</TableCell>
-                    <TableCell className="text-xs font-semibold">{c.payBasis.replaceAll("_", " ")}</TableCell>
-                    <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                    <TableCell className="text-xs font-medium text-slate-600 dark:text-slate-400">{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current Active"}</TableCell>
+                    <TableCell className="text-xs font-semibold text-slate-900 dark:text-slate-100">{c.payBasis.replaceAll("_", " ")}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums font-bold text-xs text-slate-900 dark:text-slate-100">
                       ₱{Number(c.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-xs text-slate-600 dark:text-slate-400">
@@ -649,7 +640,7 @@ export default async function EmployeeDetailPage({
 
       {/* Loans & Cash Advances */}
       {canViewLoans && (
-        <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+        <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">Loans &amp; Cash Advances</CardTitle>
@@ -663,15 +654,15 @@ export default async function EmployeeDetailPage({
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Loan Name</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Principal</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Installment</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Frequency</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Remaining</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
+                  <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Loan Name</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Category</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Principal</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Installment</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Frequency</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Remaining</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Status</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -679,7 +670,7 @@ export default async function EmployeeDetailPage({
                     <TableRow key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                       <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">{l.name}</TableCell>
                       <TableCell className="text-xs text-slate-600 dark:text-slate-400">{l.category.replaceAll("_", " ")}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">
+                      <TableCell className="text-right font-mono tabular-nums text-xs">
                         {l.hasNoExpiration
                           ? "Ongoing"
                           : l.endDate
@@ -688,9 +679,9 @@ export default async function EmployeeDetailPage({
                             : `Until ${new Date(l.endDate).toLocaleDateString()}`
                           : `₱${Number(l.principal).toLocaleString()}`}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-semibold">₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-xs font-semibold">₱{Number(l.installmentAmount).toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{l.deductionFrequency === "MONTHLY" ? "Monthly" : "Every Cutoff"}</TableCell>
-                      <TableCell className="text-right font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                      <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
                         {l.hasNoExpiration
                           ? "Ongoing"
                           : l.endDate && Number(l.principal) === 0

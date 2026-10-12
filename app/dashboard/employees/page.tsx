@@ -157,13 +157,13 @@ export default async function EmployeesPage({
       </div>
 
       {/* Main Roster Data Table Card */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
-        <div className="p-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-t-xl">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Employee Directory</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Showing {employees.length} of {totalCount} records
-            </p>
+      <Card className="border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:border-slate-800">
+        <div className="p-3.5 border-b border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-900/60 rounded-t-xl">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Employee Directory</h2>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {filteredCount} {filteredCount === 1 ? "record" : "records"}
+            </span>
           </div>
           <div className="w-full sm:w-auto">
             <SearchForm
@@ -177,15 +177,15 @@ export default async function EmployeesPage({
 
         <CardContent className="p-0">
           {employees.length === 0 ? (
-            <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400">
               {search ? `No employees match "${search}".` : "No employees added to the directory yet."}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/80 dark:bg-slate-900/80 hover:bg-slate-50/80">
-                    <TableHead className="w-[150px]">
+                  <TableRow>
+                    <TableHead className="w-[120px]">
                       <SortableHeader
                         label="Employee #"
                         sortKey="employeeNumber"
@@ -247,11 +247,11 @@ export default async function EmployeesPage({
                           align="right"
                         />
                       ) : (
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Basic Rate</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Basic Rate</span>
                       )}
                     </TableHead>
-                    <TableHead className="w-[80px] text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Action
+                    <TableHead className="w-[110px] text-right">
+                      Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -259,17 +259,29 @@ export default async function EmployeesPage({
                   {employees.map((e) => {
                     const activeComp = e.compensationRecords[0];
                     return (
-                      <TableRow key={e.id} className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                        <TableCell className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      <TableRow key={e.id} className="group hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                        <TableCell className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
                           {e.employeeNumber}
                         </TableCell>
                         <TableCell>
-                          <Link
-                            href={`/dashboard/employees/${e.id}`}
-                            className="font-bold text-sm text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          >
-                            {e.lastName}, {e.firstName} {e.middleName ? `${e.middleName[0]}.` : ""}
-                          </Link>
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200/90 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 select-none">
+                              {e.firstName?.[0] ?? ""}{e.lastName?.[0] ?? ""}
+                            </div>
+                            <div className="min-w-0">
+                              <Link
+                                href={`/dashboard/employees/${e.id}`}
+                                className="font-bold text-xs text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block"
+                              >
+                                {e.lastName}, {e.firstName} {e.middleName ? `${e.middleName[0]}.` : ""}
+                              </Link>
+                              {e.positionTitle && (
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                                  {e.positionTitle}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                           {e.branch.name}
@@ -278,9 +290,9 @@ export default async function EmployeesPage({
                           {e.employeeType.replaceAll("_", " ")}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={e.employmentStatus} />
+                          <StatusBadge status={e.employmentStatus} size="sm" />
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                        <TableCell className="text-right font-mono font-bold text-xs text-slate-900 dark:text-slate-100 tabular-nums">
                           {canViewCompensation ? (
                             activeComp
                               ? `₱${Number(activeComp.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -292,12 +304,12 @@ export default async function EmployeesPage({
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
                             <Link
                               href={`/dashboard/employees/${e.id}`}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 text-xs font-semibold transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100/80 hover:bg-slate-200/70 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 text-xs font-semibold transition-colors"
                             >
-                              <FileTextIcon className="size-3" /> 201 File
+                              <FileTextIcon className="size-3 text-slate-500" /> 201 File
                             </Link>
                             <DeleteEmployeeDialog
                               employeeId={e.id}

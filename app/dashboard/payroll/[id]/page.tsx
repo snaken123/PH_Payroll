@@ -5,7 +5,7 @@ import { assertCompanyId, getTenantContext } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
 import { hasPermission } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RunActions } from "@/components/payroll/run-actions";
 import { PayslipDetailDialog } from "@/components/payroll/payslip-detail-dialog";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ export default async function PayrollRunDetailPage({
 
   const totalGross = run.payslips.reduce((sum, p) => sum + Number(p.grossPay), 0);
   const totalStatutory = run.payslips.reduce((sum, p) => sum + Number(p.totalStatutoryDeductions), 0);
+  const totalOther = run.payslips.reduce((sum, p) => sum + Number(p.totalOtherDeductions), 0);
   const totalNet = run.payslips.reduce((sum, p) => sum + Number(p.netPay), 0);
 
   const canApprovePayroll =
@@ -120,11 +121,11 @@ export default async function PayrollRunDetailPage({
       </div>
 
       {/* Payslips Table Card */}
-      <Card className="border-slate-200/80 shadow-xs dark:border-slate-800">
+      <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
         <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Draft Payslips ({run.payslips.length})
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Cutoff Payslips Register ({run.payslips.length})
             </CardTitle>
             <CardDescription className="text-xs">
               Itemized employee earnings, statutory deductions, loan repayments, and net pay.
@@ -149,13 +150,13 @@ export default async function PayrollRunDetailPage({
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/80 dark:bg-slate-900/80">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Employee Name</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Gross Pay</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Statutory Deductions</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Loans &amp; Other</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Net Pay</TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">Payslip Action</TableHead>
+                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Employee Name</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Gross Pay</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Statutory Deductions</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Loans &amp; Other</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Net Pay</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Payslip Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -163,22 +164,32 @@ export default async function PayrollRunDetailPage({
                   const employeeName = `${p.employee.lastName}, ${p.employee.firstName} (${p.employee.employeeNumber})`;
                   return (
                     <TableRow key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <TableCell className="font-bold text-xs text-slate-900 dark:text-slate-100">
-                        {p.employee.lastName}, {p.employee.firstName} <span className="font-mono text-slate-500 font-normal">({p.employee.employeeNumber})</span>
+                      <TableCell className="py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-6 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                            {p.employee.firstName.charAt(0)}{p.employee.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                              {p.employee.lastName}, {p.employee.firstName}
+                            </span>{" "}
+                            <span className="font-mono text-[11px] text-slate-400 font-normal">({p.employee.employeeNumber})</span>
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-medium">
+                      <TableCell className="text-right font-mono tabular-nums text-xs font-medium text-slate-800 dark:text-slate-200">
                         ₱{Number(p.grossPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
                         ₱{Number(p.totalStatutoryDeductions).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
                         ₱{Number(p.totalOtherDeductions).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-right font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                      <TableCell className="text-right font-mono tabular-nums font-bold text-xs text-slate-900 dark:text-slate-100">
                         ₱{Number(p.netPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right py-1">
                         <PayslipDetailDialog
                           payslipId={p.id}
                           employeeName={employeeName}
@@ -196,6 +207,26 @@ export default async function PayrollRunDetailPage({
                   );
                 })}
               </TableBody>
+              <TableFooter>
+                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 font-bold border-t-2 border-slate-200/90 dark:border-slate-800">
+                  <TableCell className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                    Total Register ({run.payslips.length} Employees)
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
+                    ₱{totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
+                    ₱{totalStatutory.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
+                    ₱{totalOther.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-blue-700 dark:text-blue-400">
+                    ₱{totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right" />
+                </TableRow>
+              </TableFooter>
             </Table>
           )}
         </CardContent>
