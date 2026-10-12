@@ -31,3 +31,39 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ balances });
 }
+
+export async function PATCH(request: Request) {
+  let ctx;
+  try {
+    ctx = await requireTenantRole(VIEW_ROLES, { permissionKey: "leave.manage" });
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json();
+  const { balanceId, entitledDays, adjustedDays } = body;
+  if (!balanceId) {
+    return NextResponse.json({ error: "balanceId is required" }, { status: 400 });
+  }
+
+  const balance = await prisma.leaveBalance.findUnique({
+    where: { id: balanceId },
+    include: { employee: true },
+  });
+
+  if (!balance || balance.employee.companyId !== ctx.companyId) {
+    return NextResponse.json({ error: "Leave balance not found" }, { status: 404 });
+  }
+
+  const updateData: { entitledDays?: number; adjustedDays?: number } = {};
+  if (entitledDays !== undefined) updateData.entitledDays = Number(entitledDays);
+  if (adjustedDays !== undefined) updateData.adjustedDays = Number(adjustedDays);
+
+  const updated = await prisma.leaveBalance.update({
+    where: { id: balanceId },
+    data: updateData,
+    include: { leaveType: true },
+  });
+
+  return NextResponse.json({ balance: updated });
+}

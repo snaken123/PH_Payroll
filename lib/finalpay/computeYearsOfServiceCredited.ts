@@ -10,7 +10,7 @@ export function computeYearsOfServiceCredited(dateHired: Date, dateSeparated: Da
   return remainingMonths >= 6 ? wholeYears + 1 : wholeYears;
 }
 
-function monthsBetween(start: Date, end: Date): number {
+export function monthsBetween(start: Date, end: Date): number {
   let months =
     (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth());
   if (end.getUTCDate() < start.getUTCDate()) {

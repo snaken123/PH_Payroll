@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { computeFinalPay } from "@/lib/finalpay/computeFinalPay";
-import { computeYearsOfServiceCredited } from "@/lib/finalpay/computeYearsOfServiceCredited";
+import { computeYearsOfServiceCredited, monthsBetween } from "@/lib/finalpay/computeYearsOfServiceCredited";
 import { computeBasePay } from "@/lib/payroll/attendance/computeBasePay";
 import { estimateMonthlyEquivalentCompensation } from "@/lib/payroll/estimateMonthlyEquivalent";
 import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEquivalent";
@@ -111,9 +111,18 @@ export async function computeAndPersistFinalPayRun({
   });
 
   // Unused convertible leave, current year
+  // Under Art. 95 of the PH Labor Code, statutory Service Incentive Leave (SIL)
+  // requires at least 1 year (12 months) of service. Employees separated with
+  // less than 1 year of service (such as probationary resignees) are not
+  // legally entitled to statutory SIL cash conversion.
   const currentYear = dateSeparated.getUTCFullYear();
+  const totalMonthsService = monthsBetween(employee.dateHired, dateSeparated);
   const unusedConvertibleLeaveDays = employee.leaveBalances
-    .filter((b) => b.year === currentYear && b.leaveType.isConvertibleToCash)
+    .filter((b) => {
+      if (b.year !== currentYear || !b.leaveType.isConvertibleToCash) return false;
+      if (b.leaveType.isStatutory && totalMonthsService < 12) return false;
+      return true;
+    })
     .reduce((sum, b) => {
       const remaining =
         b.entitledDays.toNumber() + b.carriedOverDays.toNumber() + b.adjustedDays.toNumber() - b.usedDays.toNumber();

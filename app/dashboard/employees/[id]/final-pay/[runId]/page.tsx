@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FinalPayActions } from "@/components/finalpay/final-pay-actions";
 
 import { AddManualLineItemDialog } from "@/components/finalpay/add-manual-line-item-dialog";
+import { DeleteLineItemButton } from "@/components/finalpay/delete-line-item-button";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   DRAFT: "secondary",
@@ -83,6 +84,7 @@ export default async function FinalPayRunDetailPage({
                 <TableHead>Direction</TableHead>
                 <TableHead>Tax exempt</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                {run.status === "DRAFT" && <TableHead className="w-10"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,6 +95,11 @@ export default async function FinalPayRunDetailPage({
                   <TableCell>{li.direction.replaceAll("_", " ")}</TableCell>
                   <TableCell>{li.isTaxExempt ? "Yes" : "No"}</TableCell>
                   <TableCell className="text-right">₱{Number(li.amount).toLocaleString()}</TableCell>
+                  {run.status === "DRAFT" && (
+                    <TableCell>
+                      <DeleteLineItemButton runId={run.id} lineItemId={li.id} />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

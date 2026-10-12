@@ -15,6 +15,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { CreateLeaveRequestDialog } from "./create-leave-request-dialog";
+import { AdjustLeaveBalanceDialog } from "./adjust-leave-balance-dialog";
 
 interface EmployeeOption {
   id: string;
@@ -133,8 +134,10 @@ export function LeaveManager({
                 <TableRow>
                   <TableHead>Leave type</TableHead>
                   <TableHead>Entitled</TableHead>
+                  <TableHead>Adjusted</TableHead>
                   <TableHead>Used</TableHead>
                   <TableHead>Remaining</TableHead>
+                  {canApprove && <TableHead className="w-20"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -145,8 +148,14 @@ export function LeaveManager({
                     <TableRow key={b.id}>
                       <TableCell>{b.leaveType.name}</TableCell>
                       <TableCell>{b.entitledDays}</TableCell>
+                      <TableCell>{Number(b.adjustedDays) > 0 ? `+${b.adjustedDays}` : b.adjustedDays}</TableCell>
                       <TableCell>{b.usedDays}</TableCell>
                       <TableCell className="font-medium">{remaining}</TableCell>
+                      {canApprove && (
+                        <TableCell>
+                          <AdjustLeaveBalanceDialog balance={b} onUpdated={fetchAll} />
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

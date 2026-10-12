@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeYearsOfServiceCredited } from "../computeYearsOfServiceCredited";
+import { computeYearsOfServiceCredited, monthsBetween } from "../computeYearsOfServiceCredited";
 
 describe("computeYearsOfServiceCredited", () => {
   it("credits exactly 5 years of service as 5 years", () => {
@@ -34,3 +34,15 @@ describe("computeYearsOfServiceCredited", () => {
     expect(result).toBe(0);
   });
 });
+
+describe("monthsBetween", () => {
+  it("computes months between dates correctly", () => {
+    // 2 months and 7 days
+    expect(monthsBetween(new Date("2026-07-26"), new Date("2026-10-03"))).toBe(2);
+    // Exactly 12 months
+    expect(monthsBetween(new Date("2025-01-15"), new Date("2026-01-15"))).toBe(12);
+    // 11 months (just shy of 1 year)
+    expect(monthsBetween(new Date("2025-01-15"), new Date("2025-12-15"))).toBe(11);
+  });
+});
+
