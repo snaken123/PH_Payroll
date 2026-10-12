@@ -49,6 +49,8 @@ interface EmployeeOption {
   firstName: string;
   lastName: string;
   scheduleType?: string | null;
+  employmentStatus?: string;
+  dateSeparated?: string | null;
 }
 
 interface TimesheetEntryDTO {
@@ -284,24 +286,41 @@ export function AttendanceGrid() {
 
     const next: Record<string, CellState> = {};
     for (const emp of employees) {
+      const sepDateStr = emp.dateSeparated ? emp.dateSeparated.slice(0, 10) : null;
       for (const date of dates) {
         const key = cellKey(emp.id, date);
         const existing = entryByKey.get(key);
-        next[key] = existing
-          ? {
-              status: existing.status,
-              timeIn: toTimeString(existing.timeIn),
-              timeOut: toTimeString(existing.timeOut),
-              scheduledHours: Number(existing.scheduledHours),
-              lateMinutes: existing.lateMinutes,
-              undertimeMinutes: existing.undertimeMinutes,
-              regularHours: Number(existing.regularHours),
-              overtimeHours: Number(existing.overtimeHours),
-              nightDiffHours: Number(existing.nightDiffHours),
-              holidayType: existing.holidayType ?? "",
-              isRestDay: existing.isRestDay,
-            }
-          : defaultForDate(date, holidaysByDate);
+        if (existing) {
+          next[key] = {
+            status: existing.status,
+            timeIn: toTimeString(existing.timeIn),
+            timeOut: toTimeString(existing.timeOut),
+            scheduledHours: Number(existing.scheduledHours),
+            lateMinutes: existing.lateMinutes,
+            undertimeMinutes: existing.undertimeMinutes,
+            regularHours: Number(existing.regularHours),
+            overtimeHours: Number(existing.overtimeHours),
+            nightDiffHours: Number(existing.nightDiffHours),
+            holidayType: existing.holidayType ?? "",
+            isRestDay: existing.isRestDay,
+          };
+        } else if (sepDateStr && date > sepDateStr) {
+          next[key] = {
+            status: "REST_DAY",
+            timeIn: "",
+            timeOut: "",
+            scheduledHours: 0,
+            lateMinutes: 0,
+            undertimeMinutes: 0,
+            regularHours: 0,
+            overtimeHours: 0,
+            nightDiffHours: 0,
+            holidayType: "",
+            isRestDay: true,
+          };
+        } else {
+          next[key] = defaultForDate(date, holidaysByDate);
+        }
       }
     }
     void Promise.resolve().then(() => {
@@ -702,8 +721,13 @@ export function AttendanceGrid() {
                       <TableRow key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                         <TableCell className="whitespace-nowrap px-3 py-2 border-r font-medium text-xs">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                               {emp.lastName}, {emp.firstName}
+                              {emp.employmentStatus === "RESIGNED" && (
+                                <span className="text-[9px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                                  Resigned
+                                </span>
+                              )}
                             </span>
                             <span className="text-[10px] text-muted-foreground font-mono">
                               #{emp.employeeNumber}
@@ -923,8 +947,13 @@ export function AttendanceGrid() {
                             aria-label={`Select ${emp.lastName}, ${emp.firstName}`}
                           />
                           <div className="flex flex-col min-w-0" title={`${emp.lastName}, ${emp.firstName} (${emp.employeeNumber})`}>
-                            <span className="text-xs font-semibold truncate max-w-[130px]">
+                            <span className="text-xs font-semibold truncate max-w-[130px] flex items-center gap-1">
                               {emp.lastName}, {emp.firstName}
+                              {emp.employmentStatus === "RESIGNED" && (
+                                <span className="text-[8px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-1 py-0.2 rounded border border-amber-200 dark:border-amber-800 shrink-0">
+                                  Resigned
+                                </span>
+                              )}
                             </span>
                             <span className="text-[10px] text-muted-foreground font-mono">
                               {emp.employeeNumber}

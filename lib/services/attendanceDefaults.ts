@@ -31,7 +31,11 @@ export async function computeDefaultEntries(
   startDate: Date,
   endDate: Date
 ): Promise<DefaultEntryInput[]> {
-  const [existing, holidays] = await Promise.all([
+  const [employee, existing, holidays] = await Promise.all([
+    prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { dateSeparated: true },
+    }),
     prisma.timesheetEntry.findMany({
       where: { employeeId, workDate: { gte: startDate, lte: endDate } },
       select: { workDate: true },
@@ -46,7 +50,12 @@ export async function computeDefaultEntries(
 
   const toCreate: DefaultEntryInput[] = [];
 
-  for (let d = new Date(startDate); d <= endDate; d.setUTCDate(d.getUTCDate() + 1)) {
+  const effectiveEndDate =
+    employee?.dateSeparated && employee.dateSeparated < endDate
+      ? toDateOnly(employee.dateSeparated)
+      : endDate;
+
+  for (let d = new Date(startDate); d <= effectiveEndDate; d.setUTCDate(d.getUTCDate() + 1)) {
     const dateKey = d.toISOString().slice(0, 10);
     if (existingDates.has(dateKey)) continue;
 

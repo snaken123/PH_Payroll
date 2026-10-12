@@ -12,8 +12,11 @@ export default async function AttendancePage() {
 
   const employees = await prisma.employee.findMany({
     where: withCompanyScope(ctx.companyId, {
-      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
       isDeleted: false,
+      OR: [
+        { employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] } },
+        { dateSeparated: { not: null } },
+      ],
     }),
     select: { id: true, employeeNumber: true, firstName: true, lastName: true },
     orderBy: { lastName: "asc" },

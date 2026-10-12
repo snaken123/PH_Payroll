@@ -29,8 +29,11 @@ export async function POST(request: Request) {
 
   const employees = await prisma.employee.findMany({
     where: withCompanyScope(ctx.companyId, {
-      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
       isDeleted: false,
+      OR: [
+        { employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] } },
+        { dateSeparated: { gte: startDate } },
+      ],
     }),
     select: { id: true },
   });
