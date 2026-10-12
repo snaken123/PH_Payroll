@@ -950,7 +950,7 @@ export function AttendanceGrid() {
                             <span className="text-xs font-semibold truncate max-w-[130px] flex items-center gap-1">
                               {emp.lastName}, {emp.firstName}
                               {emp.employmentStatus === "RESIGNED" && (
-                                <span className="text-[8px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-1 py-0.2 rounded border border-amber-200 dark:border-amber-800 shrink-0">
+                                <span className="text-[8px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-200 dark:border-amber-800 shrink-0">
                                   Resigned
                                 </span>
                               )}
