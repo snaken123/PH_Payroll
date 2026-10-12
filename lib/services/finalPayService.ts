@@ -53,9 +53,12 @@ export async function computeAndPersistFinalPayRun({
   const dateSeparated = employee.dateSeparated;
   const yearStart = new Date(Date.UTC(dateSeparated.getUTCFullYear(), 0, 1));
 
-  const comp = employee.compensationRecords.find(
-    (c) => c.effectiveFrom <= dateSeparated && (c.effectiveTo === null || c.effectiveTo > dateSeparated)
-  );
+  const comp =
+    employee.compensationRecords.find(
+      (c) => c.effectiveFrom <= dateSeparated && (c.effectiveTo === null || c.effectiveTo > dateSeparated)
+    ) ??
+    employee.compensationRecords.find((c) => c.effectiveFrom <= dateSeparated) ??
+    employee.compensationRecords[0];
   if (!comp) {
     throw new FinalPayError("Employee has no compensation record active as of the separation date");
   }

@@ -27,25 +27,30 @@ export async function DELETE(
   await prisma.$transaction(async (tx) => {
     const allRecords = await tx.compensationRecord.findMany({
       where: { employeeId },
-      orderBy: { effectiveFrom: "asc" },
+      orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }],
     });
 
-    const index = allRecords.findIndex((r) => r.id === recordId);
+    const remainingRecords = allRecords.filter((r) => r.id !== recordId);
 
-    // If target was active (effectiveTo === null) and there is a preceding record
-    if (targetRecord.effectiveTo === null && index > 0) {
-      const prevRecord = allRecords[index - 1];
-      await tx.compensationRecord.update({
-        where: { id: prevRecord.id },
-        data: { effectiveTo: null },
-      });
-    } else if (targetRecord.effectiveTo !== null && index > 0) {
-      // If target was a middle historical record, extend the preceding record's effectiveTo
-      const prevRecord = allRecords[index - 1];
-      await tx.compensationRecord.update({
-        where: { id: prevRecord.id },
-        data: { effectiveTo: targetRecord.effectiveTo },
-      });
+    // Rechain remaining records: the latest record must have effectiveTo = null,
+    // and each prior record must have effectiveTo = next record's effectiveFrom.
+    if (remainingRecords.length > 0) {
+      for (let i = 0; i < remainingRecords.length; i++) {
+        const rec = remainingRecords[i];
+        const isLatest = i === remainingRecords.length - 1;
+        const nextRec = isLatest ? null : remainingRecords[i + 1];
+        const targetEffectiveTo = nextRec ? nextRec.effectiveFrom : null;
+
+        const currentEffectiveToTime = rec.effectiveTo?.getTime() ?? null;
+        const targetEffectiveToTime = targetEffectiveTo?.getTime() ?? null;
+
+        if (currentEffectiveToTime !== targetEffectiveToTime) {
+          await tx.compensationRecord.update({
+            where: { id: rec.id },
+            data: { effectiveTo: targetEffectiveTo },
+          });
+        }
+      }
     }
 
     await tx.compensationRecord.delete({
