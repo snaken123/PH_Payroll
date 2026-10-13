@@ -242,6 +242,7 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
       if (input.timesheets.length > 0) {
         let workedDays = new Decimal(0);
         for (const t of input.timesheets) {
+          if (t.status === "ABSENT") continue;
           const totalHours = new Decimal(t.regularHours || 0).plus(t.overtimeHours || 0);
           if (t.status === "PRESENT" || t.status === "LATE_UNDERTIME" || t.status === "WFH") {
             workedDays = workedDays.plus(1);

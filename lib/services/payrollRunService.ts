@@ -78,7 +78,16 @@ export async function computeAndPersistPayrollRun({
     where: {
       companyId,
       isDeleted: false,
-      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
+      dateHired: { lte: cutoffEndEndOfDay },
+      OR: [
+        {
+          employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
+          OR: [{ dateSeparated: null }, { dateSeparated: { gt: cutoffEndEndOfDay } }],
+        },
+        {
+          dateSeparated: { gt: cutoffEndEndOfDay },
+        },
+      ],
     },
     include: {
       compensationRecords: {

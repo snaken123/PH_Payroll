@@ -39,7 +39,16 @@ export async function GET(request: Request) {
       companyId: ctx.companyId,
       isDeleted: false,
       isManagerialExempt: false,
-      employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
+      dateHired: { lte: cutoffEnd },
+      OR: [
+        {
+          employmentStatus: { in: [EmploymentStatus.PROBATIONARY, EmploymentStatus.REGULAR, EmploymentStatus.RETAINER] },
+          OR: [{ dateSeparated: null }, { dateSeparated: { gt: cutoffEnd } }],
+        },
+        {
+          dateSeparated: { gt: cutoffEnd },
+        },
+      ],
     },
     select: {
       id: true,

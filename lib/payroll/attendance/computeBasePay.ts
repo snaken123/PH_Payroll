@@ -46,7 +46,7 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
   if (input.payBasis === "HOURLY_RATE") {
     const hourlyRateEquivalent = rate;
     const hoursWorked = input.timesheets.reduce(
-      (sum, t) => sum.plus(t.regularHours),
+      (sum, t) => (t.status === "ABSENT" ? sum : sum.plus(t.regularHours)),
       new Decimal(0)
     );
     const hourlyBasePay = hourlyRateEquivalent.times(hoursWorked);
@@ -65,6 +65,8 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
     const hourlyRateEquivalent = dailyRateEquivalent.dividedBy(8);
 
     const basePay = input.timesheets.reduce((sum, t) => {
+      if (t.status === "ABSENT") return sum;
+
       const isUnworkedRegularHoliday =
         t.status === "HOLIDAY" && t.holidayType === "REGULAR_HOLIDAY" && new Decimal(t.regularHours).isZero();
       if (isUnworkedRegularHoliday) return sum.plus(dailyRateEquivalent);

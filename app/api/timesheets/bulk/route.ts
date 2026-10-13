@@ -51,6 +51,8 @@ export async function PATCH(request: Request) {
         const timeIn = combineDateAndTime(row.workDate, row.timeIn);
         const timeOut = combineDateAndTime(row.workDate, row.timeOut);
 
+        const effectiveRegularHours = row.status === "ABSENT" ? 0 : row.regularHours;
+
         await tx.timesheetEntry.upsert({
           where: { employeeId_workDate: { employeeId: row.employeeId, workDate } },
           update: {
@@ -60,7 +62,7 @@ export async function PATCH(request: Request) {
             scheduledHours: row.scheduledHours,
             lateMinutes: row.lateMinutes,
             undertimeMinutes: row.undertimeMinutes,
-            regularHours: row.regularHours,
+            regularHours: effectiveRegularHours,
             overtimeHours: row.overtimeHours,
             nightDiffHours: row.nightDiffHours,
             holidayType: row.holidayType || null,
@@ -77,7 +79,7 @@ export async function PATCH(request: Request) {
             scheduledHours: row.scheduledHours,
             lateMinutes: row.lateMinutes,
             undertimeMinutes: row.undertimeMinutes,
-            regularHours: row.regularHours,
+            regularHours: effectiveRegularHours,
             overtimeHours: row.overtimeHours,
             nightDiffHours: row.nightDiffHours,
             holidayType: row.holidayType || null,

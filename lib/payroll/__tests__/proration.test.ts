@@ -97,6 +97,15 @@ describe("computeBasePay — DAILY_RATE", () => {
     });
     expect(result.basePay.toNumber()).toBe(0);
   });
+
+  it("ignores residual regularHours when status is ABSENT", () => {
+    const result = computeBasePay({
+      payBasis: "DAILY_RATE",
+      basicRate: 800,
+      timesheets: [fact({ status: "PRESENT", regularHours: 8 }), fact({ status: "ABSENT", regularHours: 8 })],
+    });
+    expect(result.basePay.toNumber()).toBe(800);
+  });
 });
 
 describe("computeBasePay — HOURLY_RATE", () => {
@@ -108,4 +117,14 @@ describe("computeBasePay — HOURLY_RATE", () => {
     });
     expect(result.basePay.toNumber()).toBe(1400);
   });
+
+  it("ignores residual regularHours when status is ABSENT", () => {
+    const result = computeBasePay({
+      payBasis: "HOURLY_RATE",
+      basicRate: 100,
+      timesheets: [fact({ regularHours: 8 }), fact({ status: "ABSENT", regularHours: 8 })],
+    });
+    expect(result.basePay.toNumber()).toBe(800);
+  });
 });
+
