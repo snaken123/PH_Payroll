@@ -67,6 +67,8 @@ export async function GET(request: Request) {
     prisma.company.findUnique({
       where: { id: ctx.companyId },
       select: {
+        legalName: true,
+        companyCode: true,
         attendanceStandardTimeIn: true,
         attendanceStandardTimeOut: true,
         attendanceLunchBreakMinutes: true,
@@ -79,5 +81,11 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  return NextResponse.json({ employees, timesheets, holidays, config: company });
+  return NextResponse.json({
+    employees,
+    timesheets,
+    holidays,
+    config: company,
+    company: company ? { legalName: company.legalName, companyCode: company.companyCode } : null,
+  });
 }

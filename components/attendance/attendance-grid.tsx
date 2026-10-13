@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { timesheetStatusValues, holidayTypeValues, extractTimeOfDay } from "@/lib/validations/attendance";
 import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
+import { GoogleSheetImportDialog } from "./google-sheet-import-dialog";
 
 interface EmployeeOption {
   id: string;
@@ -186,6 +187,7 @@ export function AttendanceGrid() {
   const [entries, setEntries] = useState<TimesheetEntryDTO[]>([]);
   const [holidays, setHolidays] = useState<HolidayDTO[]>([]);
   const [config, setConfig] = useState<CompanyAttendanceConfig | undefined>(undefined);
+  const [companyInfo, setCompanyInfo] = useState<{ legalName?: string; companyCode?: string } | null>(null);
   const [cells, setCells] = useState<Record<string, CellState>>({});
   const [initialCells, setInitialCells] = useState<Record<string, CellState>>({});
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
@@ -268,6 +270,7 @@ export function AttendanceGrid() {
     setEntries(body.timesheets);
     setHolidays(body.holidays);
     setConfig(body.config);
+    if (body.company) setCompanyInfo(body.company);
   }, [start, end, companyId]);
 
   useEffect(() => {
@@ -595,6 +598,16 @@ export function AttendanceGrid() {
         <Button variant="outline" onClick={generateDefaults} disabled={generating || !canManageAttendance}>
           {generating ? "Generating..." : "Generate default entries"}
         </Button>
+        <GoogleSheetImportDialog
+          start={start}
+          end={end}
+          companyName={companyInfo?.legalName}
+          companyCode={companyInfo?.companyCode}
+          disabled={!canManageAttendance}
+          onImportComplete={() => {
+            load();
+          }}
+        />
       </div>
 
       {canUseGlobalActions && (

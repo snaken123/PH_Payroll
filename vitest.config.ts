@@ -8,6 +8,7 @@ export default defineConfig({
       "lib/payroll/**/*.test.ts",
       "lib/contractors/**/*.test.ts",
       "lib/finalpay/**/*.test.ts",
+      "lib/services/**/*.test.ts",
       "lib/__tests__/**/*.test.ts",
       "components/**/*.test.ts",
     ],
