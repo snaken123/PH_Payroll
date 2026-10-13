@@ -24,7 +24,7 @@ interface DeleteEmployeeDialogProps {
   employeeNumber: string;
   redirectOnSuccess?: boolean;
   disabled?: boolean;
-  trigger?: React.ReactNode;
+  iconOnly?: boolean;
 }
 
 export function DeleteEmployeeDialog({
@@ -33,7 +33,7 @@ export function DeleteEmployeeDialog({
   employeeNumber,
   redirectOnSuccess = false,
   disabled = false,
-  trigger,
+  iconOnly = false,
 }: DeleteEmployeeDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -76,11 +76,18 @@ export function DeleteEmployeeDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
+        disabled={disabled}
         render={
-          trigger ? (
-            React.cloneElement(trigger as React.ReactElement<{ disabled?: boolean }>, {
-              disabled: disabled || (trigger as React.ReactElement<{ disabled?: boolean }>).props.disabled,
-            })
+          iconOnly ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={disabled}
+              className="size-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              title="Delete employee profile"
+            >
+              <Trash2Icon className="size-3.5" />
+            </Button>
           ) : (
             <Button variant="outline" size="sm" disabled={disabled} className="gap-1.5 text-xs font-semibold border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40">
               <Trash2Icon className="size-3.5 text-rose-600" /> Delete Employee

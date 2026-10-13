@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SortableHeader } from "@/components/ui/sortable-header";
-import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, Edit3Icon, Trash2Icon, FileTextIcon } from "lucide-react";
+import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, Edit3Icon, FileTextIcon } from "lucide-react";
 import { hasPermission } from "@/lib/permissions";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
@@ -316,16 +316,7 @@ export default async function EmployeesPage({
                               employeeName={`${e.firstName} ${e.lastName}`}
                               employeeNumber={e.employeeNumber}
                               disabled={!canDeleteEmployee}
-                              trigger={
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                  title="Delete employee profile"
-                                >
-                                  <Trash2Icon className="size-3.5" />
-                                </Button>
-                              }
+                              iconOnly
                             />
                           </div>
                         </TableCell>

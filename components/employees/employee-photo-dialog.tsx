@@ -27,7 +27,6 @@ interface EmployeePhotoDialogProps {
   employeeName: string;
   currentPhotoUrl?: string | null;
   disabled?: boolean;
-  trigger?: React.ReactNode;
 }
 
 export function EmployeePhotoDialog({
@@ -35,7 +34,6 @@ export function EmployeePhotoDialog({
   employeeName,
   currentPhotoUrl,
   disabled = false,
-  trigger,
 }: EmployeePhotoDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -228,7 +226,14 @@ export function EmployeePhotoDialog({
         if (!v) stopCamera();
       }}
     >
-      <DialogTrigger render={trigger ? (React.isValidElement(trigger) ? React.cloneElement(trigger as React.ReactElement<any>, { disabled }) : (trigger as any)) : <Button variant="outline" size="sm" disabled={disabled}>Photo</Button>} />
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button variant="outline" size="sm" disabled={disabled} className="gap-1.5 text-xs font-semibold">
+            <CameraIcon className="size-3.5 text-blue-600" /> Photo / Camera
+          </Button>
+        }
+      />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Employee Photo</DialogTitle>

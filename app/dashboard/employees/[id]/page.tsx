@@ -34,7 +34,6 @@ import {
   AlertTriangleIcon,
   ArrowLeftIcon,
   DownloadIcon,
-  CameraIcon,
   PhoneIcon,
   MailIcon,
   MapPinIcon,
@@ -217,11 +216,6 @@ export default async function EmployeeDetailPage({
               employeeName={`${employee.firstName} ${employee.lastName}`}
               currentPhotoUrl={employee.photoUrl}
               disabled={!canUploadDocs}
-              trigger={
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
-                  <CameraIcon className="size-3.5 text-blue-600" /> Photo / Camera
-                </Button>
-              }
             />
             <EditEmployeeProfileDialog
               employeeId={employee.id}
