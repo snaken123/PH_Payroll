@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db";
 import { getTenantContext, withCompanyScope } from "@/lib/db/scoped";
 import { ReportsManager } from "@/components/reports/reports-manager";
+import { ReportsTabsClient } from "@/components/reports/reports-tabs-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EmploymentStatus } from "@/lib/generated/prisma/enums";
+import { CompanyRole, EmploymentStatus } from "@/lib/generated/prisma/enums";
 import { PageHeader } from "@/components/ui/page-header";
-import { MetricCard } from "@/components/ui/metric-card";
-import { FileTextIcon, ShieldCheckIcon, WalletIcon } from "lucide-react";
+import { FileTextIcon } from "lucide-react";
+import { redirect } from "next/navigation";
+import { hasPermission } from "@/lib/permissions";
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   PAYSLIP: "Payslip PDF",
@@ -21,16 +23,13 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   BANK_DISBURSEMENT: "Bank Disbursement Advice File",
 };
 
-import { redirect } from "next/navigation";
-import { hasPermission } from "@/lib/permissions";
-
 export default async function ReportsPage() {
   const ctx = await getTenantContext();
   if (!hasPermission(ctx.permissions, "reports.view", ctx.platformRole)) {
     redirect("/dashboard");
   }
 
-  const [postedRuns, employees, recentDocuments] = await Promise.all([
+  const [postedRuns, employees, recentDocuments, bankAccounts] = await Promise.all([
     prisma.payrollRun.findMany({
       where: { companyId: ctx.companyId, status: "POSTED" },
       include: { payrollPeriod: true },
@@ -49,37 +48,21 @@ export default async function ReportsPage() {
       orderBy: { generatedAt: "desc" },
       take: 20,
     }),
+    prisma.companyBankAccount.findMany({
+      where: { companyId: ctx.companyId },
+      select: { id: true, bankName: true, accountNumber: true, nickname: true },
+      orderBy: { isDefault: "desc" },
+    }),
   ]);
 
-  return (
+  const canManagePayments =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    ctx.companyRole === CompanyRole.PAYROLL_ADMIN ||
+    hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
+
+  const officialReportsContent = (
     <div className="space-y-6">
-      <PageHeader
-        title="Statutory Reports &amp; BIR Tax Declarations"
-        description="Generate official PDF tax declarations and contribution reports (BIR 1601-C, BIR 2316, BIR Alphalist, SSS R-3, PhilHealth RF-1, Pag-IBIG MCRF)."
-      />
-
-      {/* KPI Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <MetricCard
-          title="Generated Documents"
-          value={recentDocuments.length}
-          subtitle="Audit-ready compliance PDFs"
-          icon={FileTextIcon}
-        />
-        <MetricCard
-          title="Posted Cutoffs"
-          value={postedRuns.length}
-          subtitle="Available for statutory filings"
-          icon={WalletIcon}
-        />
-        <MetricCard
-          title="Statutory Status"
-          value="Verified"
-          subtitle="2026 BIR &amp; SSS rate compliance"
-          icon={ShieldCheckIcon}
-        />
-      </div>
-
       <ReportsManager
         postedRuns={postedRuns.map((r) => ({
           id: r.id,
@@ -126,6 +109,21 @@ export default async function ReportsPage() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Statutory Contributions &amp; Government Reports"
+        description="Track company statutory remittances to SSS, PhilHealth, Pag-IBIG, and BIR, tag payment details, and generate official compliance returns."
+      />
+
+      <ReportsTabsClient
+        officialReportsContent={officialReportsContent}
+        companyBankAccounts={bankAccounts}
+        canManage={canManagePayments}
+      />
     </div>
   );
 }

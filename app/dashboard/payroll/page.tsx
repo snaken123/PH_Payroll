@@ -16,15 +16,19 @@ import { CompanyRole, PayrollRunStatus } from "@/lib/generated/prisma/enums";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/permissions";
 
+import { PayrollPageClient } from "@/components/payroll/payroll-page-client";
+
 export default async function PayrollPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string }>;
 }) {
   const ctx = await getTenantContext();
   if (!hasPermission(ctx.permissions, "payroll.compute", ctx.platformRole)) {
     redirect("/dashboard");
   }
+
+  const { page: pageParam, tab: tabParam } = await searchParams;
 
   const canApprovePayroll =
     ctx.isSuperAdmin ||
@@ -35,7 +39,7 @@ export default async function PayrollPage({
     ctx.isSuperAdmin ||
     ctx.companyRole === CompanyRole.COMPANY_OWNER ||
     hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
-  const page = parsePageParam((await searchParams).page);
+  const page = parsePageParam(pageParam);
   const totalCount = await prisma.payrollRun.count({ where: { companyId: ctx.companyId } });
   const { skip, take, totalPages } = paginationMeta(page, totalCount);
 
@@ -55,14 +59,8 @@ export default async function PayrollPage({
     }),
   ]);
 
-  return (
+  const runsContent = (
     <div className="space-y-6">
-      <PageHeader
-        title="Payroll Runs &amp; Register"
-        description="Calculate semi-monthly payroll periods, inspect draft payslips, recompute adjustments, approve and post."
-        actions={<CreateRunDialog />}
-      />
-
       {/* Summary KPI Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
@@ -162,6 +160,18 @@ export default async function PayrollPage({
           <Pager page={page} totalPages={totalPages} basePath="/dashboard/payroll" />
         </div>
       </Card>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Payroll Runs &amp; Register"
+        description="Calculate semi-monthly payroll periods, inspect draft payslips, recompute adjustments, approve, post, and track check disbursements."
+        actions={<CreateRunDialog />}
+      />
+
+      <PayrollPageClient runsContent={runsContent} initialTab={tabParam === "checks" ? "checks" : "runs"} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { hasPermission } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RunActions } from "@/components/payroll/run-actions";
+import { RunChecksSection } from "@/components/payroll/run-checks-section";
 import { PayslipDetailDialog } from "@/components/payroll/payslip-detail-dialog";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -48,6 +49,14 @@ export default async function PayrollRunDetailPage({
   const totalOther = run.payslips.reduce((sum, p) => sum + Number(p.totalOtherDeductions), 0);
   const totalNet = run.payslips.reduce((sum, p) => sum + Number(p.netPay), 0);
 
+  const [companyBankAccounts] = await Promise.all([
+    prisma.companyBankAccount.findMany({
+      where: { companyId: run.companyId },
+      select: { id: true, bankName: true, accountNumber: true, nickname: true },
+      orderBy: { isDefault: "desc" },
+    }),
+  ]);
+
   const canApprovePayroll =
     ctx.isSuperAdmin ||
     ctx.companyRole === CompanyRole.COMPANY_OWNER ||
@@ -56,6 +65,12 @@ export default async function PayrollRunDetailPage({
   const canPostPayroll =
     ctx.isSuperAdmin ||
     ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
+
+  const canManageChecks =
+    ctx.isSuperAdmin ||
+    ctx.companyRole === CompanyRole.COMPANY_OWNER ||
+    ctx.companyRole === CompanyRole.PAYROLL_ADMIN ||
     hasPermission(ctx.permissions, "payroll.post", ctx.platformRole);
 
   return (
@@ -119,6 +134,17 @@ export default async function PayrollRunDetailPage({
           icon={UsersIcon}
         />
       </div>
+
+      {run.status === "POSTED" && (
+        <RunChecksSection
+          runId={run.id}
+          runNumber={run.runNumber}
+          totalNetPay={totalNet}
+          payDate={run.payrollPeriod.payDate.toISOString().slice(0, 10)}
+          companyBankAccounts={companyBankAccounts}
+          canManage={canManageChecks}
+        />
+      )}
 
       {/* Payslips Table Card */}
       <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">

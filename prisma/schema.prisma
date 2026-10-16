@@ -144,6 +144,8 @@ model Company {
   allowancesPaid     AllowanceLine[]      @relation("AllowancePayingCompany")
   employeeDeletionAudits EmployeeDeletionAudit[]
   documents              EmployeeDocument[]
+  payrollPaymentChecks   PayrollPaymentCheck[]
+  statutoryPaymentRecords StatutoryPaymentRecord[]
 
   @@index([status])
 }
@@ -164,6 +166,8 @@ model CompanyBankAccount {
   company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   payslips          Payslip[]                 @relation("PayslipDisbursementBank")
   bankDisbursements PayslipBankDisbursement[]
+  payrollPaymentChecks    PayrollPaymentCheck[]
+  statutoryPaymentRecords StatutoryPaymentRecord[]
 
   @@index([companyId])
 }
@@ -750,6 +754,8 @@ model PayrollRun {
   supersededByRuns PayrollRun[]    @relation("RunSupersedeHistory")
   payslips         Payslip[]
   loanDeductions   LoanDeduction[]
+  paymentChecks           PayrollPaymentCheck[]
+  statutoryPaymentRecords StatutoryPaymentRecord[]
 
   @@unique([companyId, runNumber])
   @@index([companyId])
@@ -1208,3 +1214,91 @@ model FinalPayLineItem {
 
   @@index([finalPayRunId])
 }
+
+// ==================== Payroll Check Disbursements ====================
+
+model PayrollPaymentCheck {
+  id             String              @id @default(cuid())
+  companyId      String
+  payrollRunId   String
+  checkNumber    String
+  checkDate      DateTime
+  amount         Decimal             @db.Decimal(14, 2)
+  bankAccountId  String?
+  bankName       String?
+  payee          String?
+  notes          String?
+  status         String              @default("ISSUED") // ISSUED, CLEARED, VOID
+  issuedByUserId String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  company        Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollRun     PayrollRun          @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  bankAccount    CompanyBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([payrollRunId])
+  @@index([checkNumber])
+}
+
+// ==================== Statutory Remittances & Payment Tagging ====================
+
+enum StatutoryAgency {
+  SSS
+  PHILHEALTH
+  PAGIBIG
+  BIR
+}
+
+enum StatutoryPaymentStatus {
+  UNPAID
+  PAID
+  PARTIALLY_PAID
+}
+
+enum RemittancePaymentMethod {
+  CHECK
+  BANK_TRANSFER
+  ONLINE_PORTAL
+  CASH
+}
+
+model StatutoryPaymentRecord {
+  id                  String                   @id @default(cuid())
+  companyId           String
+  agency              StatutoryAgency
+  payrollRunId        String?
+  periodMonth         Int                      // 1-12
+  periodYear          Int                      // e.g. 2026
+
+  // Snapshot of computed amounts from payroll run
+  computedEeAmount    Decimal                  @db.Decimal(14, 2)
+  computedErAmount    Decimal                  @db.Decimal(14, 2)
+  computedTotalAmount Decimal                  @db.Decimal(14, 2)
+
+  // Payment tagging fields
+  status              StatutoryPaymentStatus   @default(UNPAID)
+  paidAmount          Decimal?                 @db.Decimal(14, 2)
+  paymentDate         DateTime?
+  paymentMethod       RemittancePaymentMethod?
+  checkNumber         String?
+  referenceNumber     String?                  // PRN, SPA, OR No., Bank Ref #
+  bankAccountId       String?
+  bankName            String?
+  notes               String?
+  taggedByUserId      String?
+  taggedAt            DateTime?
+
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  company             Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollRun          PayrollRun?              @relation(fields: [payrollRunId], references: [id], onDelete: SetNull)
+  bankAccount         CompanyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([companyId, agency, periodYear, periodMonth, payrollRunId])
+  @@index([companyId, agency])
+  @@index([companyId, periodYear, periodMonth])
+}
+
