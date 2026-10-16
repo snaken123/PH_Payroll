@@ -6,6 +6,8 @@ import type { ActiveLoanInput } from "@/lib/payroll/deductions/computeLoanDeduct
 import type { TimesheetFact } from "@/lib/payroll/attendance/types";
 import type { HolidayType, PayBasis, PayPeriodType } from "@/lib/payroll/types";
 import { EmploymentStatus, LoanStatus, PeriodType } from "@/lib/generated/prisma/enums";
+import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
+import { extractTimeOfDay } from "@/lib/validations/attendance";
 
 function asOfWhere(asOf: Date) {
   return { effectiveFrom: { lte: asOf }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }] };
@@ -54,7 +56,7 @@ export async function computeAndPersistPayrollRun({
     create: { companyId, cutoffStart, cutoffEnd, payDate, periodType },
   });
 
-  const [company, sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings] = await Promise.all([
+  const [company, sssBrackets, philhealthConfig, pagibigBracket, birBrackets, deMinimisCeilings, specialDaySchedules] = await Promise.all([
     prisma.company.findUnique({ where: { id: companyId } }),
     prisma.sssContributionBracket.findMany({ where: asOfWhere(cutoffEndEndOfDay) }),
     prisma.philhealthConfig.findFirst({ where: asOfWhere(cutoffEndEndOfDay), orderBy: { effectiveFrom: "desc" } }),
@@ -63,6 +65,12 @@ export async function computeAndPersistPayrollRun({
       where: { ...asOfWhere(cutoffEndEndOfDay), payPeriodType: "SEMI_MONTHLY" },
     }),
     prisma.deMinimisCeiling.findMany({ where: asOfWhere(cutoffEndEndOfDay) }),
+    prisma.specialDaySchedule.findMany({
+      where: {
+        companyId,
+        workDate: { gte: cutoffStartStartOfDay, lte: cutoffEndEndOfDay },
+      },
+    }),
   ]);
 
   if (!philhealthConfig || !pagibigBracket || sssBrackets.length === 0 || birBrackets.length === 0) {
@@ -70,6 +78,32 @@ export async function computeAndPersistPayrollRun({
       "Statutory rate tables are incomplete for this period — a platform admin must configure rates before payroll can run."
     );
   }
+
+  const specialDayMap = new Map<string, (typeof specialDaySchedules)[0]>();
+  for (const s of specialDaySchedules) {
+    const dStr = s.workDate instanceof Date ? s.workDate.toISOString().slice(0, 10) : String(s.workDate).slice(0, 10);
+    specialDayMap.set(dStr, s);
+  }
+
+  const attendanceConfig: CompanyAttendanceConfig = {
+    attendanceStandardTimeIn: company?.attendanceStandardTimeIn,
+    attendanceStandardTimeOut: company?.attendanceStandardTimeOut,
+    attendanceLunchBreakMinutes: company?.attendanceLunchBreakMinutes,
+    attendanceLateGracePeriodMinutes: company?.attendanceLateGracePeriodMinutes,
+    attendanceOtGracePeriodMinutes: company?.attendanceOtGracePeriodMinutes,
+    attendanceFlexi1WindowStart: company?.attendanceFlexi1WindowStart,
+    attendanceFlexi1WindowEnd: company?.attendanceFlexi1WindowEnd,
+    attendanceFlexi1LateGracePeriodMinutes: company?.attendanceFlexi1LateGracePeriodMinutes,
+    attendanceSaturdayRuleEnabled: company?.attendanceSaturdayRuleEnabled,
+    attendanceSaturdayWindowStart: company?.attendanceSaturdayWindowStart,
+    attendanceSaturdayWindowEnd: company?.attendanceSaturdayWindowEnd,
+    attendanceSaturdayGracePeriodMinutes: company?.attendanceSaturdayGracePeriodMinutes,
+    attendanceSaturdayShiftHours: company?.attendanceSaturdayShiftHours,
+    attendanceSaturdayBreakMinutes: company?.attendanceSaturdayBreakMinutes,
+    attendanceSaturdayEmployeeIds: Array.isArray(company?.attendanceSaturdayEmployeeIds)
+      ? (company?.attendanceSaturdayEmployeeIds as string[])
+      : null,
+  };
 
   const companyWorkDays = (company?.standardWorkDaysPerMonth ?? 26).toString();
   const deMinimisCeilingMap = new Map(deMinimisCeilings.map((c) => [c.category, c]));
@@ -235,18 +269,55 @@ export async function computeAndPersistPayrollRun({
       const isUndertimeIgnored = ignoredUndertimeEmployeeIds?.includes(emp.id) ?? false;
 
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => {
+        let rawLateMinutes = t.lateMinutes;
+        let rawUndertimeMinutes = t.undertimeMinutes;
+        let rawRegularHours = Number(t.regularHours);
+        let rawOvertimeHours = Number(t.overtimeHours);
+
+        if (t.status === "PRESENT" || t.timeIn || t.timeOut) {
+          const workDateStr = t.workDate.toISOString().slice(0, 10);
+          const timeInStr = extractTimeOfDay(t.timeIn);
+          const timeOutStr = extractTimeOfDay(t.timeOut);
+          const specialDay = specialDayMap.get(workDateStr);
+
+          const calc = calculateTimesheetHours({
+            workDate: workDateStr,
+            employeeId: emp.id,
+            scheduleType: emp.scheduleType,
+            timeIn: timeInStr,
+            timeOut: timeOutStr,
+            config: {
+              ...attendanceConfig,
+              specialDaySchedule: specialDay
+                ? {
+                    standardTimeIn: specialDay.standardTimeIn,
+                    standardTimeOut: specialDay.standardTimeOut,
+                    lunchBreakMinutes: specialDay.lunchBreakMinutes,
+                    lateGracePeriodMinutes: specialDay.lateGracePeriodMinutes,
+                    otGracePeriodMinutes: specialDay.otGracePeriodMinutes,
+                  }
+                : null,
+            },
+          });
+
+          rawLateMinutes = calc.lateMinutes;
+          rawUndertimeMinutes = calc.undertimeMinutes;
+          rawRegularHours = calc.regularHours;
+          rawOvertimeHours = calc.overtimeHours;
+        }
+
         const isSaturday = new Date(t.workDate).getUTCDay() === 6;
         const ignoreSatLate = (excludeSaturdayTardiness ?? false) && isSaturday;
         const ignoreSatUndertime = (excludeSaturdayUndertime ?? false) && isSaturday;
 
-        const effectiveLate = isUndertimeIgnored || ignoreSatLate ? 0 : t.lateMinutes;
-        const effectiveUndertime = isUndertimeIgnored || ignoreSatUndertime ? 0 : t.undertimeMinutes;
+        const effectiveLate = isUndertimeIgnored || ignoreSatLate ? 0 : rawLateMinutes;
+        const effectiveUndertime = isUndertimeIgnored || ignoreSatUndertime ? 0 : rawUndertimeMinutes;
 
         // Restore regular hours if tardiness or undertime is waived/ignored
         // (since calculateHours pre-deducts them: regularHours = 8.0 - (late + ut)/60)
-        let effectiveRegularHours = Number(t.regularHours);
-        const waivedLateMinutes = t.lateMinutes - effectiveLate;
-        const waivedUtMinutes = t.undertimeMinutes - effectiveUndertime;
+        let effectiveRegularHours = rawRegularHours;
+        const waivedLateMinutes = rawLateMinutes - effectiveLate;
+        const waivedUtMinutes = rawUndertimeMinutes - effectiveUndertime;
         const totalWaivedMinutes = waivedLateMinutes + waivedUtMinutes;
 
         if (totalWaivedMinutes > 0 && t.status !== "ABSENT") {
@@ -260,7 +331,7 @@ export async function computeAndPersistPayrollRun({
           workDate: t.workDate.toISOString(),
           status: t.status,
           regularHours: effectiveRegularHours.toString(),
-          overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
+          overtimeHours: (rawOvertimeHours * approvedOtRatio).toString(),
           nightDiffHours: t.nightDiffHours.toString(),
           lateMinutes: effectiveLate,
           undertimeMinutes: effectiveUndertime,
