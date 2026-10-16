@@ -24,8 +24,8 @@ export async function computeAndPersistPayrollRun({
   approvedOtEmployeeIds,
   approvedOtHoursMap,
   ignoredUndertimeEmployeeIds,
-  excludeSaturdayTardiness = true,
-  excludeSaturdayUndertime = true,
+  excludeSaturdayTardiness = false,
+  excludeSaturdayUndertime = false,
   targetRunId,
 }: {
   companyId: string;
@@ -236,16 +236,30 @@ export async function computeAndPersistPayrollRun({
 
       const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => {
         const isSaturday = new Date(t.workDate).getUTCDay() === 6;
-        const ignoreSatLate = (excludeSaturdayTardiness ?? true) && isSaturday;
-        const ignoreSatUndertime = (excludeSaturdayUndertime ?? true) && isSaturday;
+        const ignoreSatLate = (excludeSaturdayTardiness ?? false) && isSaturday;
+        const ignoreSatUndertime = (excludeSaturdayUndertime ?? false) && isSaturday;
 
         const effectiveLate = isUndertimeIgnored || ignoreSatLate ? 0 : t.lateMinutes;
         const effectiveUndertime = isUndertimeIgnored || ignoreSatUndertime ? 0 : t.undertimeMinutes;
 
+        // Restore regular hours if tardiness or undertime is waived/ignored
+        // (since calculateHours pre-deducts them: regularHours = 8.0 - (late + ut)/60)
+        let effectiveRegularHours = Number(t.regularHours);
+        const waivedLateMinutes = t.lateMinutes - effectiveLate;
+        const waivedUtMinutes = t.undertimeMinutes - effectiveUndertime;
+        const totalWaivedMinutes = waivedLateMinutes + waivedUtMinutes;
+
+        if (totalWaivedMinutes > 0 && t.status !== "ABSENT") {
+          effectiveRegularHours = Math.min(8.0, Math.round((effectiveRegularHours + totalWaivedMinutes / 60) * 100) / 100);
+          if (effectiveRegularHours > 7.95) {
+            effectiveRegularHours = 8.0;
+          }
+        }
+
         return {
           workDate: t.workDate.toISOString(),
           status: t.status,
-          regularHours: t.regularHours.toString(),
+          regularHours: effectiveRegularHours.toString(),
           overtimeHours: (Number(t.overtimeHours) * approvedOtRatio).toString(),
           nightDiffHours: t.nightDiffHours.toString(),
           lateMinutes: effectiveLate,

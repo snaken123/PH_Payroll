@@ -43,6 +43,13 @@ export async function GET(request: Request) {
         attendanceFlexi1WindowStart: true,
         attendanceFlexi1WindowEnd: true,
         attendanceFlexi1LateGracePeriodMinutes: true,
+        attendanceSaturdayRuleEnabled: true,
+        attendanceSaturdayWindowStart: true,
+        attendanceSaturdayWindowEnd: true,
+        attendanceSaturdayGracePeriodMinutes: true,
+        attendanceSaturdayShiftHours: true,
+        attendanceSaturdayBreakMinutes: true,
+        attendanceSaturdayEmployeeIds: true,
       },
     }),
   ]);

@@ -98,8 +98,8 @@ export function CreateRunDialog({ disabled = false }: { disabled?: boolean }) {
 
   const [employeesWithUndertime, setEmployeesWithUndertime] = useState<EmployeeUndertimePreview[]>([]);
   const [ignoredUndertimeIds, setIgnoredUndertimeIds] = useState<string[]>([]);
-  const [excludeSaturdayTardiness, setExcludeSaturdayTardiness] = useState(true);
-  const [excludeSaturdayUndertime, setExcludeSaturdayUndertime] = useState(true);
+  const [excludeSaturdayTardiness, setExcludeSaturdayTardiness] = useState(false);
+  const [excludeSaturdayUndertime, setExcludeSaturdayUndertime] = useState(false);
   const [undertimeSearchQuery, setUndertimeSearchQuery] = useState("");
 
   const {
@@ -113,8 +113,8 @@ export function CreateRunDialog({ disabled = false }: { disabled?: boolean }) {
     resolver: zodResolver(createPayrollRunSchema),
     defaultValues: {
       periodType: "FIRST_HALF",
-      excludeSaturdayTardiness: true,
-      excludeSaturdayUndertime: true,
+      excludeSaturdayTardiness: false,
+      excludeSaturdayUndertime: false,
     },
   });
 
@@ -127,8 +127,8 @@ export function CreateRunDialog({ disabled = false }: { disabled?: boolean }) {
     setOtSearchQuery("");
     setEmployeesWithUndertime([]);
     setIgnoredUndertimeIds([]);
-    setExcludeSaturdayTardiness(true);
-    setExcludeSaturdayUndertime(true);
+    setExcludeSaturdayTardiness(false);
+    setExcludeSaturdayUndertime(false);
     setUndertimeSearchQuery("");
     setCheckingOt(false);
     setSubmitting(false);
@@ -239,7 +239,7 @@ export function CreateRunDialog({ disabled = false }: { disabled?: boolean }) {
 
       if (otList.length > 0 || undertimeList.length > 0) {
         setEmployeesWithOt(otList);
-        setSelectedOtIds(otList.map((e) => e.employeeId));
+        setSelectedOtIds([]); // Unselected by default; user explicitly checks boxes to pay OT
         const initialMap: Record<string, number> = {};
         for (const e of otList) {
           initialMap[e.employeeId] = e.totalOtHours;

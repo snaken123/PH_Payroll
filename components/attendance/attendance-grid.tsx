@@ -379,6 +379,8 @@ export function AttendanceGrid() {
       if (patch.timeIn !== undefined || patch.timeOut !== undefined) {
         const emp = employees.find((e) => e.id === employeeId);
         const calc = calculateTimesheetHours({
+          workDate: date,
+          employeeId,
           scheduleType: emp?.scheduleType,
           timeIn: nextCell.timeIn,
           timeOut: nextCell.timeOut,

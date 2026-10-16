@@ -7,9 +7,27 @@ export interface CompanyAttendanceConfig {
   attendanceFlexi1WindowStart?: string;      // e.g. "07:00"
   attendanceFlexi1WindowEnd?: string;        // e.g. "10:00"
   attendanceFlexi1LateGracePeriodMinutes?: number; // e.g. 15
+  // Saturday Rule parameters
+  attendanceSaturdayRuleEnabled?: boolean;
+  attendanceSaturdayWindowStart?: string;    // e.g. "07:30"
+  attendanceSaturdayWindowEnd?: string;      // e.g. "10:30"
+  attendanceSaturdayGracePeriodMinutes?: number; // e.g. 10
+  attendanceSaturdayShiftHours?: number;     // e.g. 5
+  attendanceSaturdayBreakMinutes?: number;   // e.g. 0
+  attendanceSaturdayEmployeeIds?: string[] | null;
+  // Special Day Schedule parameters
+  specialDaySchedule?: {
+    standardTimeIn: string;
+    standardTimeOut?: string | null;
+    lunchBreakMinutes?: number;
+    lateGracePeriodMinutes?: number;
+    otGracePeriodMinutes?: number;
+  } | null;
 }
 
 export interface CalculateHoursInput {
+  workDate?: Date | string | null;
+  employeeId?: string | null;
   scheduleType?: string | null;
   timeIn?: string | null;
   timeOut?: string | null;
@@ -39,13 +57,15 @@ function roundToQuarter(num: number): number {
 }
 
 export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHoursResult {
-  const { scheduleType, timeIn, timeOut, customBreakMinutes, config } = input;
+  const { scheduleType, timeIn, timeOut, customBreakMinutes, config, workDate, employeeId } = input;
 
-  const stdTimeInStr = config?.attendanceStandardTimeIn || "09:30";
-  const stdTimeOutStr = config?.attendanceStandardTimeOut || "18:30";
-  const lunchBreakMinutes = customBreakMinutes ?? config?.attendanceLunchBreakMinutes ?? 60;
-  const lateGraceMinutes = config?.attendanceLateGracePeriodMinutes ?? 15;
-  const otGraceMinutes = config?.attendanceOtGracePeriodMinutes ?? 15;
+  // 1. Check for Special Day Schedule override
+  const specialDay = config?.specialDaySchedule;
+  const stdTimeInStr = specialDay?.standardTimeIn || config?.attendanceStandardTimeIn || "09:30";
+  const stdTimeOutStr = specialDay?.standardTimeOut || config?.attendanceStandardTimeOut || "18:30";
+  const lunchBreakMinutes = customBreakMinutes ?? specialDay?.lunchBreakMinutes ?? config?.attendanceLunchBreakMinutes ?? 60;
+  const lateGraceMinutes = specialDay?.lateGracePeriodMinutes ?? config?.attendanceLateGracePeriodMinutes ?? 15;
+  const otGraceMinutes = specialDay?.otGracePeriodMinutes ?? config?.attendanceOtGracePeriodMinutes ?? 15;
   const flexiWindowStartStr = config?.attendanceFlexi1WindowStart || "07:00";
   const flexiWindowEndStr = config?.attendanceFlexi1WindowEnd || "10:00";
   const flexiLateGraceMinutes = config?.attendanceFlexi1LateGracePeriodMinutes ?? 15;
@@ -61,6 +81,69 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes: 0,
       undertimeMinutes: 0,
       breakMinutes: lunchBreakMinutes,
+    };
+  }
+
+  // 2. Check for Saturday Shift Rule
+  let isSaturday = false;
+  if (workDate) {
+    const d = typeof workDate === "string" ? new Date(workDate) : workDate;
+    isSaturday = d.getUTCDay() === 6;
+  }
+  const satRuleEnabled = config?.attendanceSaturdayRuleEnabled ?? false;
+  const satEmpIds = config?.attendanceSaturdayEmployeeIds;
+  const appliesToThisEmp = !satEmpIds || satEmpIds.length === 0 || (employeeId ? satEmpIds.includes(employeeId) : false);
+  const isSaturdayRuleActive = isSaturday && satRuleEnabled && appliesToThisEmp;
+
+  if (isSaturdayRuleActive) {
+    const windowStartStr = config?.attendanceSaturdayWindowStart || "07:30";
+    const windowEndStr = config?.attendanceSaturdayWindowEnd || "10:30";
+    const satGraceMinutes = config?.attendanceSaturdayGracePeriodMinutes ?? 10;
+    const shiftHours = config?.attendanceSaturdayShiftHours ?? 5.0;
+    const requiredWorkMins = shiftHours * 60; // 5 hours = 300 minutes
+    const satBreakMinutes = customBreakMinutes ?? config?.attendanceSaturdayBreakMinutes ?? 0;
+
+    const windowStartMins = parseMinutes(windowStartStr) ?? 450;
+    const windowEndMins = parseMinutes(windowEndStr) ?? 630;
+    const inMins = rawInMins ?? windowStartMins;
+
+    let effectiveStartMins: number;
+    let lateMinutes = 0;
+
+    if (inMins < windowStartMins) {
+      effectiveStartMins = windowStartMins;
+      lateMinutes = 0;
+    } else if (inMins <= windowEndMins + satGraceMinutes) {
+      effectiveStartMins = inMins <= windowEndMins ? inMins : windowEndMins;
+      lateMinutes = 0;
+    } else {
+      effectiveStartMins = windowEndMins;
+      lateMinutes = inMins - windowEndMins;
+    }
+
+    const outMins = rawOutMins ?? (effectiveStartMins + requiredWorkMins + satBreakMinutes);
+    const elapsedMins = outMins - effectiveStartMins;
+    const workedMins = Math.max(0, elapsedMins - satBreakMinutes);
+
+    let undertimeMinutes = 0;
+    if (workedMins < requiredWorkMins) {
+      undertimeMinutes = requiredWorkMins - workedMins;
+    }
+
+    let overtimeHours = 0;
+    if (workedMins > requiredWorkMins) {
+      overtimeHours = roundToQuarter((workedMins - requiredWorkMins) / 60);
+    }
+
+    const netReductionMinutes = lateMinutes + undertimeMinutes;
+    const regularHours = Math.max(0, roundToQuarter(8.0 - netReductionMinutes / 60));
+
+    return {
+      regularHours,
+      overtimeHours,
+      lateMinutes,
+      undertimeMinutes,
+      breakMinutes: satBreakMinutes,
     };
   }
 

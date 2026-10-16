@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
   const employeeIds = employees.map((e) => e.id);
 
-  const [timesheets, holidays, company] = await Promise.all([
+  const [timesheets, holidays, company, specialDaySchedules] = await Promise.all([
     prisma.timesheetEntry.findMany({
       where: {
         employeeId: { in: employeeIds },
@@ -77,6 +77,19 @@ export async function GET(request: Request) {
         attendanceFlexi1WindowStart: true,
         attendanceFlexi1WindowEnd: true,
         attendanceFlexi1LateGracePeriodMinutes: true,
+        attendanceSaturdayRuleEnabled: true,
+        attendanceSaturdayWindowStart: true,
+        attendanceSaturdayWindowEnd: true,
+        attendanceSaturdayGracePeriodMinutes: true,
+        attendanceSaturdayShiftHours: true,
+        attendanceSaturdayBreakMinutes: true,
+        attendanceSaturdayEmployeeIds: true,
+      },
+    }),
+    prisma.specialDaySchedule.findMany({
+      where: {
+        companyId: ctx.companyId,
+        workDate: { gte: startDate, lte: endDate },
       },
     }),
   ]);
@@ -85,6 +98,7 @@ export async function GET(request: Request) {
     employees,
     timesheets,
     holidays,
+    specialDaySchedules,
     config: company,
     company: company ? { legalName: company.legalName, companyCode: company.companyCode } : null,
   });

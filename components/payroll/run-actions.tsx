@@ -98,8 +98,8 @@ export function RunActions({
 
   const [employeesWithUndertime, setEmployeesWithUndertime] = useState<EmployeeUndertimePreview[]>([]);
   const [ignoredUndertimeIds, setIgnoredUndertimeIds] = useState<string[]>([]);
-  const [excludeSaturdayTardiness, setExcludeSaturdayTardiness] = useState(true);
-  const [excludeSaturdayUndertime, setExcludeSaturdayUndertime] = useState(true);
+  const [excludeSaturdayTardiness, setExcludeSaturdayTardiness] = useState(false);
+  const [excludeSaturdayUndertime, setExcludeSaturdayUndertime] = useState(false);
   const [undertimeSearchQuery, setUndertimeSearchQuery] = useState("");
 
   async function callAction(action: "submit" | "approve" | "post" | "void" | "recompute" | "unapprove", body?: unknown) {
@@ -166,7 +166,7 @@ export function RunActions({
 
       if (otList.length > 0 || undertimeList.length > 0) {
         setEmployeesWithOt(otList);
-        setSelectedOtIds(otList.map((e) => e.employeeId));
+        setSelectedOtIds([]); // Unselected by default; user explicitly checks boxes to pay OT
         const initialMap: Record<string, number> = {};
         for (const e of otList) {
           initialMap[e.employeeId] = e.totalOtHours;

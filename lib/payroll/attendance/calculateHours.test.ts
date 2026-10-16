@@ -228,4 +228,144 @@ describe("calculateTimesheetHours", () => {
       expect(res.undertimeMinutes).toBe(0);
     });
   });
+
+  describe("Saturday Shift Rules", () => {
+    const saturdayConfig: CompanyAttendanceConfig = {
+      ...defaultConfig,
+      attendanceSaturdayRuleEnabled: true,
+      attendanceSaturdayWindowStart: "07:30",
+      attendanceSaturdayWindowEnd: "10:30",
+      attendanceSaturdayGracePeriodMinutes: 10,
+      attendanceSaturdayShiftHours: 5.0,
+      attendanceSaturdayBreakMinutes: 0,
+    };
+
+    // 2026-09-26 is a Saturday
+    const saturdayDate = new Date("2026-09-26T00:00:00.000Z");
+
+    it("should allow login between 7:30am and 10:30am with 0 late and full 5-hour shift completion", () => {
+      // Arrives 8:00am, completes 5h shift at 13:00pm
+      const res = calculateTimesheetHours({
+        workDate: saturdayDate,
+        scheduleType: "Regular",
+        timeIn: "08:00",
+        timeOut: "13:00",
+        config: saturdayConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(0);
+      expect(res.regularHours).toBe(8.0);
+      expect(res.overtimeHours).toBe(0);
+    });
+
+    it("should allow up to 10-minute grace period (e.g. 10:35am arrival) with 0 late", () => {
+      // User specification: "(i.e. if they arrive 10:35am, no late)"
+      const res = calculateTimesheetHours({
+        workDate: saturdayDate,
+        timeIn: "10:35",
+        timeOut: "15:35", // 5 hours worked
+        config: saturdayConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(0);
+      expect(res.regularHours).toBe(8.0);
+    });
+
+    it("should deduct late from 10:30am if arrival exceeds 10-minute grace period (e.g. 10:41am arrival is 11 mins late)", () => {
+      // User specification: "(but if they arrive 10:41am, 11 minutes late)"
+      const res = calculateTimesheetHours({
+        workDate: saturdayDate,
+        timeIn: "10:41",
+        timeOut: "15:41", // 5 hours worked
+        config: saturdayConfig,
+      });
+
+      expect(res.lateMinutes).toBe(11); // 10:41 - 10:30 = 11 mins
+      expect(res.undertimeMinutes).toBe(0);
+      expect(res.regularHours).toBe(7.82); // 8.0 - 11/60 = 7.8166... -> 7.82
+    });
+
+    it("should deduct undertime if shift worked is less than 5 hours", () => {
+      // User specification: "The shift is only 5 hours. They will be deducted if their shift is less than 5 hours."
+      // Arrives on time at 09:00am, but leaves at 13:00pm (4 hours worked -> 1 hour / 60 mins undertime)
+      const res = calculateTimesheetHours({
+        workDate: saturdayDate,
+        timeIn: "09:00",
+        timeOut: "13:00",
+        config: saturdayConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(60);
+      expect(res.regularHours).toBe(7.0); // 8.0 - 60/60 = 7.0
+    });
+
+    it("should respect employee filtering when specified in attendanceSaturdayEmployeeIds", () => {
+      const filteredConfig: CompanyAttendanceConfig = {
+        ...saturdayConfig,
+        attendanceSaturdayEmployeeIds: ["emp-saturday-only"],
+      };
+
+      // Non-selected employee follows regular schedule rules
+      const nonSelectedRes = calculateTimesheetHours({
+        workDate: saturdayDate,
+        employeeId: "emp-regular-schedule",
+        scheduleType: "Regular",
+        timeIn: "08:16", // Regular standard is 08:00 with 15m grace -> 16 mins late
+        timeOut: "17:00",
+        config: filteredConfig,
+      });
+      expect(nonSelectedRes.lateMinutes).toBe(16);
+
+      // Selected employee follows Saturday 7:30-10:30 rule
+      const selectedRes = calculateTimesheetHours({
+        workDate: saturdayDate,
+        employeeId: "emp-saturday-only",
+        scheduleType: "Regular",
+        timeIn: "08:16", // Within 7:30-10:30 window -> 0 late!
+        timeOut: "13:16",
+        config: filteredConfig,
+      });
+      expect(selectedRes.lateMinutes).toBe(0);
+      expect(selectedRes.regularHours).toBe(8.0);
+    });
+  });
+
+  describe("Special Day Schedule Overrides", () => {
+    it("should override standard time-in for specific special occasions without changing shift defaults", () => {
+      const specialConfig: CompanyAttendanceConfig = {
+        ...defaultConfig,
+        specialDaySchedule: {
+          standardTimeIn: "10:00", // Special day start
+          standardTimeOut: "19:00",
+          lateGracePeriodMinutes: 20,
+          lunchBreakMinutes: 60,
+        },
+      };
+
+      // Employee arriving at 09:50am is on time
+      const res = calculateTimesheetHours({
+        scheduleType: "Regular",
+        timeIn: "09:50",
+        timeOut: "19:00",
+        config: specialConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.regularHours).toBe(8.0);
+
+      // Employee arriving at 10:25am exceeds 20 min grace period -> 25 mins late from 10:00am
+      const resLate = calculateTimesheetHours({
+        scheduleType: "Regular",
+        timeIn: "10:25",
+        timeOut: "19:00",
+        config: specialConfig,
+      });
+
+      expect(resLate.lateMinutes).toBe(25);
+    });
+  });
 });
+

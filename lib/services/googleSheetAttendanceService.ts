@@ -199,6 +199,13 @@ export interface ProcessGoogleSheetOptions {
     attendanceFlexi1WindowStart?: string;
     attendanceFlexi1WindowEnd?: string;
     attendanceFlexi1LateGracePeriodMinutes?: number;
+    attendanceSaturdayRuleEnabled?: boolean;
+    attendanceSaturdayWindowStart?: string;
+    attendanceSaturdayWindowEnd?: string;
+    attendanceSaturdayGracePeriodMinutes?: number;
+    attendanceSaturdayShiftHours?: number;
+    attendanceSaturdayBreakMinutes?: number;
+    attendanceSaturdayEmployeeIds?: string[] | null;
   };
   employees: Array<{
     id: string;
@@ -212,6 +219,14 @@ export interface ProcessGoogleSheetOptions {
     date: Date;
     holidayType: string;
   }>;
+  specialDaySchedules?: Array<{
+    workDate: Date;
+    standardTimeIn: string;
+    standardTimeOut?: string | null;
+    lunchBreakMinutes?: number;
+    lateGracePeriodMinutes?: number;
+    otGracePeriodMinutes?: number;
+  }>;
   appStart: string; // YYYY-MM-DD
   appEnd: string;   // YYYY-MM-DD
 }
@@ -220,7 +235,7 @@ export interface ProcessGoogleSheetOptions {
  * Validates Rules 1, 2, 3, 4, 5 and processes attendance logs.
  */
 export function processAttendanceSpreadsheet(options: ProcessGoogleSheetOptions): ProcessGoogleSheetResult {
-  const { csvText, company, employees, holidays, appStart, appEnd } = options;
+  const { csvText, company, employees, holidays, specialDaySchedules, appStart, appEnd } = options;
 
   const rows = parseCsvText(csvText);
   if (rows.length === 0) {
@@ -412,6 +427,15 @@ export function processAttendanceSpreadsheet(options: ProcessGoogleSheetOptions)
     holidayMap.set(dStr, h.holidayType);
   }
 
+  // Prepare special day schedule lookup
+  const specialDayMap = new Map<string, NonNullable<typeof specialDaySchedules>[0]>();
+  if (specialDaySchedules) {
+    for (const s of specialDaySchedules) {
+      const dStr = s.workDate instanceof Date ? s.workDate.toISOString().slice(0, 10) : String(s.workDate).slice(0, 10);
+      specialDayMap.set(dStr, s);
+    }
+  }
+
   // Company attendance config for calculateTimesheetHours
   const attendanceConfig: CompanyAttendanceConfig = {
     attendanceStandardTimeIn: company.attendanceStandardTimeIn,
@@ -422,6 +446,15 @@ export function processAttendanceSpreadsheet(options: ProcessGoogleSheetOptions)
     attendanceFlexi1WindowStart: company.attendanceFlexi1WindowStart,
     attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd,
     attendanceFlexi1LateGracePeriodMinutes: company.attendanceFlexi1LateGracePeriodMinutes,
+    attendanceSaturdayRuleEnabled: company.attendanceSaturdayRuleEnabled,
+    attendanceSaturdayWindowStart: company.attendanceSaturdayWindowStart,
+    attendanceSaturdayWindowEnd: company.attendanceSaturdayWindowEnd,
+    attendanceSaturdayGracePeriodMinutes: company.attendanceSaturdayGracePeriodMinutes,
+    attendanceSaturdayShiftHours: company.attendanceSaturdayShiftHours,
+    attendanceSaturdayBreakMinutes: company.attendanceSaturdayBreakMinutes,
+    attendanceSaturdayEmployeeIds: Array.isArray(company.attendanceSaturdayEmployeeIds)
+      ? (company.attendanceSaturdayEmployeeIds as string[])
+      : null,
   };
 
   const cutoffDates = enumerateDates(appStart, appEnd);
@@ -531,11 +564,25 @@ export function processAttendanceSpreadsheet(options: ProcessGoogleSheetOptions)
         const timeIn = ins[0] || allTimes[0] || "";
         const timeOut = outs[outs.length - 1] || allTimes[allTimes.length - 1] || "";
 
+        const specialDay = specialDayMap.get(workDate);
         const calc = calculateTimesheetHours({
+          workDate,
+          employeeId: emp.id,
           scheduleType: emp.scheduleType,
           timeIn,
           timeOut,
-          config: attendanceConfig,
+          config: {
+            ...attendanceConfig,
+            specialDaySchedule: specialDay
+              ? {
+                  standardTimeIn: specialDay.standardTimeIn,
+                  standardTimeOut: specialDay.standardTimeOut,
+                  lunchBreakMinutes: specialDay.lunchBreakMinutes,
+                  lateGracePeriodMinutes: specialDay.lateGracePeriodMinutes,
+                  otGracePeriodMinutes: specialDay.otGracePeriodMinutes,
+                }
+              : null,
+          },
         });
 
         totalLate += calc.lateMinutes;
@@ -630,7 +677,7 @@ export async function fetchGoogleSheetAndProcess(params: {
     );
   }
 
-  const [company, employees, holidays] = await Promise.all([
+  const [company, employees, holidays, specialDaySchedules] = await Promise.all([
     prisma.company.findUniqueOrThrow({
       where: { id: companyId },
       select: {
@@ -646,6 +693,13 @@ export async function fetchGoogleSheetAndProcess(params: {
         attendanceFlexi1WindowStart: true,
         attendanceFlexi1WindowEnd: true,
         attendanceFlexi1LateGracePeriodMinutes: true,
+        attendanceSaturdayRuleEnabled: true,
+        attendanceSaturdayWindowStart: true,
+        attendanceSaturdayWindowEnd: true,
+        attendanceSaturdayGracePeriodMinutes: true,
+        attendanceSaturdayShiftHours: true,
+        attendanceSaturdayBreakMinutes: true,
+        attendanceSaturdayEmployeeIds: true,
       },
     }),
     prisma.employee.findMany({
@@ -664,13 +718,23 @@ export async function fetchGoogleSheetAndProcess(params: {
       where: { companyId },
       select: { date: true, holidayType: true },
     }),
+    prisma.specialDaySchedule.findMany({
+      where: {
+        companyId,
+        workDate: {
+          gte: new Date(`${start}T00:00:00.000Z`),
+          lte: new Date(`${end}T23:59:59.999Z`),
+        },
+      },
+    }),
   ]);
 
   const result = processAttendanceSpreadsheet({
     csvText,
-    company,
+    company: company as any,
     employees,
     holidays,
+    specialDaySchedules,
     appStart: start,
     appEnd: end,
   });

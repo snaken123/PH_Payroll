@@ -101,6 +101,13 @@ export async function PATCH(request: Request) {
           attendanceFlexi1WindowStart: data.attendanceFlexi1WindowStart,
           attendanceFlexi1WindowEnd: data.attendanceFlexi1WindowEnd,
           attendanceFlexi1LateGracePeriodMinutes: data.attendanceFlexi1LateGracePeriodMinutes,
+          attendanceSaturdayRuleEnabled: data.attendanceSaturdayRuleEnabled,
+          attendanceSaturdayWindowStart: data.attendanceSaturdayWindowStart,
+          attendanceSaturdayWindowEnd: data.attendanceSaturdayWindowEnd,
+          attendanceSaturdayGracePeriodMinutes: data.attendanceSaturdayGracePeriodMinutes,
+          attendanceSaturdayShiftHours: data.attendanceSaturdayShiftHours,
+          attendanceSaturdayBreakMinutes: data.attendanceSaturdayBreakMinutes,
+          attendanceSaturdayEmployeeIds: data.attendanceSaturdayEmployeeIds ?? undefined,
         },
       });
 

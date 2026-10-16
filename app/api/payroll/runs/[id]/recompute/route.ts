@@ -51,11 +51,11 @@ export async function POST(
   const excludeSaturdayTardiness =
     typeof body?.excludeSaturdayTardiness === "boolean"
       ? body.excludeSaturdayTardiness
-      : true;
+      : false;
   const excludeSaturdayUndertime =
     typeof body?.excludeSaturdayUndertime === "boolean"
       ? body.excludeSaturdayUndertime
-      : true;
+      : false;
 
   try {
     let replacesRunId: string | undefined = undefined;

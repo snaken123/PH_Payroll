@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -71,6 +72,13 @@ interface CompanyData {
   attendanceFlexi1WindowStart?: string;
   attendanceFlexi1WindowEnd?: string;
   attendanceFlexi1LateGracePeriodMinutes?: number;
+  attendanceSaturdayRuleEnabled?: boolean;
+  attendanceSaturdayWindowStart?: string;
+  attendanceSaturdayWindowEnd?: string;
+  attendanceSaturdayGracePeriodMinutes?: number;
+  attendanceSaturdayShiftHours?: number;
+  attendanceSaturdayBreakMinutes?: number;
+  attendanceSaturdayEmployeeIds?: any;
 }
 
 interface BankAccountData {
@@ -158,10 +166,101 @@ export function SettingsClient({
     attendanceFlexi1WindowStart: company.attendanceFlexi1WindowStart ?? "07:00",
     attendanceFlexi1WindowEnd: company.attendanceFlexi1WindowEnd ?? "10:00",
     attendanceFlexi1LateGracePeriodMinutes: company.attendanceFlexi1LateGracePeriodMinutes ?? 15,
+    attendanceSaturdayRuleEnabled: company.attendanceSaturdayRuleEnabled ?? true,
+    attendanceSaturdayWindowStart: company.attendanceSaturdayWindowStart ?? "07:30",
+    attendanceSaturdayWindowEnd: company.attendanceSaturdayWindowEnd ?? "10:30",
+    attendanceSaturdayGracePeriodMinutes: company.attendanceSaturdayGracePeriodMinutes ?? 10,
+    attendanceSaturdayShiftHours: company.attendanceSaturdayShiftHours ?? 5.0,
+    attendanceSaturdayBreakMinutes: company.attendanceSaturdayBreakMinutes ?? 0,
+    attendanceSaturdayEmployeeIds: Array.isArray(company.attendanceSaturdayEmployeeIds) ? company.attendanceSaturdayEmployeeIds : [],
   };
 
   const [formData, setFormData] = useState(initialFormDataState);
   const [initialFormData, setInitialFormData] = useState(initialFormDataState);
+
+  // Special Day Schedules State
+  const [specialSchedules, setSpecialSchedules] = useState<any[]>([]);
+  const [specialScheduleDialogOpen, setSpecialScheduleDialogOpen] = useState(false);
+  const [specialDate, setSpecialDate] = useState("");
+  const [specialTitle, setSpecialTitle] = useState("");
+  const [specialTimeIn, setSpecialTimeIn] = useState("08:00");
+  const [specialTimeOut, setSpecialTimeOut] = useState("17:00");
+  const [specialGrace, setSpecialGrace] = useState(15);
+  const [specialBreak, setSpecialBreak] = useState(60);
+  const [loadingSpecial, setLoadingSpecial] = useState(false);
+  const [savingSpecial, setSavingSpecial] = useState(false);
+
+  useEffect(() => {
+    fetchSpecialSchedules();
+  }, []);
+
+  async function fetchSpecialSchedules() {
+    setLoadingSpecial(true);
+    try {
+      const res = await fetch("/api/attendance/special-schedules");
+      if (res.ok) {
+        const data = await res.json();
+        setSpecialSchedules(data.schedules || []);
+      }
+    } catch (e) {
+      console.error("Error fetching special schedules", e);
+    } finally {
+      setLoadingSpecial(false);
+    }
+  }
+
+  async function handleCreateSpecialSchedule() {
+    if (!specialDate || !specialTitle || !specialTimeIn) {
+      toast.error("Please fill in Date, Title, and Time-In");
+      return;
+    }
+    setSavingSpecial(true);
+    try {
+      const res = await fetch("/api/attendance/special-schedules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workDate: specialDate,
+          title: specialTitle,
+          standardTimeIn: specialTimeIn,
+          standardTimeOut: specialTimeOut || null,
+          lunchBreakMinutes: Number(specialBreak),
+          lateGracePeriodMinutes: Number(specialGrace),
+          appliesToAllEmployees: true,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create special schedule");
+      }
+      toast.success("Special day schedule saved");
+      setSpecialScheduleDialogOpen(false);
+      setSpecialDate("");
+      setSpecialTitle("");
+      fetchSpecialSchedules();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save");
+    } finally {
+      setSavingSpecial(false);
+    }
+  }
+
+  async function handleDeleteSpecialSchedule(id: string) {
+    if (!confirm("Are you sure you want to remove this special day schedule?")) return;
+    try {
+      const res = await fetch(`/api/attendance/special-schedules/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Special schedule removed");
+        fetchSpecialSchedules();
+      } else {
+        toast.error("Failed to delete special schedule");
+      }
+    } catch {
+      toast.error("Error deleting schedule");
+    }
+  }
 
   async function handleSaveSettings(applyToEmployeesOverride?: boolean | React.MouseEvent): Promise<boolean> {
     const override = typeof applyToEmployeesOverride === "boolean" ? applyToEmployeesOverride : undefined;
@@ -733,6 +832,212 @@ export function SettingsClient({
               </div>
             </div>
 
+            {/* Saturday Shift Schedule Rules */}
+            <div className="space-y-4 rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <ClockIcon className="size-4 text-primary" /> Saturday Shift Schedule Rules
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Custom shift rules dedicated for Saturdays. Employees following this rule have flexible login (7:30 AM – 10:30 AM), a 5-hour shift, and customized grace period.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="attendanceSaturdayRuleEnabled" className="text-xs font-medium cursor-pointer">
+                    {formData.attendanceSaturdayRuleEnabled ? "Active" : "Disabled"}
+                  </Label>
+                  <Switch
+                    id="attendanceSaturdayRuleEnabled"
+                    checked={formData.attendanceSaturdayRuleEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, attendanceSaturdayRuleEnabled: checked })}
+                  />
+                </div>
+              </div>
+
+              {formData.attendanceSaturdayRuleEnabled && (
+                <div className="space-y-4 pt-2">
+                  <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
+                    <div className="space-y-1">
+                      <Label htmlFor="attendanceSaturdayWindowStart" className="text-xs">Saturday Login Window Start</Label>
+                      <Input
+                        id="attendanceSaturdayWindowStart"
+                        type="time"
+                        value={formData.attendanceSaturdayWindowStart}
+                        onChange={(e) => setFormData({ ...formData, attendanceSaturdayWindowStart: e.target.value })}
+                      />
+                      <p className="text-[11px] text-muted-foreground">Earliest allowed login time (default 07:30 AM).</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="attendanceSaturdayWindowEnd" className="text-xs">Saturday Login Window End</Label>
+                      <Input
+                        id="attendanceSaturdayWindowEnd"
+                        type="time"
+                        value={formData.attendanceSaturdayWindowEnd}
+                        onChange={(e) => setFormData({ ...formData, attendanceSaturdayWindowEnd: e.target.value })}
+                      />
+                      <p className="text-[11px] text-muted-foreground">Latest regular login window (default 10:30 AM).</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="attendanceSaturdayGracePeriodMinutes" className="text-xs">Late Grace Period (Minutes)</Label>
+                      <Input
+                        id="attendanceSaturdayGracePeriodMinutes"
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={formData.attendanceSaturdayGracePeriodMinutes}
+                        onChange={(e) => setFormData({ ...formData, attendanceSaturdayGracePeriodMinutes: Number(e.target.value) })}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Default 10 mins. If arrived by 10:35 AM = 0 late; if 10:41 AM = 11 mins late.
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="attendanceSaturdayShiftHours" className="text-xs">Shift Duration (Hours)</Label>
+                      <Input
+                        id="attendanceSaturdayShiftHours"
+                        type="number"
+                        step="0.5"
+                        min={1}
+                        max={12}
+                        value={formData.attendanceSaturdayShiftHours}
+                        onChange={(e) => setFormData({ ...formData, attendanceSaturdayShiftHours: Number(e.target.value) })}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Default 5.0 hours. Undertime is deducted if worked shift is less than 5 hours.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Employee Selection for Saturday Rule */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-xs font-semibold">Employees Following Saturday Rule</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Choose which employees follow this Saturday schedule. If none are selected, it applies to all employees by default.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => setFormData({ ...formData, attendanceSaturdayEmployeeIds: employees.map((e) => e.id) })}
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-7 text-muted-foreground"
+                          onClick={() => setFormData({ ...formData, attendanceSaturdayEmployeeIds: [] })}
+                        >
+                          Clear (All Follow)
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-background space-y-1.5">
+                      {employees.map((emp) => {
+                        const isChecked = (formData.attendanceSaturdayEmployeeIds || []).includes(emp.id);
+                        return (
+                          <div
+                            key={emp.id}
+                            className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer text-xs"
+                            onClick={() => {
+                              const current = formData.attendanceSaturdayEmployeeIds || [];
+                              const next = current.includes(emp.id)
+                                ? current.filter((id) => id !== emp.id)
+                                : [...current, emp.id];
+                              setFormData({ ...formData, attendanceSaturdayEmployeeIds: next });
+                            }}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={() => {}}
+                            />
+                            <span className="font-medium">{emp.lastName}, {emp.firstName}</span>
+                            <span className="text-muted-foreground font-mono">({emp.employeeNumber})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Special Occasion / Day Schedule Overrides */}
+            <div className="space-y-4 rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <CalendarDaysIcon className="size-4 text-amber-600" /> Special Occasion / Day Schedule Overrides
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Override regular time-in for specific dates (e.g. Town Hall Meeting, Christmas Party, Special Assemblies) without changing default shift settings.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8"
+                  onClick={() => setSpecialScheduleDialogOpen(true)}
+                >
+                  <PlusCircleIcon className="size-3.5" /> Add Special Day
+                </Button>
+              </div>
+
+              {loadingSpecial ? (
+                <p className="text-xs text-muted-foreground py-2">Loading special schedules...</p>
+              ) : specialSchedules.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-3 text-center border border-dashed rounded-md bg-background">
+                  No special day overrides configured yet. Click &quot;Add Special Day&quot; to create one.
+                </p>
+              ) : (
+                <div className="border rounded-md overflow-hidden bg-background">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="text-[11px] font-semibold bg-muted/40">
+                        <TableHead>Date</TableHead>
+                        <TableHead>Occasion / Title</TableHead>
+                        <TableHead>Time In</TableHead>
+                        <TableHead>Time Out</TableHead>
+                        <TableHead>Grace Period</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {specialSchedules.map((s) => (
+                        <TableRow key={s.id} className="text-xs">
+                          <TableCell className="font-semibold">{new Date(s.workDate).toISOString().slice(0, 10)}</TableCell>
+                          <TableCell>{s.title}</TableCell>
+                          <TableCell className="font-mono">{s.standardTimeIn}</TableCell>
+                          <TableCell className="font-mono">{s.standardTimeOut || "Standard"}</TableCell>
+                          <TableCell>{s.lateGracePeriodMinutes} mins</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="size-7 p-0 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteSpecialSchedule(s.id)}
+                            >
+                              <Trash2Icon className="size-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2 max-w-xs">
               <Label htmlFor="attendanceLunchBreakMinutes" className="text-xs">Default Lunch Break (Minutes)</Label>
               <Input
@@ -1168,6 +1473,110 @@ export function SettingsClient({
           </Button>
           <Button onClick={() => handleSaveSettings(true)} disabled={submitting}>
             {submitting ? "Saving..." : "Apply to All Employees & Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={specialScheduleDialogOpen} onOpenChange={setSpecialScheduleDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarDaysIcon className="size-5 text-amber-600" />
+            Add Special Day Schedule Override
+          </DialogTitle>
+          <DialogDescription>
+            Define a date-specific schedule (e.g. Town Hall Meeting, Christmas Party, Company Event) so attendance calculates using these adjusted shift hours instead of standard defaults.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="specialDate" className="text-xs font-semibold">Date *</Label>
+            <Input
+              id="specialDate"
+              type="date"
+              value={specialDate}
+              onChange={(e) => setSpecialDate(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="specialTitle" className="text-xs font-semibold">Occasion / Title *</Label>
+            <Input
+              id="specialTitle"
+              placeholder="e.g. Town Hall Meeting, Christmas Party"
+              value={specialTitle}
+              onChange={(e) => setSpecialTitle(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="specialTimeIn" className="text-xs font-semibold">Time In *</Label>
+              <Input
+                id="specialTimeIn"
+                type="time"
+                value={specialTimeIn}
+                onChange={(e) => setSpecialTimeIn(e.target.value)}
+                className="text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="specialTimeOut" className="text-xs font-semibold">Time Out</Label>
+              <Input
+                id="specialTimeOut"
+                type="time"
+                value={specialTimeOut}
+                onChange={(e) => setSpecialTimeOut(e.target.value)}
+                className="text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="specialGrace" className="text-xs font-semibold">Late Grace (mins)</Label>
+              <Input
+                id="specialGrace"
+                type="number"
+                min="0"
+                value={specialGrace}
+                onChange={(e) => setSpecialGrace(Number(e.target.value))}
+                className="text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="specialBreak" className="text-xs font-semibold">Break (mins)</Label>
+              <Input
+                id="specialBreak"
+                type="number"
+                min="0"
+                value={specialBreak}
+                onChange={(e) => setSpecialBreak(Number(e.target.value))}
+                className="text-xs font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSpecialScheduleDialogOpen(false)}
+            disabled={savingSpecial}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleCreateSpecialSchedule}
+            disabled={savingSpecial}
+          >
+            {savingSpecial ? "Saving..." : "Save Special Day"}
           </Button>
         </DialogFooter>
       </DialogContent>

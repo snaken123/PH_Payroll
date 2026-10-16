@@ -31,6 +31,13 @@ export const updateCompanySettingsSchema = z.object({
   attendanceFlexi1WindowStart: z.string().default("07:00"),
   attendanceFlexi1WindowEnd: z.string().default("10:00"),
   attendanceFlexi1LateGracePeriodMinutes: z.number().int().min(0).max(120).default(15),
+  attendanceSaturdayRuleEnabled: z.boolean().optional().default(true),
+  attendanceSaturdayWindowStart: z.string().default("07:30"),
+  attendanceSaturdayWindowEnd: z.string().default("10:30"),
+  attendanceSaturdayGracePeriodMinutes: z.number().int().min(0).max(120).default(10),
+  attendanceSaturdayShiftHours: z.number().min(1).max(24).default(5),
+  attendanceSaturdayBreakMinutes: z.number().int().min(0).max(120).default(0),
+  attendanceSaturdayEmployeeIds: z.array(z.string()).optional().nullable(),
   applyWorkDaysToEmployees: z.boolean().optional().default(false),
 });
 

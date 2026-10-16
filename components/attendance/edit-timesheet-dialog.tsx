@@ -67,6 +67,8 @@ export function EditTimesheetDialog({
 
   const handleTimeChange = (timeInVal: string, timeOutVal: string) => {
     const calc = calculateTimesheetHours({
+      workDate,
+      employeeId,
       scheduleType,
       timeIn: timeInVal,
       timeOut: timeOutVal,

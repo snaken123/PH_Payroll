@@ -124,6 +124,14 @@ model Company {
   attendanceFlexi1WindowStart          String                   @default("07:00")
   attendanceFlexi1WindowEnd            String                   @default("10:00")
   attendanceFlexi1LateGracePeriodMinutes Int                    @default(15)
+  // Saturday Shift Schedule Rules
+  attendanceSaturdayRuleEnabled          Boolean                  @default(true)
+  attendanceSaturdayWindowStart          String                   @default("07:30")
+  attendanceSaturdayWindowEnd            String                   @default("10:30")
+  attendanceSaturdayGracePeriodMinutes   Int                      @default(10)
+  attendanceSaturdayShiftHours           Float                    @default(5.0)
+  attendanceSaturdayBreakMinutes         Int                      @default(0)
+  attendanceSaturdayEmployeeIds          Json?
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
 
@@ -146,6 +154,7 @@ model Company {
   documents              EmployeeDocument[]
   payrollPaymentChecks   PayrollPaymentCheck[]
   statutoryPaymentRecords StatutoryPaymentRecord[]
+  specialDaySchedules    SpecialDaySchedule[]
 
   @@index([status])
 }
@@ -685,6 +694,28 @@ model TimesheetEntry {
   @@index([companyId, workDate])
 }
 
+model SpecialDaySchedule {
+  id                     String   @id @default(cuid())
+  companyId              String
+  workDate               DateTime
+  title                  String
+  standardTimeIn         String
+  standardTimeOut        String?
+  lunchBreakMinutes      Int      @default(60)
+  lateGracePeriodMinutes Int      @default(15)
+  otGracePeriodMinutes   Int      @default(15)
+  appliesToAllEmployees  Boolean  @default(true)
+  employeeIds            Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, workDate])
+  @@index([companyId])
+  @@index([workDate])
+}
+
 // ==================== Payroll Runs ====================
 
 enum PeriodType {
@@ -746,6 +777,8 @@ model PayrollRun {
   // applied, so a posted payslip's numbers stay reproducible even if the
   // rate tables are edited later.
   statutoryRateSnapshot Json?
+  // Snapshot of previously paid out amounts before recomputing (for audit and comparison)
+  previousPayoutSnapshot Json?
   createdAt             DateTime         @default(now())
 
   company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
