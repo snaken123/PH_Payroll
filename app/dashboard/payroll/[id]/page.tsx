@@ -91,11 +91,11 @@ export default async function PayrollRunDetailPage({
     for (const p of run.payslips) {
       seenEmpIds.add(p.employeeId);
       const prev = snapshotMap.get(p.employeeId);
-      const prevNet = prev ? prev.netPay : 0;
-      const currNet = Number(p.netPay);
+      const prevNet = prev ? Number(prev.netPay || 0) : 0;
+      const currNet = Number(p.netPay || 0);
       const netDiff = Math.round((currNet - prevNet) * 100) / 100;
-      const prevGross = prev ? prev.grossPay : 0;
-      const currGross = Number(p.grossPay);
+      const prevGross = prev ? Number(prev.grossPay || 0) : 0;
+      const currGross = Number(p.grossPay || 0);
       const grossDiff = Math.round((currGross - prevGross) * 100) / 100;
 
       comparisonRows.push({
@@ -113,23 +113,27 @@ export default async function PayrollRunDetailPage({
 
     for (const prev of previousSnapshot) {
       if (!seenEmpIds.has(prev.employeeId)) {
+        const pNet = Number(prev.netPay || 0);
+        const pGross = Number(prev.grossPay || 0);
         comparisonRows.push({
           employeeId: prev.employeeId,
           employeeName: prev.employeeName,
           employeeNumber: prev.employeeNumber,
-          prevNet: prev.netPay,
+          prevNet: pNet,
           currNet: 0,
-          netDiff: -prev.netPay,
-          prevGross: prev.grossPay,
+          netDiff: -pNet,
+          prevGross: pGross,
           currGross: 0,
-          grossDiff: -prev.grossPay,
+          grossDiff: -pGross,
         });
       }
     }
   }
 
-  const totalPrevNet = comparisonRows.reduce((sum, r) => sum + r.prevNet, 0);
-  const totalCurrNetFromComparison = comparisonRows.reduce((sum, r) => sum + r.currNet, 0);
+  const totalPrevGross = comparisonRows.reduce((sum, r) => sum + Number(r.prevGross || 0), 0);
+  const totalCurrGross = comparisonRows.reduce((sum, r) => sum + Number(r.currGross || 0), 0);
+  const totalPrevNet = comparisonRows.reduce((sum, r) => sum + Number(r.prevNet || 0), 0);
+  const totalCurrNetFromComparison = comparisonRows.reduce((sum, r) => sum + Number(r.currNet || 0), 0);
   const totalNetDiff = Math.round((totalCurrNetFromComparison - totalPrevNet) * 100) / 100;
 
   const [companyBankAccounts] = await Promise.all([
@@ -317,10 +321,10 @@ export default async function PayrollRunDetailPage({
                     Total Discrepancy
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
-                    ₱{comparisonRows.reduce((sum, r) => sum + r.prevGross, 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{totalPrevGross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
-                    ₱{comparisonRows.reduce((sum, r) => sum + r.currGross, 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{totalCurrGross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-700 dark:text-slate-300">
                     ₱{totalPrevNet.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
