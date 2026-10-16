@@ -55,6 +55,32 @@ interface TagStatutoryPaymentDialogProps {
   triggerButton?: React.ReactNode;
 }
 
+const AGENCY_META: Record<
+  string,
+  { name: string; tag: string; badgeClass: string }
+> = {
+  SSS: {
+    name: "Social Security System",
+    tag: "SSS",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
+  },
+  PHILHEALTH: {
+    name: "PhilHealth",
+    tag: "PHIC",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+  },
+  PAGIBIG: {
+    name: "Pag-IBIG Fund",
+    tag: "HDMF",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
+  },
+  BIR: {
+    name: "BIR Withholding Tax",
+    tag: "BIR",
+    badgeClass: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800",
+  },
+};
+
 export function TagStatutoryPaymentDialog({
   agencyData,
   payrollRunId,
@@ -67,6 +93,12 @@ export function TagStatutoryPaymentDialog({
 }: TagStatutoryPaymentDialogProps) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const agencyMeta = AGENCY_META[agencyData.agency] || {
+    name: agencyData.label || agencyData.agency,
+    tag: agencyData.agency,
+    badgeClass: "bg-slate-100 text-slate-800 border-slate-200",
+  };
 
   const [status, setStatus] = useState<"UNPAID" | "PAID" | "PARTIALLY_PAID">(
     agencyData.status || "UNPAID"
@@ -158,8 +190,8 @@ export function TagStatutoryPaymentDialog({
 
       toast.success(
         status === "PAID"
-          ? `${agencyData.agency} tagged as PAID successfully!`
-          : `${agencyData.agency} payment status updated.`
+          ? `${agencyMeta.tag} tagged as PAID successfully!`
+          : `${agencyMeta.tag} payment status updated.`
       );
       setOpen(false);
       onSuccess?.();
@@ -177,11 +209,20 @@ export function TagStatutoryPaymentDialog({
           triggerButton ? (
             (triggerButton as React.ReactElement)
           ) : agencyData.status === "PAID" ? (
-            <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs font-semibold gap-1">
-              <CheckCircle2Icon className="size-3.5 text-emerald-600" /> Edit Payment
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <CheckCircle2Icon className="size-3.5 text-emerald-600 mr-1" />
+              Edit Payment
             </Button>
           ) : (
-            <Button size="sm" className="h-7 px-2.5 text-xs font-semibold gap-1 bg-blue-600 hover:bg-blue-700 text-white">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2.5 text-xs font-semibold text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/50"
+            >
               Tag as Paid
             </Button>
           )
@@ -189,35 +230,52 @@ export function TagStatutoryPaymentDialog({
       />
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-            <ShieldCheckIcon className="size-4 text-blue-600" />
-            {agencyData.label} — Payment Details
-          </DialogTitle>
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className={`inline-flex items-center justify-center font-mono font-bold text-[10px] px-2 py-0.5 rounded border ${agencyMeta.badgeClass}`}
+            >
+              {agencyMeta.tag}
+            </span>
+            <DialogTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              {agencyMeta.name} — Remittance Details
+            </DialogTitle>
+          </div>
           <DialogDescription className="text-xs">
-            Tag whether this statutory contribution has been paid by the company, and record the check / reference details.
+            Tag statutory payment status and record disbursing check / reference details.
           </DialogDescription>
         </DialogHeader>
 
         {/* Read-only snapshot from Payroll Run */}
-        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60 space-y-1.5 text-xs">
+        <div className="p-3 rounded-lg border border-slate-200/90 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60 space-y-2 text-xs">
           <div className="flex justify-between items-center text-slate-500">
             <span>Cutoff Payroll Run:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">Run #{runNumber}</span>
           </div>
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Employee Share (EE):</span>
-            <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
-              ₱{agencyData.eeAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Employer Share (ER):</span>
-            <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
-              ₱{agencyData.erAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold">
-            <span className="text-slate-900 dark:text-slate-100">Total Contribution Due:</span>
+          {agencyData.agency !== "BIR" ? (
+            <>
+              <div className="flex justify-between items-center text-slate-500">
+                <span>Employee Share (EE):</span>
+                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                  ₱{agencyData.eeAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-500">
+                <span>Employer Share (ER):</span>
+                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                  ₱{agencyData.erAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between items-center text-slate-500">
+              <span>Withholding Tax Withheld:</span>
+              <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                ₱{agencyData.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold">
+            <span className="text-slate-900 dark:text-slate-100">Total Remittance Due:</span>
             <span className="font-mono text-sm text-blue-700 dark:text-blue-400">
               ₱{agencyData.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </span>

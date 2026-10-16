@@ -30,13 +30,13 @@ export function StatusBadge({ status, label, size = "md", className }: StatusBad
 
   let variantStyles = "bg-slate-100/90 text-slate-700 border-slate-200/90 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700/80";
 
-  if (["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED"].includes(normalized)) {
+  if (["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED", "PAID"].includes(normalized)) {
     variantStyles = "bg-emerald-50 text-emerald-800 border-emerald-200/90 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/80";
-  } else if (["PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE"].includes(normalized)) {
+  } else if (["PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE", "UNPAID"].includes(normalized)) {
     variantStyles = "bg-amber-50 text-amber-800 border-amber-200/90 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/80";
   } else if (["INACTIVE", "TERMINATED", "VOID", "REJECTED", "SUSPENDED"].includes(normalized)) {
     variantStyles = "bg-rose-50 text-rose-800 border-rose-200/90 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/80";
-  } else if (["CONTRACTOR", "RETAINER", "INFO"].includes(normalized)) {
+  } else if (["CONTRACTOR", "RETAINER", "INFO", "PARTIALLY_PAID"].includes(normalized)) {
     variantStyles = "bg-blue-50 text-blue-800 border-blue-200/90 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/80";
   }
 
@@ -52,10 +52,10 @@ export function StatusBadge({ status, label, size = "md", className }: StatusBad
       <span
         className={cn(
           "size-1.5 rounded-full shrink-0",
-          ["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED"].includes(normalized) && "bg-emerald-600 dark:bg-emerald-400",
-          ["PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE"].includes(normalized) && "bg-amber-600 dark:bg-amber-400",
+          ["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED", "PAID"].includes(normalized) && "bg-emerald-600 dark:bg-emerald-400",
+          ["PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE", "UNPAID"].includes(normalized) && "bg-amber-600 dark:bg-amber-400",
           ["INACTIVE", "TERMINATED", "VOID", "REJECTED", "SUSPENDED"].includes(normalized) && "bg-rose-600 dark:bg-rose-400",
-          !["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED", "PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE", "INACTIVE", "TERMINATED", "VOID", "REJECTED", "SUSPENDED"].includes(normalized) && "bg-blue-600 dark:bg-blue-400"
+          !["ACTIVE", "REGULAR", "POSTED", "APPROVED", "COMPLETED", "PAID", "PROBATIONARY", "PENDING", "PENDING_APPROVAL", "DRAFT", "ON_LEAVE", "UNPAID", "INACTIVE", "TERMINATED", "VOID", "REJECTED", "SUSPENDED"].includes(normalized) && "bg-blue-600 dark:bg-blue-400"
         )}
       />
       {displayLabel}
