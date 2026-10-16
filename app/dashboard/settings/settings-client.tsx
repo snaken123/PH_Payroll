@@ -915,7 +915,7 @@ export function SettingsClient({
                       <div>
                         <Label className="text-xs font-semibold">Employees Following Saturday Rule</Label>
                         <p className="text-[11px] text-muted-foreground">
-                          Choose which employees follow this Saturday schedule. If none are selected, it applies to all employees by default.
+                          Choose which active employees follow this Saturday schedule. If none are selected, it applies to all active employees by default.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -924,9 +924,14 @@ export function SettingsClient({
                           variant="ghost"
                           size="sm"
                           className="text-xs h-7"
-                          onClick={() => setFormData({ ...formData, attendanceSaturdayEmployeeIds: employees.map((e) => e.id) })}
+                          onClick={() => {
+                            const activeIds = employees
+                              .filter((e) => e.employmentStatus === "REGULAR" || e.employmentStatus === "PROBATIONARY" || e.employmentStatus === "RETAINER")
+                              .map((e) => e.id);
+                            setFormData({ ...formData, attendanceSaturdayEmployeeIds: activeIds });
+                          }}
                         >
-                          Select All
+                          Select All Active
                         </Button>
                         <Button
                           type="button"
@@ -941,29 +946,31 @@ export function SettingsClient({
                     </div>
 
                     <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-background space-y-1.5">
-                      {employees.map((emp) => {
-                        const isChecked = (formData.attendanceSaturdayEmployeeIds || []).includes(emp.id);
-                        return (
-                          <div
-                            key={emp.id}
-                            className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer text-xs"
-                            onClick={() => {
-                              const current = formData.attendanceSaturdayEmployeeIds || [];
-                              const next = current.includes(emp.id)
-                                ? current.filter((id) => id !== emp.id)
-                                : [...current, emp.id];
-                              setFormData({ ...formData, attendanceSaturdayEmployeeIds: next });
-                            }}
-                          >
-                            <Checkbox
-                              checked={isChecked}
-                              onCheckedChange={() => {}}
-                            />
-                            <span className="font-medium">{emp.lastName}, {emp.firstName}</span>
-                            <span className="text-muted-foreground font-mono">({emp.employeeNumber})</span>
-                          </div>
-                        );
-                      })}
+                      {employees
+                        .filter((e) => e.employmentStatus === "REGULAR" || e.employmentStatus === "PROBATIONARY" || e.employmentStatus === "RETAINER")
+                        .map((emp) => {
+                          const isChecked = (formData.attendanceSaturdayEmployeeIds || []).includes(emp.id);
+                          return (
+                            <div
+                              key={emp.id}
+                              className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer text-xs"
+                              onClick={() => {
+                                const current = formData.attendanceSaturdayEmployeeIds || [];
+                                const next = current.includes(emp.id)
+                                  ? current.filter((id) => id !== emp.id)
+                                  : [...current, emp.id];
+                                setFormData({ ...formData, attendanceSaturdayEmployeeIds: next });
+                              }}
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={() => {}}
+                              />
+                              <span className="font-medium">{emp.lastName}, {emp.firstName}</span>
+                              <span className="text-muted-foreground font-mono">({emp.employeeNumber})</span>
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 </div>
