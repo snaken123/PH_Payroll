@@ -41,17 +41,46 @@ export interface ExistingCheck {
   payee?: string | null;
   notes?: string | null;
   status?: string;
+  payrollRun?: {
+    id: string;
+    runNumber: number;
+    payrollPeriod?: {
+      cutoffStart: string;
+      cutoffEnd: string;
+      payDate: string;
+    };
+  };
+}
+
+export interface PostedRunOption {
+  id: string;
+  runNumber: number;
+  cutoffStart: string;
+  cutoffEnd: string;
+  payDate: string;
+  netPay: number;
+  hasCheck?: boolean;
 }
 
 interface RecordCheckDialogProps {
-  runId: string;
-  runNumber: number;
+  runId?: string;
+  runNumber?: number;
   defaultAmount?: number;
   defaultDate?: string;
   companyBankAccounts?: CompanyBankOption[];
   existingCheck?: ExistingCheck | null;
+  availableRuns?: PostedRunOption[];
   onSuccess?: () => void;
   triggerButton?: React.ReactNode;
+}
+
+function toDateInput(val?: string | Date | null): string {
+  if (!val) return new Date().toISOString().slice(0, 10);
+  if (typeof val === "string") {
+    if (val.includes("T")) return val.slice(0, 10);
+    return val;
+  }
+  return val.toISOString().slice(0, 10);
 }
 
 export function RecordCheckDialog({
@@ -61,6 +90,7 @@ export function RecordCheckDialog({
   defaultDate,
   companyBankAccounts = [],
   existingCheck = null,
+  availableRuns = [],
   onSuccess,
   triggerButton,
 }: RecordCheckDialogProps) {
@@ -69,19 +99,22 @@ export function RecordCheckDialog({
 
   const isEditing = Boolean(existingCheck);
 
+  const [selectedRunId, setSelectedRunId] = useState<string>(
+    runId || existingCheck?.payrollRun?.id || availableRuns[0]?.id || ""
+  );
   const [checkNumber, setCheckNumber] = useState(existingCheck?.checkNumber ?? "");
   const [checkDate, setCheckDate] = useState(
-    existingCheck?.checkDate
-      ? new Date(existingCheck.checkDate).toISOString().slice(0, 10)
-      : defaultDate || new Date().toISOString().slice(0, 10)
+    toDateInput(existingCheck?.checkDate || defaultDate)
   );
   const [amount, setAmount] = useState(
     existingCheck?.amount ? String(existingCheck.amount) : defaultAmount ? String(defaultAmount) : ""
   );
-  const [bankAccountId, setBankAccountId] = useState(existingCheck?.bankAccountId ?? (companyBankAccounts[0]?.id || ""));
+  const [bankAccountId, setBankAccountId] = useState(
+    existingCheck?.bankAccountId ?? (companyBankAccounts[0]?.id || "")
+  );
   const [bankName, setBankName] = useState(existingCheck?.bankName ?? "");
   const [payee, setPayee] = useState(
-    existingCheck?.payee ?? `Net Payroll Payout — Run #${runNumber}`
+    existingCheck?.payee ?? (runNumber ? `Net Payroll Payout — Run #${runNumber}` : "Net Payroll Payout")
   );
   const [notes, setNotes] = useState(existingCheck?.notes ?? "");
   const [status, setStatus] = useState(existingCheck?.status ?? "ISSUED");
@@ -89,12 +122,9 @@ export function RecordCheckDialog({
   const handleOpen = (nextOpen: boolean) => {
     if (nextOpen) {
       if (existingCheck) {
+        setSelectedRunId(runId || existingCheck.payrollRun?.id || "");
         setCheckNumber(existingCheck.checkNumber);
-        setCheckDate(
-          existingCheck.checkDate
-            ? new Date(existingCheck.checkDate).toISOString().slice(0, 10)
-            : new Date().toISOString().slice(0, 10)
-        );
+        setCheckDate(toDateInput(existingCheck.checkDate));
         setAmount(String(existingCheck.amount));
         setBankAccountId(existingCheck.bankAccountId ?? "");
         setBankName(existingCheck.bankName ?? "");
@@ -102,16 +132,38 @@ export function RecordCheckDialog({
         setNotes(existingCheck.notes ?? "");
         setStatus(existingCheck.status ?? "ISSUED");
       } else {
+        const initialRun = runId
+          ? availableRuns.find((r) => r.id === runId)
+          : availableRuns.find((r) => !r.hasCheck) || availableRuns[0];
+
+        const initialRunId = initialRun?.id || runId || "";
+        const initialRunNumber = initialRun?.runNumber || runNumber;
+        const initialAmount = initialRun?.netPay || defaultAmount;
+        const initialDate = initialRun?.payDate || defaultDate;
+
+        setSelectedRunId(initialRunId);
         setCheckNumber("");
-        setCheckDate(defaultDate || new Date().toISOString().slice(0, 10));
-        setAmount(defaultAmount ? String(defaultAmount) : "");
+        setCheckDate(toDateInput(initialDate));
+        setAmount(initialAmount ? String(initialAmount) : "");
         setBankAccountId(companyBankAccounts[0]?.id || "");
-        setPayee(`Net Payroll Payout — Run #${runNumber}`);
+        setBankName("");
+        setPayee(initialRunNumber ? `Net Payroll Payout — Run #${initialRunNumber}` : "Net Payroll Payout");
         setNotes("");
         setStatus("ISSUED");
       }
     }
     setOpen(nextOpen);
+  };
+
+  const handleRunChange = (newRunId: string | null) => {
+    if (!newRunId) return;
+    setSelectedRunId(newRunId);
+    const chosen = availableRuns.find((r) => r.id === newRunId);
+    if (chosen) {
+      setAmount(String(chosen.netPay));
+      setCheckDate(toDateInput(chosen.payDate));
+      setPayee(`Net Payroll Payout — Run #${chosen.runNumber}`);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,6 +178,12 @@ export function RecordCheckDialog({
     }
     if (!amount || Number(amount) < 0) {
       toast.error("Please enter a valid check amount.");
+      return;
+    }
+
+    const effectiveTargetRunId = isEditing ? (runId || existingCheck?.payrollRun?.id) : (selectedRunId || runId);
+    if (!isEditing && !effectiveTargetRunId) {
+      toast.error("Please select which payroll run this check is for.");
       return;
     }
 
@@ -149,7 +207,7 @@ export function RecordCheckDialog({
 
       const url = isEditing
         ? `/api/payroll/checks/${existingCheck!.id}`
-        : `/api/payroll/runs/${runId}/checks`;
+        : `/api/payroll/runs/${effectiveTargetRunId}/checks`;
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -166,7 +224,7 @@ export function RecordCheckDialog({
       toast.success(
         isEditing
           ? `Check #${checkNumber} updated successfully!`
-          : `Check #${checkNumber} recorded for Run #${runNumber}!`
+          : `Check #${checkNumber} recorded successfully!`
       );
       setOpen(false);
       onSuccess?.();
@@ -177,6 +235,8 @@ export function RecordCheckDialog({
       setSubmitting(false);
     }
   };
+
+  const currentRunNumber = runNumber || availableRuns.find((r) => r.id === selectedRunId)?.runNumber;
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
@@ -199,16 +259,41 @@ export function RecordCheckDialog({
         <DialogHeader>
           <DialogTitle className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
             <CreditCardIcon className="size-4 text-blue-600" />
-            {isEditing ? `Edit Check #${existingCheck?.checkNumber}` : `Record Check for Run #${runNumber}`}
+            {isEditing
+              ? `Edit Check #${existingCheck?.checkNumber}`
+              : currentRunNumber
+                ? `Record Check for Run #${currentRunNumber}`
+                : "Record Check Details"}
           </DialogTitle>
           <DialogDescription className="text-xs">
             {isEditing
-              ? "Update disbursement check number, issue date, or issuing bank account."
+              ? "Update disbursement check number, issue date, status, or issuing bank details."
               : "Record the bank check number used to pay or fund this posted payroll run."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 py-1 text-xs">
+          {!isEditing && availableRuns.length > 0 && !runId && (
+            <div className="space-y-1.5">
+              <Label htmlFor="payrollRun" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Posted Payroll Run <span className="text-red-500">*</span>
+              </Label>
+              <Select value={selectedRunId} onValueChange={handleRunChange}>
+                <SelectTrigger id="payrollRun" className="h-8 text-xs font-semibold">
+                  <SelectValue placeholder="Select posted payroll run" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRuns.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                      Run #{r.runNumber} ({r.cutoffStart} to {r.cutoffEnd}) — Net: ₱{r.netPay.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                      {r.hasCheck ? "(Check Recorded)" : "(No Check)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="checkNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -353,7 +438,7 @@ export function RecordCheckDialog({
                   Saving...
                 </>
               ) : isEditing ? (
-                "Update Check"
+                "Update Check Details"
               ) : (
                 "Save Check Number"
               )}

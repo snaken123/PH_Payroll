@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole, LineItemDirection, LoanStatus } from "@/lib/generated/prisma/enums";
 import { mutationErrorResponse } from "@/lib/api-error";
@@ -10,12 +11,19 @@ const POST_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 // are immutable at the application layer (no update/delete path exists for
 // a posted run anywhere in this codebase — corrections require a new
 // adjustment run referencing this one, not editing it in place).
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
     ctx = await requireTenantRole(POST_ROLES, { permissionKey: "payroll.post" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: any = null;
+  try {
+    body = await request.json();
+  } catch {
+    // Body is optional
   }
 
   const { id } = await context.params;
@@ -88,10 +96,41 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
         }
       }
 
-      return tx.payrollRun.update({
+      const postedRun = await tx.payrollRun.update({
         where: { id },
         data: { status: "POSTED", postedAt: new Date(), postedByUserId: ctx.userId },
       });
+
+      if (body?.checkNumber && typeof body.checkNumber === "string" && body.checkNumber.trim()) {
+        const totalNetPay = runWithPayslips.payslips.reduce(
+          (sum, p) => sum + p.netPay.toNumber(),
+          0
+        );
+
+        let effectiveBankName = body.bankName;
+        if (body.bankAccountId && !effectiveBankName) {
+          const bank = await tx.companyBankAccount.findUnique({ where: { id: body.bankAccountId } });
+          if (bank) effectiveBankName = bank.bankName;
+        }
+
+        await tx.payrollPaymentCheck.create({
+          data: {
+            companyId: run.companyId,
+            payrollRunId: id,
+            checkNumber: body.checkNumber.trim(),
+            checkDate: body.checkDate ? new Date(body.checkDate) : new Date(),
+            amount: body.amount ? new Prisma.Decimal(body.amount) : new Prisma.Decimal(totalNetPay),
+            bankAccountId: body.bankAccountId || null,
+            bankName: effectiveBankName || null,
+            payee: body.payee?.trim() || `Net Payroll Payout — Run #${run.runNumber}`,
+            notes: body.notes?.trim() || null,
+            status: "ISSUED",
+            issuedByUserId: ctx.userId || null,
+          },
+        });
+      }
+
+      return postedRun;
     });
 
     return NextResponse.json({ run: updated });

@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, Clock, ShieldAlert, AlertTriangle } from "lucide-react";
+import { Search, Clock, ShieldAlert, AlertTriangle, CreditCard } from "lucide-react";
 
 interface EmployeeOtPreview {
   employeeId: string;
@@ -83,6 +83,9 @@ export function RunActions({
   const [voidReason, setVoidReason] = useState("");
   const [voidOpen, setVoidOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
+  const [postCheckNumber, setPostCheckNumber] = useState("");
+  const [postCheckDate, setPostCheckDate] = useState(new Date().toISOString().slice(0, 10));
+  const [postBankName, setPostBankName] = useState("");
 
   // Attendance Approval modal state for Recompute
   const [otDialogOpen, setOtDialogOpen] = useState(false);
@@ -570,23 +573,81 @@ export function RunActions({
         {canPost && (
           <Dialog open={postOpen} onOpenChange={setPostOpen}>
             <DialogTrigger render={<Button disabled={busy} />}>Post (final — locks this run)</DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Post this payroll run?</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-sm font-bold flex items-center gap-2">
+                  Post this payroll run?
+                </DialogTitle>
+                <DialogDescription className="text-xs">
                   This locks the run and its payslips permanently — no further edits or voids will be possible.
-                  This cannot be undone.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
+
+              <div className="space-y-3 py-2 text-xs border-y border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+                  <CreditCard className="size-3.5 text-blue-600" />
+                  <span>Disbursement Check Details (Optional)</span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  You can record the payment check number now, or skip this and enter/edit it later in the <strong>Check Register</strong>.
+                </p>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Check Number
+                    </Label>
+                    <Input
+                      placeholder="e.g. 0048192"
+                      className="h-8 text-xs font-mono font-bold"
+                      value={postCheckNumber}
+                      onChange={(e) => setPostCheckNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Check Date
+                    </Label>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs font-mono"
+                      value={postCheckDate}
+                      onChange={(e) => setPostCheckDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    Disbursing Bank / Account
+                  </Label>
+                  <Input
+                    placeholder="e.g. BDO Current #00129"
+                    className="h-8 text-xs"
+                    value={postBankName}
+                    onChange={(e) => setPostBankName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="pt-2">
+                <Button variant="outline" size="sm" onClick={() => setPostOpen(false)} disabled={busy}>
+                  Cancel
+                </Button>
                 <Button
                   disabled={busy}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                   onClick={() => {
-                    callAction("post");
+                    callAction("post", {
+                      checkNumber: postCheckNumber.trim() || undefined,
+                      checkDate: postCheckDate || undefined,
+                      bankName: postBankName.trim() || undefined,
+                    });
                     setPostOpen(false);
                   }}
                 >
-                  {busy ? "Posting..." : "Post run"}
+                  {busy ? "Posting..." : "Confirm & Post Run"}
                 </Button>
               </DialogFooter>
             </DialogContent>
