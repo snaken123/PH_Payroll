@@ -129,13 +129,14 @@ export async function computeAndPersistFinalPayRun({
       return sum + Math.max(remaining, 0);
     }, 0);
 
-  // Year-to-date figures from posted payslips this calendar year
+  // Year-to-date figures from posted payslips this calendar year + final cutoff unpaid base wages
   const ytdPayslips = postedPayslips.filter((p) => p.payrollRun.payrollPeriod.cutoffStart >= yearStart);
-  const basicSalaryEarnedThisYear = ytdPayslips.reduce(
-    (sum, p) =>
-      sum + p.lineItems.filter((li) => li.category === "BASIC_PAY").reduce((s, li) => s + li.amount.toNumber(), 0),
-    0
-  );
+  const basicSalaryEarnedThisYear =
+    ytdPayslips.reduce(
+      (sum, p) =>
+        sum + p.lineItems.filter((li) => li.category === "BASIC_PAY").reduce((s, li) => s + li.amount.toNumber(), 0),
+      0
+    ) + unpaidWages.basePay.toNumber();
   const priorTaxableCompensationForYear = ytdPayslips.reduce((sum, p) => {
     const statutoryEe = p.lineItems
       .filter((li) => ["SSS_EE", "PHILHEALTH_EE", "PAGIBIG_EE"].includes(li.category))
