@@ -267,7 +267,7 @@ export function AddCompensationDialog({
                   <div className="flex items-center justify-between">
                     <Label htmlFor="basicRate">Basic rate (₱)</Label>
                     {bossKeyBasicPayTaxableToggle && (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs">
                         <Controller
                           control={control}
                           name="isTaxable"
@@ -280,7 +280,7 @@ export function AddCompensationDialog({
                             />
                           )}
                         />
-                        <Label htmlFor="basicRateIsTaxable" className="text-xs cursor-pointer text-slate-600 dark:text-slate-300">
+                        <Label htmlFor="basicRateIsTaxable" className="text-xs cursor-pointer font-medium text-slate-700 dark:text-slate-200">
                           Taxable
                         </Label>
                       </div>
