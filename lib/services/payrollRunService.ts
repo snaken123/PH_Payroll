@@ -542,6 +542,7 @@ export async function computeAndPersistPayrollRun({
           description: li.description,
           amount: li.amount.toFixed(2),
           quantity: li.quantity ? li.quantity.toFixed(2) : null,
+          rate: li.rate ? li.rate.toFixed(4) : null,
           sourceRef: li.loanId
             ? { loanId: li.loanId }
             : (li.sourceRef as Prisma.InputJsonObject | undefined),

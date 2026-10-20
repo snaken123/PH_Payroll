@@ -268,7 +268,20 @@ export function CutoffPayslipsRegister({
                   !li.description.toLowerCase().includes("absence")
               );
               const lateUndertimeAmount = lateItems.reduce((sum, li) => sum + Number(li.amount || 0), 0);
-              const lateUndertimeHours = lateItems.reduce((sum, li) => sum + Number(li.quantity || 0), 0);
+              const lateUndertimeMinutes = lateItems.reduce((sum, li) => {
+                const qty = Number(li.quantity || 0);
+                if (qty > 0) {
+                  return sum + (qty < 10 && !Number.isInteger(qty) ? Math.round(qty * 60) : Math.round(qty));
+                }
+                const descMatch = li.description.match(/(\d+(?:\.\d+)?)\s*(?:mins?|minutes?)/i);
+                if (descMatch) {
+                  return sum + Math.round(Number(descMatch[1]));
+                }
+                if (li.rate && Number(li.rate) > 0) {
+                  return sum + Math.round((Number(li.amount || 0) / Number(li.rate)) * 60);
+                }
+                return sum;
+              }, 0);
 
               // Check if any absence exists
               const absenceItems = p.lineItems.filter(
@@ -346,12 +359,10 @@ export function CutoffPayslipsRegister({
                               <span className="font-mono text-xs font-semibold text-amber-700 dark:text-amber-400">
                                 -₱{lateUndertimeAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
-                              {lateUndertimeHours > 0 ? (
+                              {lateUndertimeMinutes > 0 && (
                                 <span className="text-[10px] text-slate-500 font-mono">
-                                  {lateUndertimeHours.toFixed(2)}h
+                                  {lateUndertimeMinutes} {lateUndertimeMinutes === 1 ? "min" : "mins"}
                                 </span>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 font-mono">deducted</span>
                               )}
                             </div>
                           ) : (
@@ -446,7 +457,9 @@ export function CutoffPayslipsRegister({
                               <div className="flex justify-between items-center">
                                 <span className="text-slate-600 dark:text-slate-400">Late / Undertime</span>
                                 <span className={`font-mono font-medium ${lateUndertimeAmount > 0 ? "text-amber-700 font-bold" : "text-slate-400"}`}>
-                                  {lateUndertimeAmount > 0 ? `-₱${lateUndertimeAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "None / Waived"}
+                                  {lateUndertimeAmount > 0
+                                    ? `-₱${lateUndertimeAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}${lateUndertimeMinutes > 0 ? ` (${lateUndertimeMinutes} mins)` : ""}`
+                                    : "None / Waived"}
                                 </span>
                               </div>
                               {absenceAmount > 0 && (

@@ -51,6 +51,7 @@ export interface LineItemDraft {
   description: string;
   amount: Decimal;
   quantity?: Decimal;
+  rate?: Decimal;
   /** Present only for LOAN_DEDUCTION line items — which Loan this deducted. */
   loanId?: string;
   /** Audit / tax metadata for the line item. */
@@ -227,8 +228,13 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     lineItems.push({
       category: "LATE_UNDERTIME_DEDUCTION",
       direction: "DEDUCTION",
-      description: "Late/undertime deduction",
+      description:
+        base.lateUndertimeMinutes > 0
+          ? `Late/undertime deduction (${base.lateUndertimeMinutes} mins)`
+          : "Late/undertime deduction",
       amount: base.lateUndertimeDeduction,
+      quantity: new Decimal(base.lateUndertimeMinutes),
+      rate: base.hourlyRateEquivalent,
     });
   }
 

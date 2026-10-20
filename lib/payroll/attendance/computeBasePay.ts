@@ -28,6 +28,7 @@ export interface BasePayResult {
   basePay: Decimal;
   absenceDeduction: Decimal;
   lateUndertimeDeduction: Decimal;
+  lateUndertimeMinutes: number;
 }
 
 /**
@@ -57,6 +58,7 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
       basePay: hourlyBasePay,
       absenceDeduction: new Decimal(0),
       lateUndertimeDeduction: new Decimal(0),
+      lateUndertimeMinutes: 0,
     };
   }
 
@@ -82,6 +84,7 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
       basePay,
       absenceDeduction: new Decimal(0),
       lateUndertimeDeduction: new Decimal(0),
+      lateUndertimeMinutes: 0,
     };
   }
 
@@ -121,5 +124,6 @@ export function computeBasePay(input: BasePayInput): BasePayResult {
     basePay,
     absenceDeduction,
     lateUndertimeDeduction,
+    lateUndertimeMinutes,
   };
 }
