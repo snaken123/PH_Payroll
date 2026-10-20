@@ -38,6 +38,7 @@ export const updateCompanySettingsSchema = z.object({
   attendanceSaturdayShiftHours: z.number().min(1).max(24).default(5),
   attendanceSaturdayBreakMinutes: z.number().int().min(0).max(120).default(0),
   attendanceSaturdayEmployeeIds: z.array(z.string()).optional().nullable(),
+  excludeRetainersFromThirteenthMonth: z.boolean().optional().default(true),
   applyWorkDaysToEmployees: z.boolean().optional().default(false),
 });
 

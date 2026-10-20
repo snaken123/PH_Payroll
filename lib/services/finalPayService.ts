@@ -7,6 +7,7 @@ import { estimateDailyRateEquivalent } from "@/lib/payroll/estimateDailyRateEqui
 import type { FinalPaySeparationCategory } from "@/lib/finalpay/types";
 import type { TimesheetFact } from "@/lib/payroll/attendance/types";
 import type { PayBasis } from "@/lib/payroll/types";
+import { isRetainerEmployee } from "@/lib/payroll/retainer";
 
 export class FinalPayError extends Error {}
 
@@ -152,7 +153,7 @@ export async function computeAndPersistFinalPayRun({
 
   const outstandingLoanBalance = employee.loans.reduce((sum, l) => sum + l.remainingBalance.toNumber(), 0);
 
-  const [thirteenthMonthConfig, annualBrackets] = await Promise.all([
+  const [thirteenthMonthConfig, annualBrackets, company] = await Promise.all([
     prisma.thirteenthMonthConfig.findFirst({
       where: asOfWhere(dateSeparated),
       orderBy: { effectiveFrom: "desc" },
@@ -160,12 +161,21 @@ export async function computeAndPersistFinalPayRun({
     prisma.birWithholdingBracket.findMany({
       where: { ...asOfWhere(dateSeparated), payPeriodType: "ANNUAL" },
     }),
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: { excludeRetainersFromThirteenthMonth: true },
+    }),
   ]);
   if (!thirteenthMonthConfig || annualBrackets.length === 0) {
     throw new FinalPayError(
       "Statutory rate tables (13th month ceiling / annual BIR brackets) are incomplete — a platform admin must configure rates before final pay can be computed."
     );
   }
+
+  const isRetainer = isRetainerEmployee(employee);
+  const isThirteenthMonthEligible = !(
+    (company?.excludeRetainersFromThirteenthMonth ?? true) && isRetainer
+  );
 
   const statutoryRateSnapshot = {
     thirteenthMonthConfigId: thirteenthMonthConfig.id,
@@ -182,6 +192,7 @@ export async function computeAndPersistFinalPayRun({
     unusedConvertibleLeaveDays,
     basicSalaryEarnedThisYear,
     thirteenthMonthExemptionCeiling: thirteenthMonthConfig.exemptionCeiling.toString(),
+    isThirteenthMonthEligible,
     outstandingLoanBalance,
     priorTaxableCompensationForYear,
     cumulativeTaxWithheldForYear,

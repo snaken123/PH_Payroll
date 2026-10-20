@@ -108,6 +108,7 @@ export async function PATCH(request: Request) {
           attendanceSaturdayShiftHours: data.attendanceSaturdayShiftHours,
           attendanceSaturdayBreakMinutes: data.attendanceSaturdayBreakMinutes,
           attendanceSaturdayEmployeeIds: data.attendanceSaturdayEmployeeIds ?? undefined,
+          excludeRetainersFromThirteenthMonth: data.excludeRetainersFromThirteenthMonth,
         },
       });
 

@@ -103,3 +103,37 @@ describe("computeFinalPay — retirement", () => {
     expect(retirementLine?.isTaxExempt).toBe(true);
   });
 });
+
+describe("computeFinalPay — 13th month eligibility gating (retainer rule)", () => {
+  it("suppresses PRORATED_THIRTEENTH_MONTH line items when isThirteenthMonthEligible is false", () => {
+    const result = computeFinalPay(
+      baseInput({
+        separationCategory: "RESIGNATION",
+        unpaidWagesAmount: 5000,
+        basicSalaryEarnedThisYear: 60000,
+        isThirteenthMonthEligible: false,
+      })
+    );
+
+    expect(result.lineItems.some((li) => li.category === "PRORATED_THIRTEENTH_MONTH")).toBe(false);
+    expect(result.grossFinalPay.toNumber()).toBe(5000); // only unpaid wages
+    expect(result.netFinalPay.toNumber()).toBe(5000);
+  });
+
+  it("includes PRORATED_THIRTEENTH_MONTH line items when isThirteenthMonthEligible is true or omitted", () => {
+    const result = computeFinalPay(
+      baseInput({
+        separationCategory: "RESIGNATION",
+        unpaidWagesAmount: 5000,
+        basicSalaryEarnedThisYear: 60000,
+        isThirteenthMonthEligible: true,
+      })
+    );
+
+    const thirteenthLine = result.lineItems.find((li) => li.category === "PRORATED_THIRTEENTH_MONTH");
+    expect(thirteenthLine).toBeDefined();
+    expect(thirteenthLine?.amount.toNumber()).toBe(5000); // 60000 / 12
+    expect(result.grossFinalPay.toNumber()).toBe(10000); // 5000 + 5000
+  });
+});
+

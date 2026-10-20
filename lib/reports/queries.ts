@@ -5,6 +5,7 @@ import type { AgencyRemittanceDocumentData, RemittanceRow } from "./documents/Ag
 import type { Form1601CDocumentData, Form1601CCutoffRow } from "./documents/Form1601CDocument";
 import type { ThirteenthMonthDocumentData, ThirteenthMonthRow } from "./documents/ThirteenthMonthDocument";
 import { computeThirteenthMonthPay } from "@/lib/payroll/thirteenthMonth";
+import { isRetainerEmployee } from "@/lib/payroll/retainer";
 import { computeAnnualization } from "@/lib/payroll/annualization";
 import type { Form2316DocumentData } from "./documents/Form2316Document";
 import type { BirBracketRow } from "@/lib/payroll/types";
@@ -254,6 +255,10 @@ export async function getThirteenthMonthReportData(
 
   const rows: ThirteenthMonthRow[] = employees
     .map((emp) => {
+      if ((company.excludeRetainersFromThirteenthMonth ?? true) && isRetainerEmployee(emp)) {
+        return null;
+      }
+
       const basicSalaryEarned = emp.payslips.reduce(
         (sum, p) => sum + p.lineItems.reduce((s, li) => s + li.amount.toNumber(), 0),
         0

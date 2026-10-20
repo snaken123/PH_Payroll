@@ -50,6 +50,8 @@ export interface FinalPayInput {
   /** Basic salary earned so far this calendar year, for the prorated 13th month. */
   basicSalaryEarnedThisYear: Decimal.Value;
   thirteenthMonthExemptionCeiling: Decimal.Value;
+  /** Whether the employee is eligible for 13th month pay (false for retainers if company rule is on). Defaults to true. */
+  isThirteenthMonthEligible?: boolean;
   /** Sum of remainingBalance across the employee's ACTIVE loans — paid off
    * in full here, not per the usual installment schedule. */
   outstandingLoanBalance: Decimal.Value;

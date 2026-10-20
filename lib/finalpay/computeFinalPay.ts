@@ -43,28 +43,31 @@ export function computeFinalPay(input: FinalPayInput): FinalPayResult {
 
   // 2. Prorated 13th month — split into exempt/taxable portions since the
   // ceiling is a combined-benefits threshold, not an all-or-nothing cutoff.
-  const thirteenthMonth = computeThirteenthMonthPay(
-    input.basicSalaryEarnedThisYear,
-    input.thirteenthMonthExemptionCeiling
-  );
-  const thirteenthMonthExempt = thirteenthMonth.thirteenthMonthPay.minus(thirteenthMonth.taxableExcess);
-  if (thirteenthMonthExempt.greaterThan(0)) {
-    lineItems.push({
-      category: "PRORATED_THIRTEENTH_MONTH",
-      direction: "EARNING",
-      description: "Prorated 13th month pay (tax-exempt portion)",
-      amount: thirteenthMonthExempt,
-      isTaxExempt: true,
-    });
-  }
-  if (thirteenthMonth.taxableExcess.greaterThan(0)) {
-    lineItems.push({
-      category: "PRORATED_THIRTEENTH_MONTH",
-      direction: "EARNING",
-      description: "Prorated 13th month pay (taxable excess over exemption ceiling)",
-      amount: thirteenthMonth.taxableExcess,
-      isTaxExempt: false,
-    });
+  const isThirteenthMonthEligible = input.isThirteenthMonthEligible ?? true;
+  if (isThirteenthMonthEligible) {
+    const thirteenthMonth = computeThirteenthMonthPay(
+      input.basicSalaryEarnedThisYear,
+      input.thirteenthMonthExemptionCeiling
+    );
+    const thirteenthMonthExempt = thirteenthMonth.thirteenthMonthPay.minus(thirteenthMonth.taxableExcess);
+    if (thirteenthMonthExempt.greaterThan(0)) {
+      lineItems.push({
+        category: "PRORATED_THIRTEENTH_MONTH",
+        direction: "EARNING",
+        description: "Prorated 13th month pay (tax-exempt portion)",
+        amount: thirteenthMonthExempt,
+        isTaxExempt: true,
+      });
+    }
+    if (thirteenthMonth.taxableExcess.greaterThan(0)) {
+      lineItems.push({
+        category: "PRORATED_THIRTEENTH_MONTH",
+        direction: "EARNING",
+        description: "Prorated 13th month pay (taxable excess over exemption ceiling)",
+        amount: thirteenthMonth.taxableExcess,
+        isTaxExempt: false,
+      });
+    }
   }
 
   // 3. Leave cashout (up to 10 days is de minimis tax-exempt per BIR RR 2-98)

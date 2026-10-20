@@ -79,6 +79,7 @@ interface CompanyData {
   attendanceSaturdayShiftHours?: number;
   attendanceSaturdayBreakMinutes?: number;
   attendanceSaturdayEmployeeIds?: any;
+  excludeRetainersFromThirteenthMonth?: boolean;
 }
 
 interface BankAccountData {
@@ -173,6 +174,7 @@ export function SettingsClient({
     attendanceSaturdayShiftHours: company.attendanceSaturdayShiftHours ?? 5.0,
     attendanceSaturdayBreakMinutes: company.attendanceSaturdayBreakMinutes ?? 0,
     attendanceSaturdayEmployeeIds: Array.isArray(company.attendanceSaturdayEmployeeIds) ? company.attendanceSaturdayEmployeeIds : [],
+    excludeRetainersFromThirteenthMonth: company.excludeRetainersFromThirteenthMonth ?? true,
   };
 
   const [formData, setFormData] = useState(initialFormDataState);
@@ -713,6 +715,27 @@ export function SettingsClient({
                   />
                 </div>
               )}
+
+              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="space-y-0.5 max-w-md">
+                  <Label htmlFor="excludeRetainersFromThirteenthMonth" className="text-xs font-semibold cursor-pointer">
+                    Exclude Retainers (Rank = &quot;Retainer&quot;) from 13th-Month Pay
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    When enabled (default: ON), employees with rank &quot;Retainer&quot; or Retainer employment status will not be credited 13th-month pay during final pay computations or in annual 13th-month reports, in accordance with P.D. 851.
+                  </p>
+                </div>
+                <Switch
+                  id="excludeRetainersFromThirteenthMonth"
+                  checked={formData.excludeRetainersFromThirteenthMonth}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      excludeRetainersFromThirteenthMonth: checked,
+                    }))
+                  }
+                />
+              </div>
             </div>
           </CardContent>
           <CardFooter>
