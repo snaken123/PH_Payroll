@@ -4,6 +4,8 @@ import { styles, formatMoney, formatDate } from "./styles";
 export interface PayrollRegisterRow {
   employeeNumber: string;
   fullName: string;
+  overtimePay?: string;
+  lateUndertimeDeduction?: string;
   grossPay: string;
   totalStatutoryDeductions: string;
   totalOtherDeductions: string;
@@ -20,12 +22,14 @@ export interface PayrollRegisterDocumentData {
 export function PayrollRegisterDocument({ data }: { data: PayrollRegisterDocumentData }) {
   const totals = data.rows.reduce(
     (acc, r) => ({
+      overtime: acc.overtime + Number(r.overtimePay || 0),
+      lateUndertime: acc.lateUndertime + Number(r.lateUndertimeDeduction || 0),
       gross: acc.gross + Number(r.grossPay),
       statutory: acc.statutory + Number(r.totalStatutoryDeductions),
       other: acc.other + Number(r.totalOtherDeductions),
       net: acc.net + Number(r.netPay),
     }),
-    { gross: 0, statutory: 0, other: 0, net: 0 }
+    { overtime: 0, lateUndertime: 0, gross: 0, statutory: 0, other: 0, net: 0 }
   );
 
   return (
@@ -44,6 +48,8 @@ export function PayrollRegisterDocument({ data }: { data: PayrollRegisterDocumen
           <View style={styles.headerRow}>
             <Text style={styles.cellHeader}>Employee #</Text>
             <Text style={[styles.cellHeader, { flex: 2 }]}>Name</Text>
+            <Text style={styles.cellHeader}>Overtime</Text>
+            <Text style={styles.cellHeader}>Late / UT</Text>
             <Text style={styles.cellHeader}>Gross Pay</Text>
             <Text style={styles.cellHeader}>Statutory Ded.</Text>
             <Text style={styles.cellHeader}>Other Ded.</Text>
@@ -53,6 +59,8 @@ export function PayrollRegisterDocument({ data }: { data: PayrollRegisterDocumen
             <View style={styles.row} key={i}>
               <Text style={styles.cell}>{r.employeeNumber}</Text>
               <Text style={[styles.cell, { flex: 2 }]}>{r.fullName}</Text>
+              <Text style={styles.cellRight}>{formatMoney(r.overtimePay || 0)}</Text>
+              <Text style={styles.cellRight}>{formatMoney(r.lateUndertimeDeduction || 0)}</Text>
               <Text style={styles.cellRight}>{formatMoney(r.grossPay)}</Text>
               <Text style={styles.cellRight}>{formatMoney(r.totalStatutoryDeductions)}</Text>
               <Text style={styles.cellRight}>{formatMoney(r.totalOtherDeductions)}</Text>
@@ -62,6 +70,8 @@ export function PayrollRegisterDocument({ data }: { data: PayrollRegisterDocumen
           <View style={styles.totalsRow}>
             <Text style={styles.cell}>TOTAL</Text>
             <Text style={[styles.cell, { flex: 2 }]}></Text>
+            <Text style={styles.cellRight}>{formatMoney(totals.overtime)}</Text>
+            <Text style={styles.cellRight}>{formatMoney(totals.lateUndertime)}</Text>
             <Text style={styles.cellRight}>{formatMoney(totals.gross)}</Text>
             <Text style={styles.cellRight}>{formatMoney(totals.statutory)}</Text>
             <Text style={styles.cellRight}>{formatMoney(totals.other)}</Text>

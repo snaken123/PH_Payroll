@@ -128,7 +128,10 @@ export async function getPayrollRegisterData(
       include: {
         payrollPeriod: true,
         payslips: {
-          include: { employee: { select: { employeeNumber: true, firstName: true, lastName: true } } },
+          include: {
+            employee: { select: { employeeNumber: true, firstName: true, lastName: true } },
+            lineItems: true,
+          },
           orderBy: { employee: { lastName: "asc" } },
         },
       },
@@ -143,14 +146,30 @@ export async function getPayrollRegisterData(
     throw new ReportNotAvailableError("Payroll register is only available once the run is posted");
   }
 
-  const rows: PayrollRegisterRow[] = run.payslips.map((p) => ({
-    employeeNumber: p.employee.employeeNumber,
-    fullName: `${p.employee.lastName}, ${p.employee.firstName}`,
-    grossPay: p.grossPay.toString(),
-    totalStatutoryDeductions: p.totalStatutoryDeductions.toString(),
-    totalOtherDeductions: p.totalOtherDeductions.toString(),
-    netPay: p.netPay.toString(),
-  }));
+  const rows: PayrollRegisterRow[] = run.payslips.map((p) => {
+    const overtimeSum = p.lineItems
+      .filter((li) => li.category === "OVERTIME")
+      .reduce((sum, li) => sum + Number(li.amount || 0), 0);
+
+    const lateSum = p.lineItems
+      .filter(
+        (li) =>
+          li.category === "LATE_UNDERTIME_DEDUCTION" &&
+          !li.description.toLowerCase().includes("absence")
+      )
+      .reduce((sum, li) => sum + Number(li.amount || 0), 0);
+
+    return {
+      employeeNumber: p.employee.employeeNumber,
+      fullName: `${p.employee.lastName}, ${p.employee.firstName}`,
+      overtimePay: overtimeSum.toFixed(2),
+      lateUndertimeDeduction: lateSum.toFixed(2),
+      grossPay: p.grossPay.toString(),
+      totalStatutoryDeductions: p.totalStatutoryDeductions.toString(),
+      totalOtherDeductions: p.totalOtherDeductions.toString(),
+      netPay: p.netPay.toString(),
+    };
+  });
 
   return {
     company: { legalName: company.legalName, tin: company.tin },

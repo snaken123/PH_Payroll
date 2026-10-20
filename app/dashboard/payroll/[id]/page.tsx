@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RunActions } from "@/components/payroll/run-actions";
 import { RunChecksSection } from "@/components/payroll/run-checks-section";
-import { PayslipDetailDialog } from "@/components/payroll/payslip-detail-dialog";
+import { CutoffPayslipsRegister } from "@/components/payroll/cutoff-payslips-register";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -360,116 +360,30 @@ export default async function PayrollRunDetailPage({
       )}
 
       {/* Payslips Table Card */}
-      <Card className="border-slate-200/90 shadow-xs dark:border-slate-800">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Cutoff Payslips Register ({run.payslips.length})
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Itemized employee earnings, statutory deductions, loan repayments, and net pay.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {run.payslips.length === 0 ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 max-w-lg mx-auto text-sm space-y-2">
-                <p className="font-semibold">Why are there 0 payslips in this run?</p>
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  No active employees with compensation records effective on or before {run.payrollPeriod.cutoffEnd.toLocaleDateString()} were found.
-                </p>
-                <div className="pt-1 flex items-center justify-center gap-3">
-                  <Button size="sm" variant="outline" render={<Link href="/dashboard/employees" />}>
-                    Go to Employee Directory &rarr;
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Employee Name</TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Gross Pay</TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Statutory Deductions</TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Loans &amp; Other</TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Net Pay</TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Payslip Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {run.payslips.map((p) => {
-                  const employeeName = `${p.employee.lastName}, ${p.employee.firstName} (${p.employee.employeeNumber})`;
-                  return (
-                    <TableRow key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <TableCell className="py-2.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="size-6 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
-                            {p.employee.firstName.charAt(0)}{p.employee.lastName.charAt(0)}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
-                              {p.employee.lastName}, {p.employee.firstName}
-                            </span>{" "}
-                            <span className="font-mono text-[11px] text-slate-400 font-normal">({p.employee.employeeNumber})</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-xs font-medium text-slate-800 dark:text-slate-200">
-                        ₱{Number(p.grossPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
-                        ₱{Number(p.totalStatutoryDeductions).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
-                        ₱{Number(p.totalOtherDeductions).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums font-bold text-xs text-slate-900 dark:text-slate-100">
-                        ₱{Number(p.netPay).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right py-1">
-                        <PayslipDetailDialog
-                          payslipId={p.id}
-                          employeeName={employeeName}
-                          netPay={p.netPay.toString()}
-                          lineItems={p.lineItems.map((li) => ({
-                            id: li.id,
-                            category: li.category,
-                            direction: li.direction,
-                            description: li.description,
-                            amount: li.amount.toString(),
-                          }))}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-              <TableFooter>
-                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 font-bold border-t-2 border-slate-200/90 dark:border-slate-800">
-                  <TableCell className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    Total Register ({run.payslips.length} Employees)
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
-                    ₱{totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
-                    ₱{totalStatutory.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-slate-900 dark:text-slate-100">
-                    ₱{totalOther.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-xs font-bold text-blue-700 dark:text-blue-400">
-                    ₱{totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right" />
-                </TableRow>
-              </TableFooter>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <CutoffPayslipsRegister
+        payslips={run.payslips.map((p) => ({
+          id: p.id,
+          grossPay: p.grossPay.toString(),
+          totalStatutoryDeductions: p.totalStatutoryDeductions.toString(),
+          totalOtherDeductions: p.totalOtherDeductions.toString(),
+          netPay: p.netPay.toString(),
+          employee: {
+            employeeNumber: p.employee.employeeNumber,
+            firstName: p.employee.firstName,
+            lastName: p.employee.lastName,
+          },
+          lineItems: p.lineItems.map((li) => ({
+            id: li.id,
+            category: li.category,
+            direction: li.direction,
+            description: li.description,
+            amount: li.amount.toString(),
+            quantity: li.quantity ? li.quantity.toString() : null,
+            rate: li.rate ? li.rate.toString() : null,
+          })),
+        }))}
+        cutoffEndFormatted={run.payrollPeriod.cutoffEnd.toLocaleDateString()}
+      />
     </div>
   );
 }
