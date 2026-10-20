@@ -262,7 +262,18 @@ export async function computeAndPersistPayrollRun({
         let rawRegularHours = Number(t.regularHours);
         let rawOvertimeHours = Number(t.overtimeHours);
 
-        if (t.status === "PRESENT" || t.timeIn || t.timeOut) {
+        if (t.status === "ABSENT") {
+          rawLateMinutes = 0;
+          rawUndertimeMinutes = 0;
+          rawRegularHours = 0;
+          rawOvertimeHours = 0;
+        } else if (t.source === "MANUAL") {
+          // Respect user manual attendance edits directly
+          rawLateMinutes = t.lateMinutes;
+          rawUndertimeMinutes = t.undertimeMinutes;
+          rawRegularHours = Number(t.regularHours);
+          rawOvertimeHours = Number(t.overtimeHours);
+        } else if (t.status === "PRESENT" || t.timeIn || t.timeOut) {
           const workDateStr = t.workDate.toISOString().slice(0, 10);
           const timeInStr = extractTimeOfDay(t.timeIn);
           const timeOutStr = extractTimeOfDay(t.timeOut);

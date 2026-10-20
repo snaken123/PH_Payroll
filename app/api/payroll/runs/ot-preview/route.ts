@@ -82,6 +82,7 @@ export async function GET(request: Request) {
             overtimeHours: true,
             lateMinutes: true,
             undertimeMinutes: true,
+            source: true,
           },
         },
       },
@@ -127,7 +128,15 @@ export async function GET(request: Request) {
       let underMins = t.undertimeMinutes || 0;
       let otHours = Number(t.overtimeHours || 0);
 
-      if (t.status === "PRESENT" || t.timeIn || t.timeOut) {
+      if (t.status === "ABSENT") {
+        lateMins = 0;
+        underMins = 0;
+        otHours = 0;
+      } else if (t.source === "MANUAL") {
+        lateMins = t.lateMinutes || 0;
+        underMins = t.undertimeMinutes || 0;
+        otHours = Number(t.overtimeHours || 0);
+      } else if (t.status === "PRESENT" || t.timeIn || t.timeOut) {
         const workDateStr = t.workDate.toISOString().slice(0, 10);
         const timeInStr = extractTimeOfDay(t.timeIn);
         const timeOutStr = extractTimeOfDay(t.timeOut);
