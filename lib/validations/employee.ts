@@ -99,6 +99,7 @@ export const createEmployeeSchema = z.object({
   payBasis: z.enum(payBasisValues),
   basicRate: z.coerce.number().positive("Must be greater than 0"),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
+  isTaxable: z.boolean().default(true),
   allowances: z.array(allowanceSchema).default([]),
 });
 
@@ -139,6 +140,7 @@ export const compensationRecordSchema = z.object({
   payBasis: z.enum(payBasisValues).optional(),
   basicRate: optionalCoercedNumber(z.coerce.number().positive()),
   standardWorkDaysPerMonth: optionalCoercedNumber(z.coerce.number().positive()),
+  isTaxable: z.boolean().default(true),
   allowances: z.array(allowanceSchema).default([]),
 });
 export type CompensationRecordFormValues = z.input<typeof compensationRecordSchema>;

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
-import { listCompanyChecks } from "@/lib/services/checkService";
+import { listCompanyChecks, createPayrollCheck } from "@/lib/services/checkService";
 import { mutationErrorResponse } from "@/lib/api-error";
 
 const VIEW_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN, CompanyRole.APPROVER];
+const MANAGE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
 export async function GET(request: Request) {
   let ctx;
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") || undefined;
   const status = searchParams.get("status") || undefined;
+  const sourceType = searchParams.get("sourceType") || undefined;
   const payrollRunId = searchParams.get("payrollRunId") || undefined;
   const startDateStr = searchParams.get("startDate");
   const endDateStr = searchParams.get("endDate");
@@ -34,6 +36,7 @@ export async function GET(request: Request) {
       listCompanyChecks(ctx.companyId, {
         search,
         status,
+        sourceType,
         payrollRunId,
         startDate,
         endDate,
@@ -80,6 +83,29 @@ export async function GET(request: Request) {
       companyBankAccounts: bankAccounts,
       availablePostedRuns,
     });
+  } catch (err) {
+    return mutationErrorResponse(err);
+  }
+}
+
+export async function POST(request: Request) {
+  let ctx;
+  try {
+    ctx = await requireTenantRole(MANAGE_ROLES, {
+      permissionKey: "payroll.post",
+    });
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const check = await createPayrollCheck({
+      companyId: ctx.companyId,
+      ...body,
+      issuedByUserId: ctx.userId,
+    });
+    return NextResponse.json({ check }, { status: 201 });
   } catch (err) {
     return mutationErrorResponse(err);
   }

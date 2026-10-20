@@ -3,7 +3,10 @@ import { Prisma } from "@/lib/generated/prisma/client";
 
 export interface CreateCheckParams {
   companyId: string;
-  payrollRunId: string;
+  payrollRunId?: string | null;
+  finalPayRunId?: string | null;
+  statutoryPaymentRecordId?: string | null;
+  sourceType?: string;
   checkNumber: string;
   checkDate: Date | string;
   amount: number | string | Prisma.Decimal;
@@ -31,6 +34,7 @@ export interface UpdateCheckParams {
 export interface ListCompanyChecksOptions {
   search?: string;
   status?: string;
+  sourceType?: string;
   startDate?: Date;
   endDate?: Date;
   payrollRunId?: string;
@@ -51,6 +55,12 @@ export async function getPayrollRunChecks(companyId: string, payrollRunId: strin
           payrollPeriod: true,
         },
       },
+      finalPayRun: {
+        include: {
+          employee: true,
+        },
+      },
+      statutoryPaymentRecord: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -60,6 +70,9 @@ export async function createPayrollCheck(params: CreateCheckParams) {
   const {
     companyId,
     payrollRunId,
+    finalPayRunId,
+    statutoryPaymentRecordId,
+    sourceType: inputSourceType,
     checkNumber,
     checkDate,
     amount,
@@ -71,14 +84,24 @@ export async function createPayrollCheck(params: CreateCheckParams) {
     issuedByUserId,
   } = params;
 
-  // Validate run exists, belongs to company, and is POSTED
-  const run = await prisma.payrollRun.findUnique({
-    where: { id: payrollRunId },
-    include: { payrollPeriod: true },
-  });
+  // Validate run exists if provided
+  if (payrollRunId) {
+    const run = await prisma.payrollRun.findUnique({
+      where: { id: payrollRunId },
+      include: { payrollPeriod: true },
+    });
+    if (!run || run.companyId !== companyId) {
+      throw new Error("Payroll run not found for this company");
+    }
+  }
 
-  if (!run || run.companyId !== companyId) {
-    throw new Error("Payroll run not found for this company");
+  if (finalPayRunId) {
+    const finalRun = await prisma.finalPayRun.findUnique({
+      where: { id: finalPayRunId },
+    });
+    if (!finalRun || finalRun.companyId !== companyId) {
+      throw new Error("Final pay run not found for this company");
+    }
   }
 
   // If bankAccountId is provided, populate bankName if not given
@@ -90,10 +113,17 @@ export async function createPayrollCheck(params: CreateCheckParams) {
     }
   }
 
+  const sourceType =
+    inputSourceType ||
+    (finalPayRunId ? "SEPARATION_PAY" : statutoryPaymentRecordId ? "STATUTORY_REMITTANCE" : "PAYROLL_RUN");
+
   return prisma.payrollPaymentCheck.create({
     data: {
       companyId,
-      payrollRunId,
+      payrollRunId: payrollRunId || null,
+      finalPayRunId: finalPayRunId || null,
+      statutoryPaymentRecordId: statutoryPaymentRecordId || null,
+      sourceType,
       checkNumber: checkNumber.trim(),
       checkDate: new Date(checkDate),
       amount: new Prisma.Decimal(amount),
@@ -111,6 +141,12 @@ export async function createPayrollCheck(params: CreateCheckParams) {
           payrollPeriod: true,
         },
       },
+      finalPayRun: {
+        include: {
+          employee: true,
+        },
+      },
+      statutoryPaymentRecord: true,
     },
   });
 }
@@ -153,6 +189,12 @@ export async function updatePayrollCheck(params: UpdateCheckParams) {
           payrollPeriod: true,
         },
       },
+      finalPayRun: {
+        include: {
+          employee: true,
+        },
+      },
+      statutoryPaymentRecord: true,
     },
   });
 }
@@ -179,11 +221,12 @@ export async function deleteOrVoidPayrollCheck(companyId: string, checkId: strin
 }
 
 export async function listCompanyChecks(companyId: string, options: ListCompanyChecksOptions = {}) {
-  const { search, status, startDate, endDate, payrollRunId, take = 50, skip = 0 } = options;
+  const { search, status, sourceType, startDate, endDate, payrollRunId, take = 50, skip = 0 } = options;
 
   const where: Prisma.PayrollPaymentCheckWhereInput = {
     companyId,
     ...(status && status !== "ALL" ? { status } : {}),
+    ...(sourceType && sourceType !== "ALL" ? { sourceType } : {}),
     ...(payrollRunId ? { payrollRunId } : {}),
     ...(startDate || endDate
       ? {
@@ -215,6 +258,12 @@ export async function listCompanyChecks(companyId: string, options: ListCompanyC
             payrollPeriod: true,
           },
         },
+        finalPayRun: {
+          include: {
+            employee: true,
+          },
+        },
+        statutoryPaymentRecord: true,
       },
       orderBy: { checkDate: "desc" },
       take,

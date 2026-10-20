@@ -88,6 +88,7 @@ export async function POST(request: Request) {
               payBasis: data.payBasis,
               basicRate: data.basicRate,
               standardWorkDaysPerMonth: data.standardWorkDaysPerMonth ?? (data.payBasis === "MONTHLY_RATE" ? 22 : null),
+              isTaxable: data.isTaxable ?? true,
               createdByUserId: ctx.userId,
               allowances: {
                 create: data.allowances.map((a) => ({

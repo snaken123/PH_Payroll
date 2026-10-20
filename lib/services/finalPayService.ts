@@ -15,15 +15,25 @@ function asOfWhere(asOf: Date) {
   return { effectiveFrom: { lte: asOf }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }] };
 }
 
+export interface ComputeFinalPayOptions {
+  companyId: string;
+  employeeId: string;
+  computedByUserId: string;
+  calculationMode?: "AUTO" | "MANUAL_DAYS";
+  inclusiveStartDate?: string | Date | null;
+  inclusiveEndDate?: string | Date | null;
+  payableDays?: number | string | null;
+}
+
 export async function computeAndPersistFinalPayRun({
   companyId,
   employeeId,
   computedByUserId,
-}: {
-  companyId: string;
-  employeeId: string;
-  computedByUserId: string;
-}) {
+  calculationMode,
+  inclusiveStartDate,
+  inclusiveEndDate,
+  payableDays,
+}: ComputeFinalPayOptions) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
@@ -77,9 +87,9 @@ export async function computeAndPersistFinalPayRun({
 
   const yearsOfServiceCredited = computeYearsOfServiceCredited(employee.dateHired, dateSeparated);
 
-  // Unpaid wages: timesheet entries after the last POSTED payslip's cutoff,
+  // Unpaid wages: timesheet entries after the last POSTED payslip's cutoff (or user-specified inclusive range),
   // up to the separation date — reuses the same pure computeBasePay the
-  // regular payroll engine uses, just for a one-off partial period.
+  // regular payroll engine uses, or computes directly from payable days.
   const postedPayslips = employee.payslips.filter((p) => p.payrollRun.status === "POSTED");
   const lastPostedCutoffEnd =
     postedPayslips.length > 0
@@ -90,26 +100,54 @@ export async function computeAndPersistFinalPayRun({
         )
       : new Date(employee.dateHired.getTime() - 24 * 60 * 60 * 1000);
 
-  const finalCutoffTimesheets = await prisma.timesheetEntry.findMany({
-    where: { employeeId, workDate: { gt: lastPostedCutoffEnd, lte: dateSeparated } },
-  });
-  const finalCutoffFacts: TimesheetFact[] = finalCutoffTimesheets.map((t) => ({
-    workDate: t.workDate.toISOString(),
-    status: t.status,
-    regularHours: t.regularHours.toString(),
-    overtimeHours: t.overtimeHours.toString(),
-    nightDiffHours: t.nightDiffHours.toString(),
-    lateMinutes: t.lateMinutes,
-    undertimeMinutes: t.undertimeMinutes,
-    holidayType: t.holidayType,
-    isRestDay: t.isRestDay,
-  }));
-  const unpaidWages = computeBasePay({
-    payBasis: comp.payBasis as PayBasis,
-    basicRate: comp.basicRate.toString(),
-    standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString(),
-    timesheets: finalCutoffFacts,
-  });
+  const hasManualInclusiveDates = Boolean(inclusiveStartDate && inclusiveEndDate);
+  const cutoffStartDate = inclusiveStartDate ? new Date(inclusiveStartDate) : lastPostedCutoffEnd;
+  const cutoffEndDate = inclusiveEndDate ? new Date(inclusiveEndDate) : dateSeparated;
+
+  let unpaidWages: ReturnType<typeof computeBasePay>;
+
+  if (payableDays !== undefined && payableDays !== null && payableDays !== "" && Number(payableDays) >= 0) {
+    const numDays = Number(payableDays);
+    const computedPay = dailyRateEquivalent.times(numDays);
+    unpaidWages = {
+      dailyRateEquivalent,
+      hourlyRateEquivalent: dailyRateEquivalent.dividedBy(8),
+      grossBasicPay: computedPay,
+      basePay: computedPay,
+      absenceDeduction: new (dailyRateEquivalent.constructor as any)(0),
+      lateUndertimeDeduction: new (dailyRateEquivalent.constructor as any)(0),
+      lateUndertimeMinutes: 0,
+    };
+  } else {
+    const finalCutoffTimesheets = await prisma.timesheetEntry.findMany({
+      where: hasManualInclusiveDates
+        ? {
+            employeeId,
+            workDate: {
+              gte: new Date(new Date(cutoffStartDate).setUTCHours(0, 0, 0, 0)),
+              lte: new Date(new Date(cutoffEndDate).setUTCHours(23, 59, 59, 999)),
+            },
+          }
+        : { employeeId, workDate: { gt: lastPostedCutoffEnd, lte: dateSeparated } },
+    });
+    const finalCutoffFacts: TimesheetFact[] = finalCutoffTimesheets.map((t) => ({
+      workDate: t.workDate.toISOString(),
+      status: t.status,
+      regularHours: t.regularHours.toString(),
+      overtimeHours: t.overtimeHours.toString(),
+      nightDiffHours: t.nightDiffHours.toString(),
+      lateMinutes: t.lateMinutes,
+      undertimeMinutes: t.undertimeMinutes,
+      holidayType: t.holidayType,
+      isRestDay: t.isRestDay,
+    }));
+    unpaidWages = computeBasePay({
+      payBasis: comp.payBasis as PayBasis,
+      basicRate: comp.basicRate.toString(),
+      standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString(),
+      timesheets: finalCutoffFacts,
+    });
+  }
 
   // Unused convertible leave, current year
   // Under Art. 95 of the PH Labor Code, statutory Service Incentive Leave (SIL)
@@ -181,6 +219,10 @@ export async function computeAndPersistFinalPayRun({
     thirteenthMonthConfigId: thirteenthMonthConfig.id,
     annualBracketIds: annualBrackets.map((b) => b.id),
     asOf: dateSeparated.toISOString(),
+    calculationMode: calculationMode ?? (hasManualInclusiveDates || payableDays != null ? "MANUAL_DAYS" : "AUTO"),
+    inclusiveStartDate: cutoffStartDate.toISOString().slice(0, 10),
+    inclusiveEndDate: cutoffEndDate.toISOString().slice(0, 10),
+    payableDays: payableDays != null && payableDays !== "" ? Number(payableDays) : null,
   };
 
   const result = computeFinalPay({

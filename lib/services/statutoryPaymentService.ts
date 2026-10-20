@@ -316,65 +316,114 @@ export async function tagStatutoryPayment(params: TagStatutoryPaymentParams) {
     },
   });
 
-  if (existing) {
-    return prisma.statutoryPaymentRecord.update({
-      where: { id: existing.id },
-      data: {
-        computedEeAmount: new Prisma.Decimal(computedEeAmount),
-        computedErAmount: new Prisma.Decimal(computedErAmount),
-        computedTotalAmount: new Prisma.Decimal(computedTotalAmount),
-        status,
-        paidAmount: effectivePaidAmount,
-        paymentDate: paymentDate ? new Date(paymentDate) : null,
-        paymentMethod: paymentMethod || null,
-        checkNumber: checkNumber ? checkNumber.trim() : null,
-        referenceNumber: referenceNumber ? referenceNumber.trim() : null,
-        bankAccountId: bankAccountId || null,
-        bankName: effectiveBankName || null,
-        notes: notes ? notes.trim() : null,
-        taggedByUserId: taggedByUserId || null,
-        taggedAt: new Date(),
-      },
-      include: {
-        bankAccount: true,
-        payrollRun: {
-          include: {
-            payrollPeriod: true,
+  const record = existing
+    ? await prisma.statutoryPaymentRecord.update({
+        where: { id: existing.id },
+        data: {
+          computedEeAmount: new Prisma.Decimal(computedEeAmount),
+          computedErAmount: new Prisma.Decimal(computedErAmount),
+          computedTotalAmount: new Prisma.Decimal(computedTotalAmount),
+          status,
+          paidAmount: effectivePaidAmount,
+          paymentDate: paymentDate ? new Date(paymentDate) : null,
+          paymentMethod: paymentMethod || null,
+          checkNumber: checkNumber ? checkNumber.trim() : null,
+          referenceNumber: referenceNumber ? referenceNumber.trim() : null,
+          bankAccountId: bankAccountId || null,
+          bankName: effectiveBankName || null,
+          notes: notes ? notes.trim() : null,
+          taggedByUserId: taggedByUserId || null,
+          taggedAt: new Date(),
+        },
+        include: {
+          bankAccount: true,
+          payrollRun: {
+            include: {
+              payrollPeriod: true,
+            },
           },
         },
-      },
+      })
+    : await prisma.statutoryPaymentRecord.create({
+        data: {
+          companyId,
+          agency,
+          payrollRunId: payrollRunId || null,
+          periodMonth,
+          periodYear,
+          computedEeAmount: new Prisma.Decimal(computedEeAmount),
+          computedErAmount: new Prisma.Decimal(computedErAmount),
+          computedTotalAmount: new Prisma.Decimal(computedTotalAmount),
+          status,
+          paidAmount: effectivePaidAmount,
+          paymentDate: paymentDate ? new Date(paymentDate) : null,
+          paymentMethod: paymentMethod || null,
+          checkNumber: checkNumber ? checkNumber.trim() : null,
+          referenceNumber: referenceNumber ? referenceNumber.trim() : null,
+          bankAccountId: bankAccountId || null,
+          bankName: effectiveBankName || null,
+          notes: notes ? notes.trim() : null,
+          taggedByUserId: taggedByUserId || null,
+          taggedAt: new Date(),
+        },
+        include: {
+          bankAccount: true,
+          payrollRun: {
+            include: {
+              payrollPeriod: true,
+            },
+          },
+        },
+      });
+
+  // Automatically sync with PayrollPaymentCheck for the Check Register
+  if (status === StatutoryPaymentStatus.PAID && paymentMethod === RemittancePaymentMethod.CHECK && checkNumber?.trim()) {
+    const existingCheck = await prisma.payrollPaymentCheck.findFirst({
+      where: { statutoryPaymentRecordId: record.id },
     });
+    if (existingCheck) {
+      await prisma.payrollPaymentCheck.update({
+        where: { id: existingCheck.id },
+        data: {
+          checkNumber: checkNumber.trim(),
+          checkDate: paymentDate ? new Date(paymentDate) : new Date(),
+          amount: effectivePaidAmount || new Prisma.Decimal(computedTotalAmount),
+          bankAccountId: bankAccountId || null,
+          bankName: effectiveBankName || null,
+          payee: agency,
+          notes: notes ? notes.trim() : null,
+          status: "ISSUED",
+        },
+      });
+    } else {
+      await prisma.payrollPaymentCheck.create({
+        data: {
+          companyId,
+          statutoryPaymentRecordId: record.id,
+          sourceType: "STATUTORY_REMITTANCE",
+          checkNumber: checkNumber.trim(),
+          checkDate: paymentDate ? new Date(paymentDate) : new Date(),
+          amount: effectivePaidAmount || new Prisma.Decimal(computedTotalAmount),
+          bankAccountId: bankAccountId || null,
+          bankName: effectiveBankName || null,
+          payee: agency,
+          notes: notes ? notes.trim() : `Statutory Payment Remittance (${agency} ${periodMonth}/${periodYear})`,
+          status: "ISSUED",
+          issuedByUserId: taggedByUserId || null,
+        },
+      });
+    }
+  } else if (existing) {
+    const existingCheck = await prisma.payrollPaymentCheck.findFirst({
+      where: { statutoryPaymentRecordId: record.id, status: { not: "VOID" } },
+    });
+    if (existingCheck && (status !== StatutoryPaymentStatus.PAID || paymentMethod !== RemittancePaymentMethod.CHECK)) {
+      await prisma.payrollPaymentCheck.update({
+        where: { id: existingCheck.id },
+        data: { status: "VOID" },
+      });
+    }
   }
 
-  return prisma.statutoryPaymentRecord.create({
-    data: {
-      companyId,
-      agency,
-      payrollRunId: payrollRunId || null,
-      periodMonth,
-      periodYear,
-      computedEeAmount: new Prisma.Decimal(computedEeAmount),
-      computedErAmount: new Prisma.Decimal(computedErAmount),
-      computedTotalAmount: new Prisma.Decimal(computedTotalAmount),
-      status,
-      paidAmount: effectivePaidAmount,
-      paymentDate: paymentDate ? new Date(paymentDate) : null,
-      paymentMethod: paymentMethod || null,
-      checkNumber: checkNumber ? checkNumber.trim() : null,
-      referenceNumber: referenceNumber ? referenceNumber.trim() : null,
-      bankAccountId: bankAccountId || null,
-      bankName: effectiveBankName || null,
-      notes: notes ? notes.trim() : null,
-      taggedByUserId: taggedByUserId || null,
-      taggedAt: new Date(),
-    },
-    include: {
-      bankAccount: true,
-      payrollRun: {
-        include: {
-          payrollPeriod: true,
-        },
-      },
-    },
-  });
+  return record;
 }

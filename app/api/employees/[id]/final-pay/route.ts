@@ -5,7 +5,7 @@ import { computeAndPersistFinalPayRun, FinalPayError } from "@/lib/services/fina
 
 const COMPUTE_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
     ctx = await requireTenantRole(COMPUTE_ROLES, { permissionKey: ["payroll.compute", "employee.manage"] });
@@ -15,11 +15,22 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
   const { id: employeeId } = await context.params;
 
+  let body: any = {};
+  try {
+    body = await request.json();
+  } catch {
+    // Body is optional
+  }
+
   try {
     const finalPayRunId = await computeAndPersistFinalPayRun({
       companyId: ctx.companyId,
       employeeId,
       computedByUserId: ctx.userId,
+      calculationMode: body?.calculationMode,
+      inclusiveStartDate: body?.inclusiveStartDate,
+      inclusiveEndDate: body?.inclusiveEndDate,
+      payableDays: body?.payableDays,
     });
 
     return NextResponse.json({ finalPayRunId }, { status: 201 });

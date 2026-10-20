@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { assertCompanyId, requireTenantRole } from "@/lib/db/scoped";
 import { CompanyRole } from "@/lib/generated/prisma/enums";
 import { mutationErrorResponse } from "@/lib/api-error";
@@ -11,12 +12,19 @@ const POST_ROLES = [CompanyRole.COMPANY_OWNER, CompanyRole.PAYROLL_ADMIN];
 // Additionally gated on Employee.clearanceCompleted — the PH-practice
 // stand-in for withholding final pay pending property/accountability
 // clearance (see plan notes; this is a single gate, not a checklist system).
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   let ctx;
   try {
     ctx = await requireTenantRole(POST_ROLES, { permissionKey: "payroll.post" });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: any = null;
+  try {
+    body = await request.json();
+  } catch {
+    // Body is optional
   }
 
   const { id } = await context.params;
@@ -65,10 +73,37 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
         await tx.loan.update({ where: { id: loanId }, data: { remainingBalance: "0", status: "COMPLETED" } });
       }
 
-      return tx.finalPayRun.update({
+      const postedRun = await tx.finalPayRun.update({
         where: { id },
         data: { status: "POSTED", postedAt: new Date(), postedByUserId: ctx.userId },
       });
+
+      if (body?.checkNumber && typeof body.checkNumber === "string" && body.checkNumber.trim()) {
+        let effectiveBankName = body.bankName;
+        if (body.bankAccountId && !effectiveBankName) {
+          const bank = await tx.companyBankAccount.findUnique({ where: { id: body.bankAccountId } });
+          if (bank) effectiveBankName = bank.bankName;
+        }
+
+        await tx.payrollPaymentCheck.create({
+          data: {
+            companyId: run.companyId,
+            finalPayRunId: run.id,
+            sourceType: "SEPARATION_PAY",
+            checkNumber: body.checkNumber.trim(),
+            checkDate: body.checkDate ? new Date(body.checkDate) : new Date(),
+            amount: body.amount !== undefined && body.amount !== null ? new Prisma.Decimal(body.amount) : run.netFinalPay,
+            bankAccountId: body.bankAccountId || null,
+            bankName: effectiveBankName || null,
+            payee: body.payee?.trim() || `${run.employee.firstName} ${run.employee.lastName}`,
+            notes: body.notes?.trim() || `Separation / Final Pay #${run.finalPayNumber}`,
+            status: "ISSUED",
+            issuedByUserId: ctx.userId || null,
+          },
+        });
+      }
+
+      return postedRun;
     });
     return NextResponse.json({ run: updated });
   } catch (err) {

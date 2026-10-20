@@ -422,6 +422,7 @@ export async function computeAndPersistPayrollRun({
         payBasis: comp.payBasis as PayBasis,
         basicRate: comp.basicRate.toString(),
         standardWorkDaysPerMonth: comp.standardWorkDaysPerMonth?.toString() || companyWorkDays,
+        isBasicPayTaxable: comp.isTaxable ?? true,
         isManagerialExempt: emp.isManagerialExempt,
         timesheets,
         allowances,

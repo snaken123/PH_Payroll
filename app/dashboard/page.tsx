@@ -20,6 +20,7 @@ import {
   ArrowRightIcon,
   FileTextIcon,
   UserCheckIcon,
+  CreditCardIcon,
 } from "lucide-react";
 
 import { getSuperUserTodoList } from "@/lib/services/todoService";
@@ -140,7 +141,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Operational Modules Navigation Row */}
-      <div className="grid gap-3.5 sm:grid-cols-3">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {(canComputePayroll || canViewCompensation) && (
           <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
             <div className="flex items-center gap-3 min-w-0">
@@ -157,6 +158,26 @@ export default async function DashboardPage() {
               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 shrink-0 ml-2"
             >
               Open <ArrowRightIcon className="size-3" />
+            </Link>
+          </div>
+        )}
+
+        {(canComputePayroll || canViewCompensation) && (
+          <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                <CreditCardIcon className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">Check Register</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Disbursement check ledger</p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/checks"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 shrink-0 ml-2"
+            >
+              Ledger <ArrowRightIcon className="size-3" />
             </Link>
           </div>
         )}

@@ -541,7 +541,13 @@ export default async function EmployeeDetailPage({
                     </Button>
                   );
                 }
-                return <ComputeFinalPayButton employeeId={employee.id} disabled={!canComputePayroll} />;
+                return (
+                  <ComputeFinalPayButton
+                    employeeId={employee.id}
+                    defaultSeparationDate={employee.dateSeparated ? employee.dateSeparated.toISOString().split("T")[0] : undefined}
+                    disabled={!canComputePayroll}
+                  />
+                );
               })()}
             </div>
           )}
@@ -567,6 +573,7 @@ export default async function EmployeeDetailPage({
                       standardWorkDaysPerMonth: currentComp.standardWorkDaysPerMonth
                         ? Number(currentComp.standardWorkDaysPerMonth)
                         : null,
+                      isTaxable: currentComp.isTaxable ?? true,
                       allowances: currentComp.allowances.map((a) => ({
                         label: a.label,
                         amount: Number(a.amount),
@@ -600,7 +607,12 @@ export default async function EmployeeDetailPage({
                     <TableCell className="text-xs font-medium text-slate-600 dark:text-slate-400">{c.effectiveTo ? c.effectiveTo.toLocaleDateString() : "Current Active"}</TableCell>
                     <TableCell className="text-xs font-semibold text-slate-900 dark:text-slate-100">{c.payBasis.replaceAll("_", " ")}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums font-bold text-xs text-slate-900 dark:text-slate-100">
-                      ₱{Number(c.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      <div>₱{Number(c.basicRate).toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+                      {c.isTaxable === false && (
+                        <span className="inline-block text-[10px] font-sans font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                          Non-taxable
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-slate-600 dark:text-slate-400">
                       {c.allowances.length === 0

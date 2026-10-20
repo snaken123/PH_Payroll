@@ -114,6 +114,7 @@ model Company {
   bossKeyWaiveMandatoryMpfWisp         Boolean      @default(false)
   bossKeyPayingCompanyAllowance        Boolean      @default(false)
   bossKeyAllowanceTaxableToggle        Boolean      @default(false)
+  bossKeyBasicPayTaxableToggle         Boolean      @default(false)
   bossKeyWithholdingTaxToggle          Boolean      @default(false)
   // Attendance & Shift Rules Configuration
   attendanceStandardTimeIn         String                   @default("09:30")
@@ -451,6 +452,7 @@ model CompensationRecord {
   // Divisor used to convert monthly <-> daily/hourly rates (e.g. 261/313/314
   // day-year conventions). Not a legal constant — company/employee configurable.
   standardWorkDaysPerMonth  Decimal?  @db.Decimal(6, 2)
+  isTaxable                 Boolean   @default(true)
   createdAt                 DateTime  @default(now())
   createdByUserId           String?
 
@@ -1214,6 +1216,7 @@ model FinalPayRun {
   employee       Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   lineItems      FinalPayLineItem[]
   loanDeductions LoanDeduction[]
+  checks         PayrollPaymentCheck[]
 
   @@unique([companyId, finalPayNumber])
   @@index([companyId])
@@ -1253,27 +1256,35 @@ model FinalPayLineItem {
 // ==================== Payroll Check Disbursements ====================
 
 model PayrollPaymentCheck {
-  id             String              @id @default(cuid())
-  companyId      String
-  payrollRunId   String
-  checkNumber    String
-  checkDate      DateTime
-  amount         Decimal             @db.Decimal(14, 2)
-  bankAccountId  String?
-  bankName       String?
-  payee          String?
-  notes          String?
-  status         String              @default("ISSUED") // ISSUED, CLEARED, VOID
-  issuedByUserId String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id                        String                   @id @default(cuid())
+  companyId                 String
+  payrollRunId              String?
+  finalPayRunId             String?
+  statutoryPaymentRecordId  String?
+  sourceType                String                   @default("PAYROLL_RUN") // PAYROLL_RUN, SEPARATION_PAY, STATUTORY_REMITTANCE, MANUAL
+  checkNumber               String
+  checkDate                 DateTime
+  amount                    Decimal                  @db.Decimal(14, 2)
+  bankAccountId             String?
+  bankName                  String?
+  payee                     String?
+  notes                     String?
+  status                    String                   @default("ISSUED") // ISSUED, CLEARED, VOID
+  issuedByUserId            String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
 
-  company        Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  payrollRun     PayrollRun          @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  bankAccount    CompanyBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  company                   Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollRun                PayrollRun?              @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  finalPayRun               FinalPayRun?             @relation(fields: [finalPayRunId], references: [id], onDelete: Cascade)
+  statutoryPaymentRecord    StatutoryPaymentRecord?  @relation(fields: [statutoryPaymentRecordId], references: [id], onDelete: SetNull)
+  bankAccount               CompanyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([payrollRunId])
+  @@index([finalPayRunId])
+  @@index([statutoryPaymentRecordId])
+  @@index([sourceType])
   @@index([checkNumber])
 }
 
@@ -1331,6 +1342,7 @@ model StatutoryPaymentRecord {
   company             Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   payrollRun          PayrollRun?              @relation(fields: [payrollRunId], references: [id], onDelete: SetNull)
   bankAccount         CompanyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  checks              PayrollPaymentCheck[]
 
   @@unique([companyId, agency, periodYear, periodMonth, payrollRunId])
   @@index([companyId, agency])

@@ -30,6 +30,10 @@ export default async function FinalPayRunDetailPage({
     include: {
       employee: { select: { employeeNumber: true, firstName: true, lastName: true, clearanceCompleted: true } },
       lineItems: true,
+      checks: {
+        include: { bankAccount: true },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -41,6 +45,7 @@ export default async function FinalPayRunDetailPage({
   }
 
   const netFinalPay = Number(run.netFinalPay);
+  const employeeFullName = `${run.employee.firstName} ${run.employee.lastName}`;
 
   return (
     <div className="space-y-6">
@@ -59,7 +64,13 @@ export default async function FinalPayRunDetailPage({
               Final pay statement PDF
             </Button>
           )}
-          <FinalPayActions runId={run.id} status={run.status} clearanceCompleted={run.employee.clearanceCompleted} />
+          <FinalPayActions
+            runId={run.id}
+            status={run.status}
+            clearanceCompleted={run.employee.clearanceCompleted}
+            netFinalPay={netFinalPay}
+            employeeName={employeeFullName}
+          />
         </div>
       </div>
 
@@ -113,6 +124,50 @@ export default async function FinalPayRunDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {run.checks && run.checks.length > 0 && (
+        <Card className="border-blue-200/80 bg-blue-50/20 dark:border-blue-900/50 dark:bg-blue-950/10">
+          <CardHeader className="pb-3 border-b border-blue-100 dark:border-blue-900/40">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-950 dark:text-blue-100">
+              Disbursement Check Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-blue-50/50 dark:bg-blue-950/30">
+                  <TableHead className="text-[11px] font-semibold uppercase">Check Number</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase">Check Date</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase">Payee</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase">Bank / Account</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase">Status</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {run.checks.map((chk) => (
+                  <TableRow key={chk.id}>
+                    <TableCell className="font-mono font-bold text-xs">{chk.checkNumber}</TableCell>
+                    <TableCell className="text-xs">{chk.checkDate.toLocaleDateString()}</TableCell>
+                    <TableCell className="text-xs">{chk.payee || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {chk.bankAccount
+                        ? `${chk.bankAccount.bankName} (${chk.bankAccount.accountNumber})`
+                        : chk.bankName || "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <Badge variant="outline">{chk.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-semibold text-xs">
+                      ₱{Number(chk.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -74,6 +74,7 @@ export function CreateEmployeeDialog({
   const [allowanceTypes, setAllowanceTypes] = useState<string[]>(INITIAL_ALLOWANCES);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [bossKeyAllowanceTaxableToggle, setBossKeyAllowanceTaxableToggle] = useState(false);
+  const [bossKeyBasicPayTaxableToggle, setBossKeyBasicPayTaxableToggle] = useState(false);
   const [customLabels, setCustomLabels] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -97,6 +98,9 @@ export function CreateEmployeeDialog({
         if (data.bossKeyAllowanceTaxableToggle !== undefined) {
           setBossKeyAllowanceTaxableToggle(data.bossKeyAllowanceTaxableToggle);
         }
+        if (data.bossKeyBasicPayTaxableToggle !== undefined) {
+          setBossKeyBasicPayTaxableToggle(data.bossKeyBasicPayTaxableToggle);
+        }
       })
       .catch(() => {});
   }, [open]);
@@ -118,6 +122,7 @@ export function CreateEmployeeDialog({
       civilStatus: "" as CreateEmployeeFormValues["civilStatus"],
       employeeType: "" as CreateEmployeeFormValues["employeeType"],
       payBasis: "" as CreateEmployeeFormValues["payBasis"],
+      isTaxable: true,
       allowances: [],
     },
   });
@@ -471,7 +476,28 @@ export function CreateEmployeeDialog({
             {errors.payBasis && <p className="text-sm text-destructive">{errors.payBasis.message}</p>}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="basicRate">Basic rate (₱)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="basicRate">Basic rate (₱)</Label>
+              {bossKeyBasicPayTaxableToggle && (
+                <div className="flex items-center gap-1.5">
+                  <Controller
+                    control={control}
+                    name="isTaxable"
+                    render={({ field }) => (
+                      <Switch
+                        id="create_basicRateIsTaxable"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        size="sm"
+                      />
+                    )}
+                  />
+                  <Label htmlFor="create_basicRateIsTaxable" className="text-xs cursor-pointer text-slate-600 dark:text-slate-300">
+                    Taxable
+                  </Label>
+                </div>
+              )}
+            </div>
             <Input id="basicRate" type="number" step="0.01" {...register("basicRate")} />
             {errors.basicRate && <p className="text-sm text-destructive">{errors.basicRate.message}</p>}
           </div>

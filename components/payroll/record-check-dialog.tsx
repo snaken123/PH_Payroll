@@ -41,6 +41,7 @@ export interface ExistingCheck {
   payee?: string | null;
   notes?: string | null;
   status?: string;
+  sourceType?: string;
   payrollRun?: {
     id: string;
     runNumber: number;
@@ -49,7 +50,22 @@ export interface ExistingCheck {
       cutoffEnd: string;
       payDate: string;
     };
-  };
+  } | null;
+  finalPayRun?: {
+    id: string;
+    finalPayNumber: number;
+    employee: {
+      firstName: string;
+      lastName: string;
+      employeeNumber: string;
+    };
+  } | null;
+  statutoryPaymentRecord?: {
+    id: string;
+    agency: string;
+    periodMonth: number;
+    periodYear: number;
+  } | null;
 }
 
 export interface PostedRunOption {
@@ -182,10 +198,6 @@ export function RecordCheckDialog({
     }
 
     const effectiveTargetRunId = isEditing ? (runId || existingCheck?.payrollRun?.id) : (selectedRunId || runId);
-    if (!isEditing && !effectiveTargetRunId) {
-      toast.error("Please select which payroll run this check is for.");
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -203,11 +215,14 @@ export function RecordCheckDialog({
         payee: payee.trim() || null,
         notes: notes.trim() || null,
         status,
+        ...(effectiveTargetRunId ? { payrollRunId: effectiveTargetRunId } : {}),
       };
 
       const url = isEditing
         ? `/api/payroll/checks/${existingCheck!.id}`
-        : `/api/payroll/runs/${effectiveTargetRunId}/checks`;
+        : effectiveTargetRunId
+        ? `/api/payroll/runs/${effectiveTargetRunId}/checks`
+        : `/api/payroll/checks`;
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {

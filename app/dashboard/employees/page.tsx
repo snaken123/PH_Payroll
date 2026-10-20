@@ -17,16 +17,18 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { UsersIcon, UserCheckIcon, ClockIcon, Building2Icon, Edit3Icon, FileTextIcon } from "lucide-react";
 import { hasPermission } from "@/lib/permissions";
+import { ShowResignedToggle } from "@/components/employees/show-resigned-toggle";
 import { EmploymentStatus } from "@/lib/generated/prisma/enums";
 
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; sort?: string; order?: "asc" | "desc" }>;
+  searchParams: Promise<{ page?: string; q?: string; sort?: string; order?: "asc" | "desc"; showResigned?: string }>;
 }) {
   const ctx = await getTenantContext();
   const resolvedSearchParams = await searchParams;
-  const { page: pageParam, q, sort, order } = resolvedSearchParams;
+  const { page: pageParam, q, sort, order, showResigned } = resolvedSearchParams;
+  const includeResigned = showResigned === "true";
   const page = parsePageParam(pageParam);
   const search = q?.trim() || undefined;
   const sortOrder = order === "desc" ? "desc" : "asc";
@@ -35,6 +37,7 @@ export default async function EmployeesPage({
     ctx.companyId,
     {
       isDeleted: false,
+      ...(!includeResigned ? { employmentStatus: { not: EmploymentStatus.RESIGNED } } : {}),
       ...(search
         ? {
             OR: [
@@ -65,7 +68,12 @@ export default async function EmployeesPage({
   }
 
   const filteredCount = await prisma.employee.count({ where });
-  const totalCount = await prisma.employee.count({ where: withCompanyScope(ctx.companyId, { isDeleted: false }) });
+  const totalCount = await prisma.employee.count({
+    where: withCompanyScope(ctx.companyId, {
+      isDeleted: false,
+      ...(!includeResigned ? { employmentStatus: { not: EmploymentStatus.RESIGNED } } : {}),
+    }),
+  });
   const { skip, take, totalPages } = paginationMeta(page, filteredCount);
 
   const [rawEmployees, branches, regularCount, probationaryCount] = await Promise.all([
@@ -159,18 +167,20 @@ export default async function EmployeesPage({
       {/* Main Roster Data Table Card */}
       <Card className="border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:border-slate-800">
         <div className="p-3.5 border-b border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-900/60 rounded-t-xl">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Employee Directory</h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {filteredCount} {filteredCount === 1 ? "record" : "records"}
             </span>
+            <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
+            <ShowResignedToggle defaultChecked={includeResigned} />
           </div>
           <div className="w-full sm:w-auto">
             <SearchForm
               action="/dashboard/employees"
               placeholder="Search name or employee #…"
               defaultValue={search}
-              hiddenParams={{ sort, order }}
+              hiddenParams={{ sort, order, ...(includeResigned ? { showResigned: "true" } : {}) }}
             />
           </div>
         </div>
@@ -192,7 +202,7 @@ export default async function EmployeesPage({
                         currentSort={sort}
                         currentOrder={sortOrder}
                         basePath="/dashboard/employees"
-                        query={{ q: search }}
+                        query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                       />
                     </TableHead>
                     <TableHead>
@@ -202,7 +212,7 @@ export default async function EmployeesPage({
                         currentSort={sort}
                         currentOrder={sortOrder}
                         basePath="/dashboard/employees"
-                        query={{ q: search }}
+                        query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                       />
                     </TableHead>
                     <TableHead>
@@ -212,7 +222,7 @@ export default async function EmployeesPage({
                         currentSort={sort}
                         currentOrder={sortOrder}
                         basePath="/dashboard/employees"
-                        query={{ q: search }}
+                        query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                       />
                     </TableHead>
                     <TableHead>
@@ -222,7 +232,7 @@ export default async function EmployeesPage({
                         currentSort={sort}
                         currentOrder={sortOrder}
                         basePath="/dashboard/employees"
-                        query={{ q: search }}
+                        query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                       />
                     </TableHead>
                     <TableHead>
@@ -232,7 +242,7 @@ export default async function EmployeesPage({
                         currentSort={sort}
                         currentOrder={sortOrder}
                         basePath="/dashboard/employees"
-                        query={{ q: search }}
+                        query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                       />
                     </TableHead>
                     <TableHead className="text-right">
@@ -243,7 +253,7 @@ export default async function EmployeesPage({
                           currentSort={sort}
                           currentOrder={sortOrder}
                           basePath="/dashboard/employees"
-                          query={{ q: search }}
+                          query={{ q: search, ...(includeResigned ? { showResigned: "true" } : {}) }}
                           align="right"
                         />
                       ) : (
@@ -330,7 +340,7 @@ export default async function EmployeesPage({
         </CardContent>
 
         <div className="p-4 border-t border-slate-200/80 dark:border-slate-800">
-          <Pager page={page} totalPages={totalPages} basePath="/dashboard/employees" query={{ q: search, sort, order: sortOrder }} />
+          <Pager page={page} totalPages={totalPages} basePath="/dashboard/employees" query={{ q: search, sort, order: sortOrder, ...(includeResigned ? { showResigned: "true" } : {}) }} />
         </div>
       </Card>
     </div>

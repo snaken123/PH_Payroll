@@ -62,6 +62,7 @@ export interface PayrollEngineInput {
   payBasis: PayBasis;
   basicRate: Decimal.Value;
   standardWorkDaysPerMonth?: Decimal.Value;
+  isBasicPayTaxable?: boolean;
   isManagerialExempt: boolean;
   timesheets: TimesheetFact[];
   allowances: AllowanceInput[];
@@ -157,6 +158,9 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
     direction: "EARNING",
     description: "Basic pay",
     amount: base.grossBasicPay,
+    sourceRef: {
+      isTaxable: input.isBasicPayTaxable ?? true,
+    },
   });
 
   // 2. Attendance-based adjustments (OT/night-diff gated by managerial
@@ -458,8 +462,9 @@ export function computePayroll(input: PayrollEngineInput): PayrollEngineResult {
   let withholdingTaxAmount = zero;
 
   if (isDeductWithholdingTax) {
+    const nonTaxableBasicPay = input.isBasicPayTaxable === false ? base.basePay : zero;
     const taxableIncome = Decimal.max(
-      grossPay.minus(nonTaxableAllowances).minus(statutoryEeTotal),
+      grossPay.minus(nonTaxableAllowances).minus(nonTaxableBasicPay).minus(statutoryEeTotal),
       0
     );
     const withholding = getWithholdingTax(taxableIncome, "SEMI_MONTHLY", input.rates.birBrackets);

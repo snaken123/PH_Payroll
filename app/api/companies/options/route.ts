@@ -12,6 +12,7 @@ export async function GET() {
         where: { id: activeCompanyId },
         select: {
           bossKeyAllowanceTaxableToggle: true,
+          bossKeyBasicPayTaxableToggle: true,
           bossKeyWithholdingTaxToggle: true,
         },
       })
@@ -30,6 +31,7 @@ export async function GET() {
   return NextResponse.json({
     companies,
     bossKeyAllowanceTaxableToggle: currentCompany?.bossKeyAllowanceTaxableToggle ?? false,
+    bossKeyBasicPayTaxableToggle: currentCompany?.bossKeyBasicPayTaxableToggle ?? false,
     bossKeyWithholdingTaxToggle: currentCompany?.bossKeyWithholdingTaxToggle ?? false,
   });
 }

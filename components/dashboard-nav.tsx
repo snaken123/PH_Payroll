@@ -17,6 +17,7 @@ import {
   SettingsIcon,
   BookOpenIcon,
   ShieldAlertIcon,
+  CreditCardIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hasPermission } from "@/lib/permissions";
@@ -49,6 +50,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     title: "PAYROLL & COMPLIANCE",
     items: [
       { href: "/dashboard/payroll", label: "Payroll Runs", icon: WalletIcon, permission: "payroll.compute" },
+      { href: "/dashboard/checks", label: "Check Register", icon: CreditCardIcon, permission: "payroll.compute" },
       { href: "/dashboard/reports", label: "Statutory Reports", icon: FileTextIcon, permission: "reports.view" },
       { href: "/dashboard/contractors", label: "Contractors", icon: BriefcaseIcon, permission: "contractors.view" },
     ],

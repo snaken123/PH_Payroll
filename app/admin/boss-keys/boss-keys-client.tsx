@@ -15,6 +15,7 @@ interface CompanyBossKeyData {
   bossKeyIncludeOtherCompanyAllowances: boolean;
   bossKeyWaiveMandatoryMpfWisp: boolean;
   bossKeyAllowanceTaxableToggle: boolean;
+  bossKeyBasicPayTaxableToggle: boolean;
   bossKeyWithholdingTaxToggle: boolean;
   includeOtherCompanyAllowancesInContributions: boolean;
   waiveMandatoryMpfWisp: boolean;
@@ -44,6 +45,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
       | "bossKeyIncludeOtherCompanyAllowances"
       | "bossKeyWaiveMandatoryMpfWisp"
       | "bossKeyAllowanceTaxableToggle"
+      | "bossKeyBasicPayTaxableToggle"
       | "bossKeyWithholdingTaxToggle",
     newValue: boolean
   ) => {
@@ -70,6 +72,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
         bossKeyIncludeOtherCompanyAllowances: "Include Other Co. Allowances Toggle",
         bossKeyWaiveMandatoryMpfWisp: "Waive Mandatory MPF/WISP Toggle",
         bossKeyAllowanceTaxableToggle: "'Taxable' Toggle in Allowances",
+        bossKeyBasicPayTaxableToggle: "'Taxable' Toggle in Basic Pay",
         bossKeyWithholdingTaxToggle: "Withholding Tax Deduction Checkbox",
       };
 
@@ -171,6 +174,17 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                 </th>
                 <th className="py-4 px-5 text-center min-w-[220px]">
                   <div className="flex items-center justify-center gap-1.5">
+                    <span>"Taxable" Toggle in Basic Pay</span>
+                    <span title="Controls visibility of the 'Taxable' toggle switch for Basic Pay in Compensation History">
+                      <HelpCircle className="size-3.5 text-slate-400 cursor-help" />
+                    </span>
+                  </div>
+                  <div className="text-[10px] normal-case text-slate-400 font-normal mt-0.5">
+                    Compensation History Toggle
+                  </div>
+                </th>
+                <th className="py-4 px-5 text-center min-w-[220px]">
+                  <div className="flex items-center justify-center gap-1.5">
                     <span>Withholding Tax Checkbox</span>
                     <span title="Controls visibility of the 'Withholding Tax Deduction' checkbox in Update 201 file">
                       <HelpCircle className="size-3.5 text-slate-400 cursor-help" />
@@ -185,7 +199,7 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
             <tbody className="divide-y divide-slate-800 text-slate-200">
               {filteredCompanies.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     No companies match your search criteria.
                   </td>
                 </tr>
@@ -314,7 +328,39 @@ export function BossKeysClient({ initialCompanies }: BossKeysClientProps) {
                       </div>
                     </td>
 
-                    {/* Boss Key 4: Withholding Tax Deduction Checkbox */}
+                    {/* Boss Key 4: "Taxable" Toggle in Basic Pay */}
+                    <td className="py-4 px-5 text-center bg-slate-900/30">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <Switch
+                          checked={company.bossKeyBasicPayTaxableToggle}
+                          onCheckedChange={(checked) =>
+                            handleToggle(
+                              company.id,
+                              "bossKeyBasicPayTaxableToggle",
+                              checked
+                            )
+                          }
+                          disabled={
+                            loadingId ===
+                            `${company.id}-bossKeyBasicPayTaxableToggle`
+                          }
+                          className="data-[state=checked]:bg-amber-500"
+                        />
+                        <span
+                          className={`text-[11px] font-medium ${
+                            company.bossKeyBasicPayTaxableToggle
+                              ? "text-amber-400 font-semibold"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {company.bossKeyBasicPayTaxableToggle
+                            ? "Visible in Form"
+                            : "Invisible"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Boss Key 5: Withholding Tax Deduction Checkbox */}
                     <td className="py-4 px-5 text-center bg-slate-900/30">
                       <div className="flex flex-col items-center justify-center gap-1.5">
                         <Switch

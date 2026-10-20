@@ -54,6 +54,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const standardWorkDaysPerMonth = (updateType === "ALLOWANCE" && currentRecord)
     ? currentRecord.standardWorkDaysPerMonth
     : (data.standardWorkDaysPerMonth ?? currentRecord?.standardWorkDaysPerMonth ?? null);
+  const isTaxable = (updateType === "ALLOWANCE" && currentRecord)
+    ? currentRecord.isTaxable
+    : (data.isTaxable ?? true);
 
   // Determine allowances: fallback to active allowances if updating basic rate only
   let allowancesToCreate: Array<{ label: string; amount: number | string; frequency?: "MONTHLY" | "DAILY"; isTaxable: boolean; payingCompanyId?: string | null }> = [];
@@ -100,6 +103,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         payBasis,
         basicRate,
         standardWorkDaysPerMonth,
+        isTaxable,
         createdByUserId: ctx.userId,
         allowances: {
           create: allowancesToCreate.map((a) => ({
