@@ -41,7 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { timesheetStatusValues, holidayTypeValues, extractTimeOfDay } from "@/lib/validations/attendance";
-import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
+import { calculateTimesheetHours, isSaturdayRuleActiveForDate, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
 import { GoogleSheetImportDialog } from "./google-sheet-import-dialog";
 
 interface EmployeeOption {
@@ -105,11 +105,28 @@ function enumerateDates(start: string, end: string): string[] {
   return dates;
 }
 
+function getScheduledShiftHours(
+  workDate: string,
+  employeeId?: string,
+  config?: CompanyAttendanceConfig
+): number {
+  if (isSaturdayRuleActiveForDate(workDate, employeeId, config)) {
+    return config?.attendanceSaturdayShiftHours ?? 5;
+  }
+  return 8;
+}
+
 /** Mirrors lib/services/attendanceDefaults.ts so a day with no entry yet
  * still shows a sensible, immediately-editable default. */
-function defaultForDate(workDate: string, holidaysByDate: Map<string, string>): CellState {
+function defaultForDate(
+  workDate: string,
+  holidaysByDate: Map<string, string>,
+  employeeId?: string,
+  config?: CompanyAttendanceConfig
+): CellState {
   const isSunday = new Date(`${workDate}T00:00:00Z`).getUTCDay() === 0;
   const holidayType = holidaysByDate.get(workDate);
+  const shiftHours = getScheduledShiftHours(workDate, employeeId, config);
 
   if (isSunday) {
     return {
@@ -131,7 +148,7 @@ function defaultForDate(workDate: string, holidaysByDate: Map<string, string>): 
       status: "HOLIDAY",
       timeIn: "",
       timeOut: "",
-      scheduledHours: 8,
+      scheduledHours: shiftHours,
       lateMinutes: 0,
       undertimeMinutes: 0,
       regularHours: 0,
@@ -145,10 +162,10 @@ function defaultForDate(workDate: string, holidaysByDate: Map<string, string>): 
     status: "PRESENT",
     timeIn: "",
     timeOut: "",
-    scheduledHours: 8,
+    scheduledHours: shiftHours,
     lateMinutes: 0,
     undertimeMinutes: 0,
-    regularHours: 8,
+    regularHours: shiftHours,
     overtimeHours: 0,
     nightDiffHours: 0,
     holidayType: "",
@@ -293,15 +310,28 @@ export function AttendanceGrid() {
       for (const date of dates) {
         const key = cellKey(emp.id, date);
         const existing = entryByKey.get(key);
+        const shiftHours = getScheduledShiftHours(date, emp.id, config);
+        const isSatRuleActive = isSaturdayRuleActiveForDate(date, emp.id, config);
+
         if (existing) {
+          const rawTimeIn = toTimeString(existing.timeIn);
+          const rawTimeOut = toTimeString(existing.timeOut);
+          let regularHours = Number(existing.regularHours);
+          let scheduledHours = Number(existing.scheduledHours);
+
+          if (isSatRuleActive && !rawTimeIn && !rawTimeOut && existing.status === "PRESENT" && regularHours === 8) {
+            regularHours = shiftHours;
+            scheduledHours = shiftHours;
+          }
+
           next[key] = {
             status: existing.status,
-            timeIn: toTimeString(existing.timeIn),
-            timeOut: toTimeString(existing.timeOut),
-            scheduledHours: Number(existing.scheduledHours),
+            timeIn: rawTimeIn,
+            timeOut: rawTimeOut,
+            scheduledHours,
             lateMinutes: existing.lateMinutes,
             undertimeMinutes: existing.undertimeMinutes,
-            regularHours: Number(existing.regularHours),
+            regularHours,
             overtimeHours: Number(existing.overtimeHours),
             nightDiffHours: Number(existing.nightDiffHours),
             holidayType: existing.holidayType ?? "",
@@ -322,7 +352,7 @@ export function AttendanceGrid() {
             isRestDay: true,
           };
         } else {
-          next[key] = defaultForDate(date, holidaysByDate);
+          next[key] = defaultForDate(date, holidaysByDate, emp.id, config);
         }
       }
     }
@@ -332,7 +362,7 @@ export function AttendanceGrid() {
       setSelectedEmployees(new Set());
       setSelectedDates(new Set());
     });
-  }, [employees, entries, holidays, dates]);
+  }, [employees, entries, holidays, dates, config]);
 
   const filteredEmployees = useMemo(() => {
     if (!search.trim()) return employees;
@@ -371,8 +401,22 @@ export function AttendanceGrid() {
       } else if (patch.status === "PRESENT") {
         nextCell.isRestDay = false;
         if (patch.regularHours === undefined && !nextCell.timeIn && !nextCell.timeOut && nextCell.regularHours === 0) {
-          nextCell.regularHours = 8;
-          nextCell.scheduledHours = 8;
+          const shiftHours = getScheduledShiftHours(date, employeeId, config);
+          nextCell.regularHours = shiftHours;
+          nextCell.scheduledHours = shiftHours;
+        }
+      }
+
+      if (patch.isRestDay === true) {
+        if (!nextCell.timeIn && !nextCell.timeOut) {
+          nextCell.regularHours = 0;
+          nextCell.scheduledHours = 0;
+        }
+      } else if (patch.isRestDay === false) {
+        if (!nextCell.timeIn && !nextCell.timeOut && nextCell.regularHours === 0) {
+          const shiftHours = getScheduledShiftHours(date, employeeId, config);
+          nextCell.regularHours = shiftHours;
+          nextCell.scheduledHours = shiftHours;
         }
       }
 
@@ -392,11 +436,23 @@ export function AttendanceGrid() {
           overtimeHours: calc.overtimeHours,
           lateMinutes: calc.lateMinutes,
           undertimeMinutes: calc.undertimeMinutes,
+          nightDiffHours: calc.nightDiffHours,
         };
       }
 
       return { ...prev, [key]: nextCell };
     });
+  }
+
+  function handleOpenEditDialog(employeeId: string, date: string) {
+    const isSatRuleActive = isSaturdayRuleActiveForDate(date, employeeId, config);
+    const shiftHours = getScheduledShiftHours(date, employeeId, config);
+    const key = cellKey(employeeId, date);
+    const cell = cells[key];
+    if (cell && isSatRuleActive && !cell.timeIn && !cell.timeOut && cell.status === "PRESENT" && cell.regularHours === 8) {
+      updateCell(employeeId, date, { regularHours: shiftHours, scheduledHours: shiftHours });
+    }
+    setEditingCell({ employeeId, date });
   }
 
   function toggleEmployee(employeeId: string) {
@@ -441,7 +497,16 @@ export function AttendanceGrid() {
     setCells((prev) => {
       const next = { ...prev };
       for (const key of keys) {
-        if (next[key]) next[key] = { ...next[key], ...patch };
+        if (next[key]) {
+          const [empId, date] = key.split("::");
+          const entryPatch = { ...patch };
+          if (patch.status === "PRESENT") {
+            const shiftHours = getScheduledShiftHours(date, empId, config);
+            entryPatch.scheduledHours = shiftHours;
+            entryPatch.regularHours = shiftHours;
+          }
+          next[key] = { ...next[key], ...entryPatch };
+        }
       }
       return next;
     });
@@ -452,7 +517,15 @@ export function AttendanceGrid() {
       const next = { ...prev };
       for (const emp of filteredEmployees) {
         const key = cellKey(emp.id, date);
-        if (next[key]) next[key] = { ...next[key], ...patch };
+        if (next[key]) {
+          const entryPatch = { ...patch };
+          if (patch.status === "PRESENT") {
+            const shiftHours = getScheduledShiftHours(date, emp.id, config);
+            entryPatch.scheduledHours = shiftHours;
+            entryPatch.regularHours = shiftHours;
+          }
+          next[key] = { ...next[key], ...entryPatch };
+        }
       }
       return next;
     });
@@ -500,8 +573,8 @@ export function AttendanceGrid() {
     setCells((prev) => {
       const next = { ...prev };
       for (const key of keys) {
-        const [, date] = key.split("::");
-        next[key] = defaultForDate(date, holidaysByDate);
+        const [empId, date] = key.split("::");
+        next[key] = defaultForDate(date, holidaysByDate, empId, config);
       }
       return next;
     });
@@ -1023,14 +1096,14 @@ export function AttendanceGrid() {
                               </Select>
                               <div className="flex items-center justify-between gap-0.5">
                                 <div
-                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  onClick={() => handleOpenEditDialog(emp.id, date)}
                                   className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
                                   title="Regular hours (click pencil to edit)"
                                 >
                                   {c.regularHours}
                                 </div>
                                 <div
-                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  onClick={() => handleOpenEditDialog(emp.id, date)}
                                   className="h-5 w-[26px] flex items-center justify-center rounded border border-slate-300/80 bg-background/95 font-mono text-[9px] font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 cursor-pointer select-none hover:border-slate-400"
                                   title="Overtime hours (click pencil to edit)"
                                 >
@@ -1041,7 +1114,7 @@ export function AttendanceGrid() {
                                   variant="ghost"
                                   size="icon-xs"
                                   className="h-5 w-4 p-0 shrink-0 hover:bg-black/10 dark:hover:bg-white/10"
-                                  onClick={() => setEditingCell({ employeeId: emp.id, date })}
+                                  onClick={() => handleOpenEditDialog(emp.id, date)}
                                   aria-label={`More details for ${emp.lastName} on ${date}`}
                                   title="Time in/out, late, undertime, night diff, rest day, holiday"
                                 >
@@ -1074,103 +1147,122 @@ export function AttendanceGrid() {
             </DialogTitle>
             <DialogDescription>Time in/out, regular & overtime hours, late, undertime, night differential, rest day, and holiday type.</DialogDescription>
           </DialogHeader>
-          {editingCell && editingState && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label htmlFor="detailTimeIn">Time in</Label>
-                <Input
-                  id="detailTimeIn"
-                  type="time"
-                  value={editingState.timeIn}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { timeIn: e.target.value })}
-                />
+          {editingCell && editingState && (() => {
+            const isSatRuleActiveForEditing = isSaturdayRuleActiveForDate(editingCell.date, editingCell.employeeId, config);
+            const shiftHoursForEditing = getScheduledShiftHours(editingCell.date, editingCell.employeeId, config);
+            const displayRegularHours =
+              isSatRuleActiveForEditing && !editingState.timeIn && !editingState.timeOut && editingState.status === "PRESENT" && editingState.regularHours === 8
+                ? shiftHoursForEditing
+                : editingState.regularHours;
+
+            return (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="detailTimeIn">Time in</Label>
+                  <Input
+                    id="detailTimeIn"
+                    type="time"
+                    value={editingState.timeIn}
+                    onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { timeIn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailTimeOut">Time out</Label>
+                  <Input
+                    id="detailTimeOut"
+                    type="time"
+                    value={editingState.timeOut}
+                    onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { timeOut: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailRegular">Regular hours</Label>
+                  <Input
+                    id="detailRegular"
+                    type="number"
+                    step="0.25"
+                    value={displayRegularHours}
+                    readOnly
+                    tabIndex={-1}
+                    className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailOvertime">Overtime hours</Label>
+                  <Input
+                    id="detailOvertime"
+                    type="number"
+                    step="0.25"
+                    value={editingState.overtimeHours}
+                    readOnly
+                    tabIndex={-1}
+                    className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailLate">Late (min)</Label>
+                  <Input
+                    id="detailLate"
+                    type="number"
+                    value={editingState.lateMinutes}
+                    readOnly
+                    tabIndex={-1}
+                    className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailUndertime">Undertime (min)</Label>
+                  <Input
+                    id="detailUndertime"
+                    type="number"
+                    value={editingState.undertimeMinutes}
+                    readOnly
+                    tabIndex={-1}
+                    className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="detailNightDiff">Night diff hours</Label>
+                  <Input
+                    id="detailNightDiff"
+                    type="number"
+                    step="0.25"
+                    value={editingState.nightDiffHours}
+                    readOnly
+                    tabIndex={-1}
+                    className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+                  />
+                </div>
+                <div className="flex items-center gap-2 self-end pb-2">
+                  <Switch
+                    checked={editingState.isRestDay}
+                    onCheckedChange={(checked) => updateCell(editingCell.employeeId, editingCell.date, { isRestDay: !!checked })}
+                    id="detailRestDay"
+                  />
+                  <Label htmlFor="detailRestDay">Rest day</Label>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="detailHolidayType">Holiday type</Label>
+                  <Select
+                    value={editingState.holidayType || "none"}
+                    onValueChange={(v) => updateCell(editingCell.employeeId, editingCell.date, { holidayType: v === "none" ? "" : (v ?? "") })}
+                  >
+                    <SelectTrigger id="detailHolidayType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {holidayTypeValues.map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {v.replaceAll("_", " ")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailTimeOut">Time out</Label>
-                <Input
-                  id="detailTimeOut"
-                  type="time"
-                  value={editingState.timeOut}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { timeOut: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailRegular">Regular hours</Label>
-                <Input
-                  id="detailRegular"
-                  type="number"
-                  step="0.25"
-                  value={editingState.regularHours}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { regularHours: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailOvertime">Overtime hours (auto-computed)</Label>
-                <Input
-                  id="detailOvertime"
-                  type="number"
-                  step="0.25"
-                  value={editingState.overtimeHours}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { overtimeHours: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailLate">Late (min)</Label>
-                <Input
-                  id="detailLate"
-                  type="number"
-                  value={editingState.lateMinutes}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { lateMinutes: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailUndertime">Undertime (min)</Label>
-                <Input
-                  id="detailUndertime"
-                  type="number"
-                  value={editingState.undertimeMinutes}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { undertimeMinutes: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="detailNightDiff">Night diff hours</Label>
-                <Input
-                  id="detailNightDiff"
-                  type="number"
-                  step="0.25"
-                  value={editingState.nightDiffHours}
-                  onChange={(e) => updateCell(editingCell.employeeId, editingCell.date, { nightDiffHours: Number(e.target.value) })}
-                />
-              </div>
-              <div className="flex items-center gap-2 self-end pb-2">
-                <Switch
-                  checked={editingState.isRestDay}
-                  onCheckedChange={(checked) => updateCell(editingCell.employeeId, editingCell.date, { isRestDay: !!checked })}
-                  id="detailRestDay"
-                />
-                <Label htmlFor="detailRestDay">Rest day</Label>
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <Label htmlFor="detailHolidayType">Holiday type</Label>
-                <Select
-                  value={editingState.holidayType || "none"}
-                  onValueChange={(v) => updateCell(editingCell.employeeId, editingCell.date, { holidayType: v === "none" ? "" : (v ?? "") })}
-                >
-                  <SelectTrigger id="detailHolidayType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {holidayTypeValues.map((v) => (
-                      <SelectItem key={v} value={v}>
-                        {v.replaceAll("_", " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+            );
+          })()}
           <DialogFooter>
             <Button onClick={() => setEditingCell(null)}>Done</Button>
           </DialogFooter>

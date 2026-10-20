@@ -41,6 +41,7 @@ export interface CalculateHoursResult {
   lateMinutes: number;
   undertimeMinutes: number;
   breakMinutes: number;
+  nightDiffHours: number;
 }
 
 function parseMinutes(timeStr?: string | null): number | null {
@@ -56,44 +57,74 @@ function roundToQuarter(num: number): number {
   return Math.round(num * 100) / 100;
 }
 
+export function isSaturdayDate(workDate?: Date | string | null): boolean {
+  if (!workDate) return false;
+  if (typeof workDate === "string") {
+    const match = workDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]) - 1;
+      const day = Number(match[3]);
+      return new Date(Date.UTC(year, month, day)).getUTCDay() === 6;
+    }
+  }
+  const d = new Date(workDate);
+  return d.getUTCDay() === 6 || d.getDay() === 6;
+}
+
+export function isSaturdayRuleActiveForDate(
+  workDate: Date | string | null | undefined,
+  employeeId: string | null | undefined,
+  config?: CompanyAttendanceConfig
+): boolean {
+  if (!isSaturdayDate(workDate)) return false;
+  const satRuleEnabled = config?.attendanceSaturdayRuleEnabled ?? false;
+  if (!satRuleEnabled) return false;
+  const satEmpIds = config?.attendanceSaturdayEmployeeIds;
+  const appliesToThisEmp =
+    !satEmpIds || satEmpIds.length === 0 || (employeeId ? satEmpIds.includes(employeeId) : false);
+  return appliesToThisEmp;
+}
+
+export function calculateNightDiffHours(rawInMins: number | null, rawOutMins: number | null): number {
+  if (rawInMins === null || rawOutMins === null) return 0;
+
+  let start = rawInMins;
+  let end = rawOutMins;
+  if (end < start) {
+    // Overnight shift: timeOut is on next calendar day
+    end += 1440;
+  }
+
+  // Night diff window is 10:00 PM (22:00 = 1320m) to 6:00 AM (06:00 = 360m / 1800m)
+  const nightWindows: Array<[number, number]> = [
+    [0, 360],         // Day 1 12am - 6am
+    [1320, 1440],     // Day 1 10pm - 12am
+    [1440, 1800],     // Day 2 12am - 6am
+    [2760, 2880],     // Day 2 10pm - 12am
+  ];
+
+  let totalNightMinutes = 0;
+  for (const [winStart, winEnd] of nightWindows) {
+    const overlapStart = Math.max(start, winStart);
+    const overlapEnd = Math.min(end, winEnd);
+    if (overlapEnd > overlapStart) {
+      totalNightMinutes += overlapEnd - overlapStart;
+    }
+  }
+
+  return roundToQuarter(totalNightMinutes / 60);
+}
+
 export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHoursResult {
   const { scheduleType, timeIn, timeOut, customBreakMinutes, config, workDate, employeeId } = input;
 
-  // 1. Check for Special Day Schedule override
-  const specialDay = config?.specialDaySchedule;
-  const stdTimeInStr = specialDay?.standardTimeIn || config?.attendanceStandardTimeIn || "09:30";
-  const stdTimeOutStr = specialDay?.standardTimeOut || config?.attendanceStandardTimeOut || "18:30";
-  const lunchBreakMinutes = customBreakMinutes ?? specialDay?.lunchBreakMinutes ?? config?.attendanceLunchBreakMinutes ?? 60;
-  const lateGraceMinutes = specialDay?.lateGracePeriodMinutes ?? config?.attendanceLateGracePeriodMinutes ?? 15;
-  const otGraceMinutes = specialDay?.otGracePeriodMinutes ?? config?.attendanceOtGracePeriodMinutes ?? 15;
-  const flexiWindowStartStr = config?.attendanceFlexi1WindowStart || "07:00";
-  const flexiWindowEndStr = config?.attendanceFlexi1WindowEnd || "10:00";
-  const flexiLateGraceMinutes = config?.attendanceFlexi1LateGracePeriodMinutes ?? 15;
-
   const rawInMins = parseMinutes(timeIn);
   const rawOutMins = parseMinutes(timeOut);
+  const nightDiffHours = calculateNightDiffHours(rawInMins, rawOutMins);
 
-  // Default output if neither time-in nor time-out is specified
-  if (rawInMins === null && rawOutMins === null) {
-    return {
-      regularHours: 8.0,
-      overtimeHours: 0,
-      lateMinutes: 0,
-      undertimeMinutes: 0,
-      breakMinutes: lunchBreakMinutes,
-    };
-  }
-
-  // 2. Check for Saturday Shift Rule
-  let isSaturday = false;
-  if (workDate) {
-    const d = typeof workDate === "string" ? new Date(workDate) : workDate;
-    isSaturday = d.getUTCDay() === 6;
-  }
-  const satRuleEnabled = config?.attendanceSaturdayRuleEnabled ?? false;
-  const satEmpIds = config?.attendanceSaturdayEmployeeIds;
-  const appliesToThisEmp = !satEmpIds || satEmpIds.length === 0 || (employeeId ? satEmpIds.includes(employeeId) : false);
-  const isSaturdayRuleActive = isSaturday && satRuleEnabled && appliesToThisEmp;
+  // 1. Check for Saturday Shift Rule
+  const isSaturdayRuleActive = isSaturdayRuleActiveForDate(workDate, employeeId, config);
 
   if (isSaturdayRuleActive) {
     const windowStartStr = config?.attendanceSaturdayWindowStart || "07:30";
@@ -102,6 +133,18 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     const shiftHours = config?.attendanceSaturdayShiftHours ?? 5.0;
     const requiredWorkMins = shiftHours * 60; // 5 hours = 300 minutes
     const satBreakMinutes = customBreakMinutes ?? config?.attendanceSaturdayBreakMinutes ?? 0;
+
+    // Default output if neither time-in nor time-out is specified on Saturday with rule active
+    if (rawInMins === null && rawOutMins === null) {
+      return {
+        regularHours: shiftHours,
+        overtimeHours: 0,
+        lateMinutes: 0,
+        undertimeMinutes: 0,
+        breakMinutes: satBreakMinutes,
+        nightDiffHours: 0,
+      };
+    }
 
     const windowStartMins = parseMinutes(windowStartStr) ?? 450;
     const windowEndMins = parseMinutes(windowEndStr) ?? 630;
@@ -136,7 +179,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     }
 
     const netReductionMinutes = lateMinutes + undertimeMinutes;
-    const regularHours = Math.max(0, roundToQuarter(8.0 - netReductionMinutes / 60));
+    const regularHours = Math.max(0, roundToQuarter(shiftHours - netReductionMinutes / 60));
 
     return {
       regularHours,
@@ -144,6 +187,30 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes,
       undertimeMinutes,
       breakMinutes: satBreakMinutes,
+      nightDiffHours,
+    };
+  }
+
+  // 2. Check for Special Day Schedule override
+  const specialDay = config?.specialDaySchedule;
+  const stdTimeInStr = specialDay?.standardTimeIn || config?.attendanceStandardTimeIn || "09:30";
+  const stdTimeOutStr = specialDay?.standardTimeOut || config?.attendanceStandardTimeOut || "18:30";
+  const lunchBreakMinutes = customBreakMinutes ?? specialDay?.lunchBreakMinutes ?? config?.attendanceLunchBreakMinutes ?? 60;
+  const lateGraceMinutes = specialDay?.lateGracePeriodMinutes ?? config?.attendanceLateGracePeriodMinutes ?? 15;
+  const otGraceMinutes = specialDay?.otGracePeriodMinutes ?? config?.attendanceOtGracePeriodMinutes ?? 15;
+  const flexiWindowStartStr = config?.attendanceFlexi1WindowStart || "07:00";
+  const flexiWindowEndStr = config?.attendanceFlexi1WindowEnd || "10:00";
+  const flexiLateGraceMinutes = config?.attendanceFlexi1LateGracePeriodMinutes ?? 15;
+
+  // Default output if neither time-in nor time-out is specified (regular non-Saturday)
+  if (rawInMins === null && rawOutMins === null) {
+    return {
+      regularHours: 8.0,
+      overtimeHours: 0,
+      lateMinutes: 0,
+      undertimeMinutes: 0,
+      breakMinutes: lunchBreakMinutes,
+      nightDiffHours: 0,
     };
   }
 
@@ -161,6 +228,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes: 0,
       undertimeMinutes: 0,
       breakMinutes: lunchBreakMinutes,
+      nightDiffHours,
     };
   }
 
@@ -205,6 +273,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes,
       undertimeMinutes,
       breakMinutes: lunchBreakMinutes,
+      nightDiffHours,
     };
   }
 
@@ -251,6 +320,7 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
       lateMinutes,
       undertimeMinutes,
       breakMinutes: lunchBreakMinutes,
+      nightDiffHours,
     };
   }
 
@@ -268,5 +338,6 @@ export function calculateTimesheetHours(input: CalculateHoursInput): CalculateHo
     lateMinutes: 0,
     undertimeMinutes: 0,
     breakMinutes: lunchBreakMinutes,
+    nightDiffHours,
   };
 }

@@ -28,6 +28,7 @@ describe("calculateTimesheetHours", () => {
         lateMinutes: 0,
         undertimeMinutes: 0,
         breakMinutes: 60,
+        nightDiffHours: 0,
       });
     });
 
@@ -255,7 +256,20 @@ describe("calculateTimesheetHours", () => {
 
       expect(res.lateMinutes).toBe(0);
       expect(res.undertimeMinutes).toBe(0);
-      expect(res.regularHours).toBe(8.0);
+      expect(res.regularHours).toBe(5.0);
+      expect(res.overtimeHours).toBe(0);
+    });
+
+    it("should return 5 hours regular hours when no time-in/out specified on Saturday with rule active", () => {
+      const res = calculateTimesheetHours({
+        workDate: saturdayDate,
+        scheduleType: "Regular",
+        config: saturdayConfig,
+      });
+
+      expect(res.lateMinutes).toBe(0);
+      expect(res.undertimeMinutes).toBe(0);
+      expect(res.regularHours).toBe(5.0);
       expect(res.overtimeHours).toBe(0);
     });
 
@@ -270,7 +284,7 @@ describe("calculateTimesheetHours", () => {
 
       expect(res.lateMinutes).toBe(0);
       expect(res.undertimeMinutes).toBe(0);
-      expect(res.regularHours).toBe(8.0);
+      expect(res.regularHours).toBe(5.0);
     });
 
     it("should deduct late from 10:30am if arrival exceeds 10-minute grace period (e.g. 10:41am arrival is 11 mins late)", () => {
@@ -284,7 +298,7 @@ describe("calculateTimesheetHours", () => {
 
       expect(res.lateMinutes).toBe(11); // 10:41 - 10:30 = 11 mins
       expect(res.undertimeMinutes).toBe(0);
-      expect(res.regularHours).toBe(7.82); // 8.0 - 11/60 = 7.8166... -> 7.82
+      expect(res.regularHours).toBe(4.82); // 5.0 - 11/60 = 4.8166... -> 4.82
     });
 
     it("should deduct undertime if shift worked is less than 5 hours", () => {
@@ -299,7 +313,7 @@ describe("calculateTimesheetHours", () => {
 
       expect(res.lateMinutes).toBe(0);
       expect(res.undertimeMinutes).toBe(60);
-      expect(res.regularHours).toBe(7.0); // 8.0 - 60/60 = 7.0
+      expect(res.regularHours).toBe(4.0); // 5.0 - 60/60 = 4.0
     });
 
     it("should respect employee filtering when specified in attendanceSaturdayEmployeeIds", () => {
@@ -329,7 +343,7 @@ describe("calculateTimesheetHours", () => {
         config: filteredConfig,
       });
       expect(selectedRes.lateMinutes).toBe(0);
-      expect(selectedRes.regularHours).toBe(8.0);
+      expect(selectedRes.regularHours).toBe(5.0);
     });
   });
 

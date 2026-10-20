@@ -31,7 +31,7 @@ export async function computeDefaultEntries(
   startDate: Date,
   endDate: Date
 ): Promise<DefaultEntryInput[]> {
-  const [employee, existing, holidays] = await Promise.all([
+  const [employee, existing, holidays, company] = await Promise.all([
     prisma.employee.findUnique({
       where: { id: employeeId },
       select: { dateSeparated: true },
@@ -43,10 +43,25 @@ export async function computeDefaultEntries(
     prisma.companyHoliday.findMany({
       where: withCompanyScope(companyId, { date: { gte: startDate, lte: endDate } }),
     }),
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        attendanceSaturdayRuleEnabled: true,
+        attendanceSaturdayShiftHours: true,
+        attendanceSaturdayEmployeeIds: true,
+      },
+    }),
   ]);
 
   const existingDates = new Set(existing.map((e) => e.workDate.toISOString().slice(0, 10)));
   const holidayByDate = new Map(holidays.map((h) => [h.date.toISOString().slice(0, 10), h]));
+
+  const satRuleEnabled = company?.attendanceSaturdayRuleEnabled ?? false;
+  const satEmpIds = Array.isArray(company?.attendanceSaturdayEmployeeIds)
+    ? (company?.attendanceSaturdayEmployeeIds as string[])
+    : null;
+  const appliesToThisEmp = !satEmpIds || satEmpIds.length === 0 || satEmpIds.includes(employeeId);
+  const saturdayShiftHours = company?.attendanceSaturdayShiftHours ?? 5;
 
   const toCreate: DefaultEntryInput[] = [];
 
@@ -60,7 +75,10 @@ export async function computeDefaultEntries(
     if (existingDates.has(dateKey)) continue;
 
     const isSunday = d.getUTCDay() === 0;
+    const isSaturday = d.getUTCDay() === 6;
     const holiday = holidayByDate.get(dateKey);
+    const isSatRuleActive = isSaturday && satRuleEnabled && appliesToThisEmp;
+    const dayShiftHours = isSatRuleActive ? saturdayShiftHours : 8;
 
     if (isSunday) {
       toCreate.push({
@@ -78,7 +96,7 @@ export async function computeDefaultEntries(
         employeeId,
         workDate: new Date(d),
         status: "HOLIDAY",
-        scheduledHours: 8,
+        scheduledHours: dayShiftHours,
         regularHours: 0,
         holidayType: holiday.holidayType,
         isRestDay: false,
@@ -89,8 +107,8 @@ export async function computeDefaultEntries(
         employeeId,
         workDate: new Date(d),
         status: "PRESENT",
-        scheduledHours: 8,
-        regularHours: 8,
+        scheduledHours: dayShiftHours,
+        regularHours: dayShiftHours,
         isRestDay: false,
       });
     }

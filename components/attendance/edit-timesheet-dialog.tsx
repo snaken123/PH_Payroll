@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,11 @@ import {
   type TimesheetFormValues,
   type TimesheetFormInput,
 } from "@/lib/validations/attendance";
-import { calculateTimesheetHours, type CompanyAttendanceConfig } from "@/lib/attendance/calculateHours";
+import {
+  calculateTimesheetHours,
+  isSaturdayRuleActiveForDate,
+  type CompanyAttendanceConfig,
+} from "@/lib/attendance/calculateHours";
 import { toast } from "sonner";
 
 export type { TimesheetFormValues };
@@ -53,6 +57,26 @@ export function EditTimesheetDialog({
   onSaved: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
+
+  const effectiveInitialValues = useMemo(() => {
+    const isSatRule = isSaturdayRuleActiveForDate(workDate, employeeId, config);
+    const satHours = config?.attendanceSaturdayShiftHours ?? 5.0;
+    if (
+      isSatRule &&
+      !initialValues.timeIn &&
+      !initialValues.timeOut &&
+      initialValues.status === "PRESENT" &&
+      initialValues.regularHours === 8
+    ) {
+      return {
+        ...initialValues,
+        regularHours: satHours,
+        scheduledHours: satHours,
+      };
+    }
+    return initialValues;
+  }, [initialValues, workDate, employeeId, config]);
+
   const {
     register,
     handleSubmit,
@@ -62,7 +86,7 @@ export function EditTimesheetDialog({
     formState: { errors },
   } = useForm<TimesheetFormValues, unknown, TimesheetFormInput>({
     resolver: zodResolver(timesheetFormSchema),
-    values: initialValues,
+    values: effectiveInitialValues,
   });
 
   const handleTimeChange = (timeInVal: string, timeOutVal: string) => {
@@ -78,6 +102,7 @@ export function EditTimesheetDialog({
     setValue("overtimeHours", calc.overtimeHours);
     setValue("lateMinutes", calc.lateMinutes);
     setValue("undertimeMinutes", calc.undertimeMinutes);
+    setValue("nightDiffHours", calc.nightDiffHours);
   };
 
   async function onSubmit(values: TimesheetFormInput) {
@@ -179,17 +204,41 @@ export function EditTimesheetDialog({
           </div>
           <div className="space-y-1">
             <Label htmlFor="regularHours">Regular hours</Label>
-            <Input id="regularHours" type="number" step="0.25" {...register("regularHours")} />
+            <Input
+              id="regularHours"
+              type="number"
+              step="0.25"
+              readOnly
+              tabIndex={-1}
+              className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+              {...register("regularHours")}
+            />
             {errors.regularHours && <p className="text-sm text-destructive">{errors.regularHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="overtimeHours">Overtime hours</Label>
-            <Input id="overtimeHours" type="number" step="0.25" {...register("overtimeHours")} />
+            <Input
+              id="overtimeHours"
+              type="number"
+              step="0.25"
+              readOnly
+              tabIndex={-1}
+              className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+              {...register("overtimeHours")}
+            />
             {errors.overtimeHours && <p className="text-sm text-destructive">{errors.overtimeHours.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="nightDiffHours">Night diff hours</Label>
-            <Input id="nightDiffHours" type="number" step="0.25" {...register("nightDiffHours")} />
+            <Input
+              id="nightDiffHours"
+              type="number"
+              step="0.25"
+              readOnly
+              tabIndex={-1}
+              className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+              {...register("nightDiffHours")}
+            />
             {errors.nightDiffHours && <p className="text-sm text-destructive">{errors.nightDiffHours.message}</p>}
           </div>
           <div className="space-y-1">
@@ -199,12 +248,26 @@ export function EditTimesheetDialog({
           </div>
           <div className="space-y-1">
             <Label htmlFor="lateMinutes">Late minutes</Label>
-            <Input id="lateMinutes" type="number" {...register("lateMinutes")} />
+            <Input
+              id="lateMinutes"
+              type="number"
+              readOnly
+              tabIndex={-1}
+              className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+              {...register("lateMinutes")}
+            />
             {errors.lateMinutes && <p className="text-sm text-destructive">{errors.lateMinutes.message}</p>}
           </div>
           <div className="space-y-1">
             <Label htmlFor="undertimeMinutes">Undertime minutes</Label>
-            <Input id="undertimeMinutes" type="number" {...register("undertimeMinutes")} />
+            <Input
+              id="undertimeMinutes"
+              type="number"
+              readOnly
+              tabIndex={-1}
+              className="bg-slate-100 dark:bg-slate-800/60 cursor-not-allowed select-none font-mono"
+              {...register("undertimeMinutes")}
+            />
             {errors.undertimeMinutes && (
               <p className="text-sm text-destructive">{errors.undertimeMinutes.message}</p>
             )}
