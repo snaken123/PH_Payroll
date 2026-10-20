@@ -76,4 +76,29 @@ describe("Overtime Approval Gate in Payroll Engine", () => {
     const otLine = result.lineItems.find((li) => li.category === "OVERTIME");
     expect(otLine).toBeUndefined();
   });
+
+  it("scales overtime hours to custom approved amount (e.g. 12 approved out of 13.92 logged)", () => {
+    const rawOtHours = [0.83, 2.42, 2.17, 0.5, 1.17, 1.5, 1.83, 2, 1.5];
+    const totalLogged = rawOtHours.reduce((a, b) => a + b, 0); // 13.92
+    const customApproved = 12;
+    const ratio = customApproved / totalLogged;
+
+    const timesheets = rawOtHours.map((ot) => makeTimesheet(ot * ratio));
+
+    const result = computePayroll({
+      payBasis: "MONTHLY_RATE",
+      basicRate: 26000,
+      monthlyEquivalentCompensation: 26000,
+      standardWorkDaysPerMonth: 26,
+      isManagerialExempt: false,
+      timesheets,
+      allowances: [],
+      isStatutoryDeductionCutoff: false,
+      rates: { sssBrackets, philhealthConfig, pagibigBracket, birBrackets },
+    });
+
+    const otLine = result.lineItems.find((li) => li.category === "OVERTIME");
+    expect(otLine).toBeDefined();
+    expect(Number(otLine?.quantity)).toBeCloseTo(12, 2);
+  });
 });

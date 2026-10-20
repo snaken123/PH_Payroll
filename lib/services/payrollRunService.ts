@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { Decimal } from "decimal.js";
 import { computePayroll, type AllowanceInput } from "@/lib/payroll/engine";
 import { estimateMonthlyEquivalentCompensation } from "@/lib/payroll/estimateMonthlyEquivalent";
 import type { ActiveLoanInput } from "@/lib/payroll/deductions/computeLoanDeductions";
@@ -253,22 +254,9 @@ export async function computeAndPersistPayrollRun({
       ) ?? emp.compensationRecords[0];
       if (!comp) continue; // no compensation record found — skip
 
-      const totalLoggedOt = emp.timesheetEntries.reduce((sum, t) => sum + Number(t.overtimeHours || 0), 0);
-      let approvedOtRatio = 1;
-      if (approvedOtHoursMap !== undefined) {
-        const customApprovedOt = approvedOtHoursMap[emp.id] ?? 0;
-        if (customApprovedOt <= 0 || totalLoggedOt <= 0) {
-          approvedOtRatio = 0;
-        } else {
-          approvedOtRatio = Math.min(customApprovedOt / totalLoggedOt, 1);
-        }
-      } else if (approvedOtEmployeeIds !== undefined) {
-        approvedOtRatio = approvedOtEmployeeIds.includes(emp.id) ? 1 : 0;
-      }
-
       const isUndertimeIgnored = ignoredUndertimeEmployeeIds?.includes(emp.id) ?? false;
 
-      const timesheets: TimesheetFact[] = emp.timesheetEntries.map((t) => {
+      const evaluatedEntries = emp.timesheetEntries.map((t) => {
         let rawLateMinutes = t.lateMinutes;
         let rawUndertimeMinutes = t.undertimeMinutes;
         let rawRegularHours = Number(t.regularHours);
@@ -331,7 +319,7 @@ export async function computeAndPersistPayrollRun({
           workDate: t.workDate.toISOString(),
           status: t.status,
           regularHours: effectiveRegularHours.toString(),
-          overtimeHours: (rawOvertimeHours * approvedOtRatio).toString(),
+          rawOvertimeHours,
           nightDiffHours: t.nightDiffHours.toString(),
           lateMinutes: effectiveLate,
           undertimeMinutes: effectiveUndertime,
@@ -339,6 +327,51 @@ export async function computeAndPersistPayrollRun({
           isRestDay: t.isRestDay,
         };
       });
+
+      const totalLoggedOt = evaluatedEntries.reduce((sum, e) => sum + e.rawOvertimeHours, 0);
+      let approvedOtRatio = 1;
+      let hasCustomApprovedOt = false;
+      let customApprovedOt = 0;
+
+      if (approvedOtHoursMap !== undefined) {
+        customApprovedOt = approvedOtHoursMap[emp.id] ?? 0;
+        hasCustomApprovedOt = true;
+        if (customApprovedOt <= 0 || totalLoggedOt <= 0) {
+          approvedOtRatio = 0;
+        } else {
+          approvedOtRatio = customApprovedOt / totalLoggedOt;
+        }
+      } else if (approvedOtEmployeeIds !== undefined) {
+        approvedOtRatio = approvedOtEmployeeIds.includes(emp.id) ? 1 : 0;
+      }
+
+      const timesheets: TimesheetFact[] = evaluatedEntries.map((e) => {
+        let finalOt = "0";
+        if (hasCustomApprovedOt && customApprovedOt > 0) {
+          if (totalLoggedOt > 0) {
+            finalOt = new Decimal(e.rawOvertimeHours).times(approvedOtRatio).toString();
+          }
+        } else {
+          finalOt = (e.rawOvertimeHours * approvedOtRatio).toString();
+        }
+
+        return {
+          workDate: e.workDate,
+          status: e.status,
+          regularHours: e.regularHours,
+          overtimeHours: finalOt,
+          nightDiffHours: e.nightDiffHours,
+          lateMinutes: e.lateMinutes,
+          undertimeMinutes: e.undertimeMinutes,
+          holidayType: e.holidayType,
+          isRestDay: e.isRestDay,
+        };
+      });
+
+      if (hasCustomApprovedOt && customApprovedOt > 0 && totalLoggedOt <= 0 && timesheets.length > 0) {
+        const firstPresent = timesheets.find((ts) => ts.status === "PRESENT") ?? timesheets[0];
+        firstPresent.overtimeHours = customApprovedOt.toString();
+      }
 
       const allowances: AllowanceInput[] = comp.allowances.map((a) => {
         const ceiling = a.deMinimisCategory ? deMinimisCeilingMap.get(a.deMinimisCategory) : null;
