@@ -166,9 +166,13 @@ export async function getConsolidatedPayables(
           birTax: 0,
         };
 
+        const cutoffStart = run.payrollPeriod.cutoffStart;
         const cutoffEnd = run.payrollPeriod.cutoffEnd;
         const periodYear = cutoffEnd.getUTCFullYear();
         const periodMonth = cutoffEnd.getUTCMonth() + 1;
+        const cutoffStartStr = cutoffStart.toISOString().slice(5, 10);
+        const cutoffEndStr = cutoffEnd.toISOString().slice(5, 10);
+        const runTag = `Cutoff ${cutoffStartStr} to ${cutoffEndStr} (Run #${run.runNumber})`;
 
         const agencyEntries: Array<{
           agency: StatutoryAgency;
@@ -184,7 +188,7 @@ export async function getConsolidatedPayables(
             er: totals.sssEr,
             total: totals.sssEe + totals.sssEr,
             agencyNumber: comp.sssEmployerNumber,
-            desc: `SSS Premium & MPF/WISP (${periodMonth}/${periodYear})`,
+            desc: `SSS Premium & MPF/WISP — ${runTag}`,
           },
           {
             agency: StatutoryAgency.PHILHEALTH,
@@ -192,7 +196,7 @@ export async function getConsolidatedPayables(
             er: totals.phicEr,
             total: totals.phicEe + totals.phicEr,
             agencyNumber: comp.philhealthEmployerNumber,
-            desc: `PhilHealth NHIP Premium (${periodMonth}/${periodYear})`,
+            desc: `PhilHealth NHIP Premium — ${runTag}`,
           },
           {
             agency: StatutoryAgency.PAGIBIG,
@@ -200,7 +204,7 @@ export async function getConsolidatedPayables(
             er: totals.hdmfEr,
             total: totals.hdmfEe + totals.hdmfEr,
             agencyNumber: comp.pagibigEmployerId,
-            desc: `Pag-IBIG Regular Mandatory Savings (${periodMonth}/${periodYear})`,
+            desc: `Pag-IBIG Regular Mandatory Savings — ${runTag}`,
           },
           {
             agency: StatutoryAgency.BIR,
@@ -208,7 +212,7 @@ export async function getConsolidatedPayables(
             er: 0,
             total: totals.birTax,
             agencyNumber: comp.tin,
-            desc: `BIR 1601-C Withholding Tax (${periodMonth}/${periodYear})`,
+            desc: `BIR 1601-C Withholding Tax — ${runTag}`,
           },
         ];
 
@@ -624,7 +628,7 @@ export async function disburseRemittanceCheck(params: DisburseRemittanceCheckPar
             itemType: "CONTRIBUTION",
             statutoryPaymentRecordId: record.id,
             amount: totalDec,
-            description: `${agency} Contribution (${item.periodMonth}/${item.periodYear})`,
+            description: item.description || `${agency} Contribution (${item.periodMonth}/${item.periodYear})`,
           },
         });
       } else if (item.itemType === "LOAN") {
@@ -655,6 +659,41 @@ export async function disburseRemittanceCheck(params: DisburseRemittanceCheckPar
           },
         });
       }
+    }
+
+    try {
+      const fullCheck = await tx.payrollPaymentCheck.findUniqueOrThrow({
+        where: { id: check.id },
+        include: {
+          company: true,
+          bankAccount: true,
+          remittanceBatchItems: {
+            include: {
+              statutoryPaymentRecord: {
+                include: {
+                  payrollRun: {
+                    include: {
+                      payrollPeriod: true,
+                    },
+                  },
+                },
+              },
+              loanDeduction: {
+                include: {
+                  loan: {
+                    include: {
+                      employee: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (fullCheck) return fullCheck;
+    } catch {
+      // Fallback to newly created check record
     }
 
     return check;
@@ -694,7 +733,15 @@ export async function getRemittanceChecks(options: { companyId?: string; agency?
       bankAccount: true,
       remittanceBatchItems: {
         include: {
-          statutoryPaymentRecord: true,
+          statutoryPaymentRecord: {
+            include: {
+              payrollRun: {
+                include: {
+                  payrollPeriod: true,
+                },
+              },
+            },
+          },
           loanDeduction: {
             include: {
               loan: {

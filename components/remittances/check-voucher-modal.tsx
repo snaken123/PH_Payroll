@@ -49,6 +49,13 @@ interface CheckVoucherModalProps {
         referenceNumber?: string | null;
         computedEeAmount: number | string | any;
         computedErAmount: number | string | any;
+        payrollRun?: {
+          runNumber: number;
+          payrollPeriod?: {
+            cutoffStart: string | Date;
+            cutoffEnd: string | Date;
+          } | null;
+        } | null;
       } | null;
       loanDeduction?: {
         cutoffDate: string | Date;
@@ -285,6 +292,8 @@ export function CheckVoucherModal({ open, onOpenChange, check }: CheckVoucherMod
                         ? item.loanDeduction?.cutoffDate
                           ? new Date(item.loanDeduction.cutoffDate).toLocaleDateString()
                           : "—"
+                        : item.statutoryPaymentRecord?.payrollRun?.payrollPeriod
+                        ? `Cutoff ${new Date(item.statutoryPaymentRecord.payrollRun.payrollPeriod.cutoffStart).toISOString().slice(5, 10)} to ${new Date(item.statutoryPaymentRecord.payrollRun.payrollPeriod.cutoffEnd).toISOString().slice(5, 10)} (Run #${item.statutoryPaymentRecord.payrollRun.runNumber})`
                         : item.statutoryPaymentRecord
                         ? `${item.statutoryPaymentRecord.periodMonth}/${item.statutoryPaymentRecord.periodYear}`
                         : "—";

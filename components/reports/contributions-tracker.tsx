@@ -20,13 +20,29 @@ import {
   LayersIcon,
   LayoutGridIcon,
   TablePropertiesIcon,
+  LandmarkIcon,
 } from "lucide-react";
-import {
-  TagStatutoryPaymentDialog,
-  type StatutoryAgencyPaymentData,
-} from "./tag-statutory-payment-dialog";
+import Link from "next/link";
 import type { CompanyBankOption } from "@/components/payroll/record-check-dialog";
 import { cn } from "@/lib/utils";
+
+export interface StatutoryAgencyPaymentData {
+  agency: "SSS" | "PHILHEALTH" | "PAGIBIG" | "BIR";
+  label: string;
+  eeAmount: number;
+  erAmount: number;
+  totalAmount: number;
+  status: "UNPAID" | "PAID" | "PARTIALLY_PAID";
+  paymentRecordId?: string | null;
+  paidAmount?: number | null;
+  paymentDate?: string | null;
+  paymentMethod?: "CHECK" | "BANK_TRANSFER" | "ONLINE_PORTAL" | "CASH" | null;
+  checkNumber?: string | null;
+  referenceNumber?: string | null;
+  bankAccountId?: string | null;
+  bankName?: string | null;
+  notes?: string | null;
+}
 
 interface AgencyItem extends StatutoryAgencyPaymentData {
   agency: "SSS" | "PHILHEALTH" | "PAGIBIG" | "BIR";
@@ -571,8 +587,8 @@ export function ContributionsTracker({
                 <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Payment &amp; Check Details
                 </TableHead>
-                <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 pr-6 w-[120px]">
-                  Action
+                <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 pr-6 w-[150px]">
+                  Remittance Status
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -664,16 +680,18 @@ export function ContributionsTracker({
                       )}
                     </TableCell>
                     <TableCell className="text-right py-2 pr-6">
-                      {canManage && (
-                        <TagStatutoryPaymentDialog
-                          agencyData={ag}
-                          payrollRunId={grp.payrollRunId}
-                          runNumber={grp.runNumber}
-                          periodYear={periodYear}
-                          periodMonth={periodMonth}
-                          companyBankAccounts={companyBankAccounts}
-                          onSuccess={() => fetchData(selectedRunId)}
-                        />
+                      {isPaid ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2Icon className="size-3.5" /> Remitted
+                        </span>
+                      ) : (
+                        <Link
+                          href="/remittances"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 hover:underline"
+                        >
+                          <LandmarkIcon className="size-3" />
+                          <span>Remit in Portal →</span>
+                        </Link>
                       )}
                     </TableCell>
                   </TableRow>

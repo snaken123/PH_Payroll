@@ -613,12 +613,19 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                           </div>
                         </TableCell>
                         <TableCell className="font-mono text-xs text-slate-300">
-                          {item.periodMonth}/{item.periodYear}
-                          {item.cutoffEnd && (
+                          <span className="font-bold text-slate-200">
+                            {item.periodMonth}/{item.periodYear}
+                          </span>
+                          {item.cutoffStart && item.cutoffEnd ? (
+                            <span className="text-[10px] text-emerald-400/90 block">
+                              Cutoff: {item.cutoffStart.slice(5)} to {item.cutoffEnd.slice(5)}
+                              {item.runNumber ? ` (Run #${item.runNumber})` : ""}
+                            </span>
+                          ) : item.cutoffEnd ? (
                             <span className="text-[10px] text-slate-500 block">
                               End: {item.cutoffEnd}
                             </span>
-                          )}
+                          ) : null}
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold text-xs text-emerald-400">
                           {formatCurrency(item.totalAmount)}

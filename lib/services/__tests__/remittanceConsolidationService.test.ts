@@ -261,6 +261,97 @@ describe("remittanceConsolidationService", () => {
       expect(check.id).toBe("check-101");
     });
 
+    it("bundles 2 or more semi-monthly contribution line items onto a single remittance check", async () => {
+      vi.mocked(prisma.company.findUniqueOrThrow).mockResolvedValue(companyA as any);
+      vi.mocked(prisma.companyBankAccount.findUnique).mockResolvedValue(companyA.bankAccounts[0] as any);
+
+      vi.mocked(prisma.payrollPaymentCheck.create).mockResolvedValue({
+        id: "check-bundle-202",
+        checkNumber: "CHK-BUNDLE-01",
+        amount: new Decimal("6000.00"),
+        status: "ISSUED",
+        payee: "Social Security System",
+      } as any);
+
+      vi.mocked(prisma.statutoryPaymentRecord.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.statutoryPaymentRecord.create).mockImplementation((args: any) => ({
+        id: `stat-rec-${args.data.payrollRunId}`,
+        status: StatutoryPaymentStatus.PAID,
+      }) as any);
+
+      const check = await disburseRemittanceCheck({
+        companyId: "comp-A",
+        agency: StatutoryAgency.SSS,
+        checkNumber: "CHK-BUNDLE-01",
+        checkDate: "2026-10-31",
+        bankAccountId: "bank-1",
+        referenceNumber: "PRN-MONTHLY-CONSOLIDATED",
+        notes: "October SSS full month remittance across 2 cutoffs",
+        issuedByUserId: "user-liaison-1",
+        items: [
+          {
+            itemType: "CONTRIBUTION",
+            id: "contrib-cutoff-1",
+            amount: 3000,
+            payrollRunId: "run-1",
+            periodYear: 2026,
+            periodMonth: 10,
+            eeAmount: 1000,
+            erAmount: 2000,
+            description: "SSS Premium & MPF/WISP — Cutoff 10-01 to 10-15 (Run #1)",
+          },
+          {
+            itemType: "CONTRIBUTION",
+            id: "contrib-cutoff-2",
+            amount: 3000,
+            payrollRunId: "run-2",
+            periodYear: 2026,
+            periodMonth: 10,
+            eeAmount: 1000,
+            erAmount: 2000,
+            description: "SSS Premium & MPF/WISP — Cutoff 10-16 to 10-31 (Run #2)",
+          },
+        ],
+      });
+
+      // Total check amount must be 6000 (3000 + 3000)
+      expect(prisma.payrollPaymentCheck.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            companyId: "comp-A",
+            checkNumber: "CHK-BUNDLE-01",
+            payee: "Social Security System",
+          }),
+        })
+      );
+      const createCall = vi.mocked(prisma.payrollPaymentCheck.create).mock.calls[0][0];
+      expect(Number(createCall.data.amount)).toBe(6000);
+
+      // 2 statutory payment records created/updated
+      expect(prisma.statutoryPaymentRecord.create).toHaveBeenCalledTimes(2);
+
+      // 2 batch items linked to check
+      expect(prisma.remittanceCheckBatchItem.create).toHaveBeenCalledTimes(2);
+      expect(prisma.remittanceCheckBatchItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            checkId: "check-bundle-202",
+            description: "SSS Premium & MPF/WISP — Cutoff 10-01 to 10-15 (Run #1)",
+          }),
+        })
+      );
+      expect(prisma.remittanceCheckBatchItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            checkId: "check-bundle-202",
+            description: "SSS Premium & MPF/WISP — Cutoff 10-16 to 10-31 (Run #2)",
+          }),
+        })
+      );
+
+      expect(check.id).toBe("check-bundle-202");
+    });
+
     it("successfully creates a check and tags loan deductions to PAID", async () => {
       vi.mocked(prisma.company.findUniqueOrThrow).mockResolvedValue(companyA as any);
 
