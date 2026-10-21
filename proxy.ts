@@ -20,7 +20,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const isSuperAdmin = token.platformRole === "SUPER_ADMIN";
-  const isRemittanceOfficer = token.platformRole === "REMITTANCE_OFFICER";
+  const isRemittanceOfficer = token.platformRole === "REMITTANCE_OFFICER" || Boolean(token.isRemittanceOfficer);
 
   // Platform admin routes (statutory rate config, tenant onboarding).
   if (pathname.startsWith("/admin") && !isSuperAdmin) {

@@ -117,6 +117,7 @@ export const authOptions: NextAuthOptions = {
             select: {
               name: true,
               platformRole: true,
+              isRemittanceOfficer: true,
               memberships: {
                 where: { isActive: true },
                 select: { companyId: true, role: true, permissions: true },
@@ -128,8 +129,10 @@ export const authOptions: NextAuthOptions = {
             return {};
           }
 
+          const isRemitOfficer = Boolean(dbUser.isRemittanceOfficer || dbUser.platformRole === PlatformRole.REMITTANCE_OFFICER);
           token.name = dbUser.name;
           token.platformRole = dbUser.platformRole;
+          token.isRemittanceOfficer = isRemitOfficer;
 
           const requestedCompanyId = (token.companyId as string | undefined) ?? undefined;
           const activeMembership = dbUser.memberships.find((m) => m.companyId === requestedCompanyId) ?? dbUser.memberships[0];
@@ -145,11 +148,14 @@ export const authOptions: NextAuthOptions = {
           } else if (activeMembership) {
             token.companyId = activeMembership.companyId;
             token.companyRole = activeMembership.role;
-            token.permissions = parsePermissions(activeMembership.permissions);
+            const parsed = parsePermissions(activeMembership.permissions);
+            token.permissions = isRemitOfficer
+              ? Array.from(new Set([...parsed, "remittances:read", "remittances:write", "checks:read", "checks:write"]))
+              : parsed;
           } else {
             token.companyId = null;
             token.companyRole = null;
-            token.permissions = [];
+            token.permissions = isRemitOfficer ? ["remittances:read", "remittances:write", "checks:read", "checks:write"] : [];
           }
 
           // 1-hour inactivity timeout check for standard users
@@ -177,6 +183,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
         session.user.platformRole = token.platformRole as PlatformRole;
+        session.user.isRemittanceOfficer = Boolean(token.isRemittanceOfficer);
         session.user.companyId = (token.companyId as string | null) ?? null;
         session.user.companyRole = (token.companyRole as CompanyRole | null) ?? null;
         session.user.permissions = (token.permissions as string[] | undefined) ?? [];
@@ -212,7 +219,8 @@ export async function requireRemittanceAccess() {
   if (!session) throw new Error("Unauthorized");
   if (
     session.user.platformRole === PlatformRole.SUPER_ADMIN ||
-    session.user.platformRole === PlatformRole.REMITTANCE_OFFICER
+    session.user.platformRole === PlatformRole.REMITTANCE_OFFICER ||
+    session.user.isRemittanceOfficer
   ) {
     return session;
   }

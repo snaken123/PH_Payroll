@@ -24,7 +24,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, password, name, platformRole, memberships } = parsed.data;
+  const { email, password, name, platformRole, isRemittanceOfficer, memberships } = parsed.data;
 
   // Check email uniqueness if changing
   if (email && email !== existing.email) {
@@ -38,6 +38,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (email) updateData.email = email;
   if (name) updateData.name = name;
   if (platformRole) updateData.platformRole = platformRole;
+  if (isRemittanceOfficer !== undefined) updateData.isRemittanceOfficer = isRemittanceOfficer;
 
   if (password && password.trim() !== "") {
     updateData.password = await bcrypt.hash(password, 10);
@@ -77,6 +78,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       email: true,
       name: true,
       platformRole: true,
+      isRemittanceOfficer: true,
       updatedAt: true,
       memberships: {
         select: {

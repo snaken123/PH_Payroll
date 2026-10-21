@@ -145,7 +145,7 @@ function LoginForm() {
         const sessRes = await fetch("/api/auth/session");
         if (sessRes.ok) {
           const sessData = await sessRes.json();
-          if (sessData?.user?.platformRole === "REMITTANCE_OFFICER") {
+          if (sessData?.user?.platformRole === "REMITTANCE_OFFICER" || (sessData?.user?.isRemittanceOfficer && !sessData?.user?.companyId)) {
             targetUrl = "/remittances";
           } else if (sessData?.user?.platformRole === "SUPER_ADMIN") {
             targetUrl = "/admin";

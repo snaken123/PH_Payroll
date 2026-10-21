@@ -9,6 +9,7 @@ declare module "next-auth" {
       email: string;
       name?: string | null;
       platformRole: PlatformRole;
+      isRemittanceOfficer?: boolean;
       companyId: string | null;
       companyRole: CompanyRole | null;
       permissions: string[];
@@ -20,6 +21,7 @@ declare module "next-auth" {
     email: string;
     name?: string | null;
     companyId?: string | null;
+    isRemittanceOfficer?: boolean;
   }
 }
 
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     platformRole?: PlatformRole;
+    isRemittanceOfficer?: boolean;
     companyId?: string | null;
     companyRole?: CompanyRole | null;
     permissions?: string[];

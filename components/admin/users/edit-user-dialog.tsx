@@ -21,7 +21,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { KeyRoundIcon, Edit3Icon } from "lucide-react";
+import { KeyRoundIcon, Edit3Icon, LandmarkIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AccessTree, type CompanyOption, type AccessTreeMembership, type PlatformRoleOption } from "./access-tree";
 
 interface UserProfile {
@@ -29,6 +30,7 @@ interface UserProfile {
   name: string | null;
   email: string;
   platformRole: string;
+  isRemittanceOfficer?: boolean;
   memberships?: Array<{
     companyId: string;
     role: string;
@@ -50,6 +52,7 @@ export function EditUserDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const initialPlatformRole = (user.platformRole as PlatformRoleOption) || "STANDARD";
+  const initialIsRemittanceOfficer = Boolean(user.isRemittanceOfficer || user.platformRole === "REMITTANCE_OFFICER");
   const initialMemberships: AccessTreeMembership[] = (user.memberships ?? []).map((m) => ({
     companyId: m.companyId,
     role: (m.role as any) || "HR_STAFF",
@@ -57,9 +60,14 @@ export function EditUserDialog({
   }));
 
   const [platformRole, setPlatformRole] = useState<PlatformRoleOption>(initialPlatformRole);
+  const [isRemittanceOfficer, setIsRemittanceOfficer] = useState(initialIsRemittanceOfficer);
   const [memberships, setMemberships] = useState<AccessTreeMembership[]>(initialMemberships);
 
-  const isDirty = open && (platformRole !== initialPlatformRole || JSON.stringify(memberships) !== JSON.stringify(initialMemberships));
+  const isDirty =
+    open &&
+    (platformRole !== initialPlatformRole ||
+      isRemittanceOfficer !== initialIsRemittanceOfficer ||
+      JSON.stringify(memberships) !== JSON.stringify(initialMemberships));
 
   const { UnsavedChangesDialog, confirmDiscard } = useUnsavedChanges({
     isDirty,
@@ -71,6 +79,7 @@ export function EditUserDialog({
           const payload = {
             ...values,
             platformRole,
+            isRemittanceOfficer,
             memberships: platformRole === "STANDARD" ? memberships : [],
           };
           const res = await fetch(`/api/admin/users/${user.id}`, {
@@ -128,6 +137,7 @@ export function EditUserDialog({
     const payload = {
       ...values,
       platformRole,
+      isRemittanceOfficer,
       memberships: platformRole === "STANDARD" ? memberships : [],
     };
 
@@ -210,6 +220,28 @@ export function EditUserDialog({
                 {...register("password")}
               />
               {errors.password && <p className="text-[11px] text-rose-400 font-medium">{errors.password.message}</p>}
+            </div>
+          </div>
+
+          {/* Remittance Officer Assignment Checkbox */}
+          <div className="flex items-start space-x-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3.5 transition-colors hover:border-slate-700">
+            <Checkbox
+              id={`edit-isRemittanceOfficer-${user.id}`}
+              checked={isRemittanceOfficer}
+              onCheckedChange={(val) => setIsRemittanceOfficer(Boolean(val))}
+              className="mt-0.5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+            />
+            <div className="space-y-1 leading-none select-none">
+              <label
+                htmlFor={`edit-isRemittanceOfficer-${user.id}`}
+                className="text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5"
+              >
+                <LandmarkIcon className="size-3.5 text-emerald-400" />
+                Assign as Remittance Officer
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Grants cross-company access to the Statutory Remittance Portal to consolidate SSS, PhilHealth, Pag-IBIG &amp; BIR payables and disburse payment checks.
+              </p>
             </div>
           </div>
 

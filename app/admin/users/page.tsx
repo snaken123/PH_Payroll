@@ -7,7 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
 import { DeleteUserDialog } from "@/components/admin/users/delete-user-dialog";
-import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, LockIcon, LandmarkIcon } from "lucide-react";
+import { RemittanceOfficerToggle } from "@/components/admin/users/remittance-officer-toggle";
+import {
+  UsersIcon,
+  ShieldAlertIcon,
+  UserCheckIcon,
+  Building2Icon,
+  LockIcon,
+  LandmarkIcon,
+  UserPlusIcon,
+} from "lucide-react";
 
 export default async function AdminUsersPage() {
   const [users, companies] = await Promise.all([
@@ -18,6 +27,7 @@ export default async function AdminUsersPage() {
         email: true,
         name: true,
         platformRole: true,
+        isRemittanceOfficer: true,
         createdAt: true,
         memberships: {
           select: {
@@ -37,7 +47,7 @@ export default async function AdminUsersPage() {
   ]);
 
   const superAdminCount = users.filter((u) => u.platformRole === "SUPER_ADMIN").length;
-  const remittanceCount = users.filter((u) => u.platformRole === "REMITTANCE_OFFICER").length;
+  const remittanceCount = users.filter((u) => u.isRemittanceOfficer || u.platformRole === "REMITTANCE_OFFICER").length;
   const standardCount = users.filter((u) => u.platformRole === "STANDARD").length;
 
   const formattedUsers = users.map((u) => ({
@@ -63,6 +73,19 @@ export default async function AdminUsersPage() {
           </div>
         }
       />
+
+      {/* Prominent Quick-Action Create User Section */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-slate-900 to-slate-900 shadow-sm">
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <UserPlusIcon className="size-4 text-blue-400" /> Create Platform User Account
+          </h3>
+          <p className="text-xs text-slate-300">
+            Register new standard users, assign company permissions, or authorize remittance officers with a single click.
+          </p>
+        </div>
+        <CreateUserDialog companies={companies} />
+      </div>
 
       {/* Metric Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -98,7 +121,10 @@ export default async function AdminUsersPage() {
           <CardTitle className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <UsersIcon className="size-4 text-blue-400" /> Platform User Directory
           </CardTitle>
-          <span className="text-xs text-slate-400 font-mono">{users.length} total users</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400 font-mono">{users.length} total users</span>
+            <CreateUserDialog companies={companies} />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {users.length === 0 ? (
@@ -107,7 +133,7 @@ export default async function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-900/90 border-slate-800">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">User Name</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">User Name &amp; Role</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Email / Username</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Platform Role</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Access Tree &amp; Companies</TableHead>
@@ -118,9 +144,19 @@ export default async function AdminUsersPage() {
               <TableBody>
                 {formattedUsers.map((user) => (
                   <TableRow key={user.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="font-bold text-xs text-slate-100">{user.name || "—"}</TableCell>
-                    <TableCell className="font-mono text-xs text-slate-300">{user.email}</TableCell>
-                    <TableCell>
+                    <TableCell className="align-top py-3">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="font-bold text-xs text-slate-100">{user.name || "—"}</span>
+                        <RemittanceOfficerToggle
+                          userId={user.id}
+                          userName={user.name || user.email}
+                          initialChecked={Boolean(user.isRemittanceOfficer || user.platformRole === "REMITTANCE_OFFICER")}
+                          isSuperAdmin={user.platformRole === "SUPER_ADMIN"}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-slate-300 align-top py-3">{user.email}</TableCell>
+                    <TableCell className="align-top py-3">
                       {user.platformRole === "SUPER_ADMIN" ? (
                         <Badge variant="outline" className="text-[10px] font-mono uppercase bg-amber-950/60 border-amber-500/50 text-amber-400">
                           SUPER_ADMIN
@@ -135,7 +171,7 @@ export default async function AdminUsersPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-top py-3">
                       {user.platformRole === "SUPER_ADMIN" ? (
                         <span className="inline-flex items-center gap-1 text-xs text-amber-400/90 font-medium">
                           <LockIcon className="size-3 text-amber-400" />
@@ -147,32 +183,46 @@ export default async function AdminUsersPage() {
                           Statutory Remittance Portal (All Companies)
                         </span>
                       ) : user.memberships.length === 0 ? (
-                        <span className="text-xs text-slate-500 italic">No companies assigned</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {user.memberships.map((m) => (
-                            <span
-                              key={m.id}
-                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700 text-[11px] text-slate-200"
-                            >
-                              <Building2Icon className="size-3 text-blue-400" />
-                              <span className="font-semibold">{m.company.legalName}</span>
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-slate-700 text-slate-300">
-                                {m.permissions.length} perms
-                              </Badge>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-slate-500 italic">No companies assigned</span>
+                          {user.isRemittanceOfficer && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                              <LandmarkIcon className="size-3 text-emerald-400" /> Cross-Company Remittances
                             </span>
-                          ))}
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-wrap gap-1.5">
+                            {user.memberships.map((m) => (
+                              <span
+                                key={m.id}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700 text-[11px] text-slate-200"
+                              >
+                                <Building2Icon className="size-3 text-blue-400" />
+                                <span className="font-semibold">{m.company.legalName}</span>
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-slate-700 text-slate-300">
+                                  {m.permissions.length} perms
+                                </Badge>
+                              </span>
+                            ))}
+                          </div>
+                          {user.isRemittanceOfficer && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                              <LandmarkIcon className="size-3 text-emerald-400" /> + Cross-Company Remittances Portal
+                            </span>
+                          )}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-slate-400">
+                    <TableCell className="text-xs text-slate-400 align-top py-3">
                       {new Date(user.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
                       })}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right align-top py-3">
                       <div className="flex items-center justify-end gap-1.5">
                         <EditUserDialog user={user} companies={companies} />
                         <DeleteUserDialog user={user} />

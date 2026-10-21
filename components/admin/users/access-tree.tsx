@@ -184,42 +184,22 @@ export function AccessTree({
             Step 1: Platform Level Role
           </h4>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => onPlatformRoleChange("STANDARD")}
             className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
-              platformRole === "STANDARD"
+              platformRole !== "SUPER_ADMIN"
                 ? "bg-blue-950/60 border-blue-500/80 text-white"
                 : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700"
             }`}
           >
             <div className="flex items-center justify-between w-full">
               <span className="text-xs font-bold">Standard User</span>
-              {platformRole === "STANDARD" && <Badge variant="default" className="text-[10px] bg-blue-600">Active</Badge>}
+              {platformRole !== "SUPER_ADMIN" && <Badge variant="default" className="text-[10px] bg-blue-600">Active</Badge>}
             </div>
             <span className="text-[10px] text-slate-400 mt-1">
               Access is restricted to explicitly assigned companies &amp; checked feature tree permissions.
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onPlatformRoleChange("REMITTANCE_OFFICER")}
-            className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
-              platformRole === "REMITTANCE_OFFICER"
-                ? "bg-emerald-950/60 border-emerald-500/80 text-white ring-1 ring-emerald-500/30"
-                : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700"
-            }`}
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                <LandmarkIcon className="size-3.5" /> Remittance Officer
-              </span>
-              {platformRole === "REMITTANCE_OFFICER" && <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-400">Remittance Portal</Badge>}
-            </div>
-            <span className="text-[10px] text-slate-400 mt-1">
-              Consolidated cross-company portal to remit SSS, PhilHealth, Pag-IBIG &amp; BIR contributions and loans.
             </span>
           </button>
 
@@ -243,24 +223,8 @@ export function AccessTree({
         </div>
       </div>
 
-      {/* Remittance Officer Info Card */}
-      {platformRole === "REMITTANCE_OFFICER" && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-4 space-y-2 text-slate-200">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wide">
-            <LandmarkIcon className="size-4" /> Statutory Remittance &amp; Contributions Portal User
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            This account is dedicated to the Liaison / Remittance / Treasury Officer who settles all company payables for <strong>SSS (Contributions &amp; Loans)</strong>, <strong>PhilHealth (EPRS)</strong>, <strong>Pag-IBIG (Contributions &amp; MPL/Calamity Loans)</strong>, and <strong>BIR (Form 1601-C)</strong>.
-          </p>
-          <div className="text-[11px] text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 flex items-center gap-2">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            <span>Upon sign in, this user is directly routed to the Consolidated Remittance Portal with access to all company payroll obligations.</span>
-          </div>
-        </div>
-      )}
-
       {/* STEP 2: Company Access & Granular Functionality Tree */}
-      {platformRole === "STANDARD" && (
+      {platformRole !== "SUPER_ADMIN" && (
         <div className="space-y-4 pt-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

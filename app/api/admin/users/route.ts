@@ -17,6 +17,7 @@ export async function GET() {
       email: true,
       name: true,
       platformRole: true,
+      isRemittanceOfficer: true,
       createdAt: true,
       memberships: {
         select: {
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, password, name, platformRole, companyId, companyRole, memberships } = parsed.data;
+  const { email, password, name, platformRole, isRemittanceOfficer, companyId, companyRole, memberships } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
       password: hashedPassword,
       name,
       platformRole,
+      isRemittanceOfficer: Boolean(isRemittanceOfficer),
       ...(membershipsCreate.length > 0
         ? {
             memberships: {
@@ -89,6 +91,7 @@ export async function POST(request: Request) {
       email: true,
       name: true,
       platformRole: true,
+      isRemittanceOfficer: true,
       createdAt: true,
       memberships: {
         select: {

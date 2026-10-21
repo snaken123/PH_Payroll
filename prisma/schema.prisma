@@ -34,6 +34,7 @@ model User {
   name         String?
   image        String?
   platformRole         PlatformRole @default(STANDARD)
+  isRemittanceOfficer  Boolean      @default(false)
   passwordResetToken   String?
   passwordResetExpires DateTime?
   createdAt            DateTime     @default(now())

@@ -20,6 +20,7 @@ export const createUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   name: z.string().min(1, "Name is required"),
   platformRole: z.enum(platformRoleValues),
+  isRemittanceOfficer: z.boolean().optional(),
   companyId: z.string().optional(),
   companyRole: z.enum(companyRoleValues).optional(),
   memberships: z.array(membershipInputSchema).optional(),
@@ -33,6 +34,7 @@ export const updateUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
   name: z.string().min(1, "Name is required").optional(),
   platformRole: z.enum(platformRoleValues).optional(),
+  isRemittanceOfficer: z.boolean().optional(),
   memberships: z.array(membershipInputSchema).optional(),
 });
 

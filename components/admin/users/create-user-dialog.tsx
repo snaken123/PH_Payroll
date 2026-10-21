@@ -22,7 +22,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlusIcon, KeyIcon } from "lucide-react";
+import { UserPlusIcon, KeyIcon, LandmarkIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AccessTree, type CompanyOption, type AccessTreeMembership, type PlatformRoleOption } from "./access-tree";
 
 export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption[] }) {
@@ -31,6 +32,7 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
   const [submitting, setSubmitting] = useState(false);
 
   const [platformRole, setPlatformRole] = useState<PlatformRoleOption>("STANDARD");
+  const [isRemittanceOfficer, setIsRemittanceOfficer] = useState(false);
   const [memberships, setMemberships] = useState<AccessTreeMembership[]>([]);
 
   const {
@@ -43,6 +45,7 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
     resolver: zodResolver(createUserSchema) as any,
     defaultValues: {
       platformRole: "STANDARD",
+      isRemittanceOfficer: false,
       email: "",
       name: "",
       password: "",
@@ -60,6 +63,7 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
     const payload = {
       ...values,
       platformRole,
+      isRemittanceOfficer,
       memberships: platformRole === "STANDARD" ? memberships : [],
     };
 
@@ -80,6 +84,7 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
     reset();
     setMemberships([]);
     setPlatformRole("STANDARD");
+    setIsRemittanceOfficer(false);
     setOpen(false);
     router.refresh();
   }
@@ -145,6 +150,28 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
                 {...register("password")}
               />
               {errors.password && <p className="text-[11px] text-rose-400 font-medium">{errors.password.message}</p>}
+            </div>
+          </div>
+
+          {/* Remittance Officer Assignment Checkbox */}
+          <div className="flex items-start space-x-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3.5 transition-colors hover:border-slate-700">
+            <Checkbox
+              id="create-isRemittanceOfficer"
+              checked={isRemittanceOfficer}
+              onCheckedChange={(val) => setIsRemittanceOfficer(Boolean(val))}
+              className="mt-0.5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+            />
+            <div className="space-y-1 leading-none select-none">
+              <label
+                htmlFor="create-isRemittanceOfficer"
+                className="text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5"
+              >
+                <LandmarkIcon className="size-3.5 text-emerald-400" />
+                Assign as Remittance Officer
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Grants cross-company access to the Statutory Remittance Portal to consolidate SSS, PhilHealth, Pag-IBIG &amp; BIR payables and disburse payment checks.
+              </p>
             </div>
           </div>
 

@@ -24,7 +24,8 @@ export default async function RemittancesLayout({
   }
 
   const isSuperAdmin = session.user.platformRole === "SUPER_ADMIN";
-  const isRemittanceOfficer = session.user.platformRole === "REMITTANCE_OFFICER";
+  const isRemittanceOfficer =
+    session.user.platformRole === "REMITTANCE_OFFICER" || Boolean(session.user.isRemittanceOfficer);
   const isCompanyAdmin =
     session.user.companyRole &&
     ["COMPANY_OWNER", "PAYROLL_ADMIN"].includes(session.user.companyRole);
@@ -107,7 +108,7 @@ export default async function RemittancesLayout({
                   <span className="text-[10px] text-emerald-400 font-medium">
                     {session.user.platformRole === "SUPER_ADMIN"
                       ? "Super Admin"
-                      : session.user.platformRole === "REMITTANCE_OFFICER"
+                      : session.user.platformRole === "REMITTANCE_OFFICER" || session.user.isRemittanceOfficer
                       ? "Remittance Officer"
                       : "Payroll Admin"}
                   </span>
