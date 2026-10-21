@@ -631,25 +631,26 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-900/90 border-slate-800">
-                    <TableHead className="w-16 min-w-[64px] text-center pl-3">
+                  <TableRow className="bg-slate-900/95 border-slate-800">
+                    <TableHead className="w-14 min-w-[56px] text-center pl-2 sticky left-0 bg-slate-900 z-20 border-r border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
                       <div className="flex flex-col items-center justify-center gap-1">
                         <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">SELECT</span>
                         <Checkbox
                           checked={selectedItemIds.size === items.length && items.length > 0}
                           onCheckedChange={toggleSelectAll}
-                          className="size-4 border-slate-500 bg-slate-950/80 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
+                          className="size-4 border-slate-400 bg-slate-950 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Status</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Company</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Agency</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Obligation Details</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Period / Cutoff</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Amount (PHP)</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Payment &amp; Check Details</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right pr-4">Action</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 sticky left-14 bg-slate-900 z-20 border-r border-slate-800/80 w-24">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-36">Company</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-24">Agency</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">Obligation Details</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-28">Period / Cutoff</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right w-28">Amount (PHP)</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">Payment &amp; Check Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -670,14 +671,14 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                           !isPaid ? "cursor-pointer" : ""
                         } ${isSelected ? "bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
                       >
-                        <TableCell className="w-16 min-w-[64px] text-center pl-3">
+                        <TableCell className="w-14 min-w-[56px] text-center pl-2 sticky left-0 bg-slate-900 z-10 border-r border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleSelectItem(item.id)}
-                            className="size-4 border-slate-500 bg-slate-950/80 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
+                            className="size-4 border-slate-400 bg-slate-950 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="sticky left-14 bg-slate-900 z-10 border-r border-slate-800/80 w-24">
                           {isPaid ? (
                             <Badge
                               variant="outline"
@@ -694,17 +695,17 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-36">
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-xs text-slate-200 block truncate max-w-[150px]">
+                            <span className="font-semibold text-xs text-slate-200 block truncate max-w-[140px]">
                               {item.companyName}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono">
+                            <span className="text-[10px] text-slate-500 font-mono block truncate max-w-[140px]">
                               {item.companyCode} • TIN: {item.companyTin}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-24">
                           <Badge
                             variant="outline"
                             className={`text-[10px] font-mono font-bold ${
@@ -720,13 +721,13 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             {item.agency}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-normal max-w-[260px]">
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[10px] font-mono uppercase px-1 py-0 rounded bg-slate-800 text-slate-300">
                                 {item.itemType}
                               </span>
-                              <span className="font-semibold text-xs text-slate-200">
+                              <span className="font-semibold text-xs text-slate-200 leading-snug">
                                 {item.description}
                               </span>
                             </div>
@@ -736,13 +737,13 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                               </p>
                             ) : (
                               <p className="text-[11px] text-slate-400 font-mono">
-                                EE Share: {formatCurrency(item.eeAmount || 0)} • ER Share: {formatCurrency(item.erAmount || 0)}
+                                EE: {formatCurrency(item.eeAmount || 0)} • ER: {formatCurrency(item.erAmount || 0)}
                               </p>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-slate-300">
-                          <span className="font-bold text-slate-200">
+                        <TableCell className="font-mono text-xs text-slate-300 w-28">
+                          <span className="font-bold text-slate-200 block">
                             {item.periodMonth}/{item.periodYear}
                           </span>
                           {item.cutoffStart && item.cutoffEnd ? (
@@ -756,52 +757,50 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             </span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-xs text-emerald-400">
+                        <TableCell className="text-right font-mono font-bold text-xs text-emerald-400 w-28">
                           {formatCurrency(item.totalAmount)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[200px]">
                           {isPaid ? (
-                            <div className="space-y-0.5 text-[11px]">
-                              <span className="font-mono font-bold text-white block">
-                                Check #{item.checkNumber || "PAID"}
-                              </span>
-                              <span className="text-slate-400 text-[10px] block">
-                                Date: {item.checkDate || "—"} • Ref: {item.referenceNumber || "PRN"}
-                              </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="space-y-0.5 text-[11px]">
+                                <span className="font-mono font-bold text-white block">
+                                  Check #{item.checkNumber || "PAID"}
+                                </span>
+                                <span className="text-slate-400 text-[10px] block">
+                                  Date: {item.checkDate || "—"} • Ref: {item.referenceNumber || "PRN"}
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (item.checkId) {
+                                    handleViewVoucherForCheck(item.checkId);
+                                  } else {
+                                    setActiveTab("checks");
+                                  }
+                                }}
+                                className="h-7 text-xs text-slate-300 hover:text-white hover:bg-slate-800 shrink-0"
+                              >
+                                <PrinterIcon className="size-3 mr-1 text-emerald-400" /> View CDV
+                              </Button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-500 italic">Not yet disbursed</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right pr-4">
-                          {isPaid ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (item.checkId) {
-                                  handleViewVoucherForCheck(item.checkId);
-                                } else {
-                                  setActiveTab("checks");
-                                }
-                              }}
-                              className="h-7 text-xs text-slate-300 hover:text-white hover:bg-slate-800"
-                            >
-                              <PrinterIcon className="size-3 mr-1 text-emerald-400" /> View CDV
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleTagSingleItem(item);
-                              }}
-                              className="h-7 text-xs border-emerald-500/60 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-600 hover:text-white font-semibold transition-colors"
-                            >
-                              <CreditCardIcon className="size-3 mr-1 text-emerald-400" /> Tag Check
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTagSingleItem(item);
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-7 px-3 shadow-md gap-1.5 cursor-pointer shrink-0 transition-transform active:scale-95"
+                              >
+                                <CreditCardIcon className="size-3" /> Tag Check
+                              </Button>
+                              <span className="text-[11px] text-slate-500 italic">Unpaid</span>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
