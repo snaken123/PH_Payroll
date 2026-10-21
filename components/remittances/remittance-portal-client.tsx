@@ -215,30 +215,30 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
   return (
     <div className="space-y-6">
       {/* Module Title & Tab Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl flex items-center gap-2.5">
-              <LandmarkIcon className="size-6 text-emerald-400" />
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl flex items-center gap-2.5">
+              <LandmarkIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
               Statutory Contributions &amp; Remittance Console
             </h1>
-            <Badge variant="outline" className="text-[10px] bg-emerald-950/60 border-emerald-500/40 text-emerald-400 font-mono">
+            <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-mono">
               SEC &amp; BIR Treasury
             </Badge>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Consolidated cross-company portal to calculate, verify, bundle into checks, and remit SSS, PhilHealth, Pag-IBIG, and BIR obligations.
           </p>
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 self-start md:self-auto">
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 self-start md:self-auto">
           <button
             onClick={() => setActiveTab("payables")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               activeTab === "payables"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/60"
-                : "text-slate-400 hover:text-white"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <CoinsIcon className="size-3.5" /> Consolidated Payables
@@ -247,8 +247,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             onClick={() => setActiveTab("checks")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               activeTab === "checks"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/60"
-                : "text-slate-400 hover:text-white"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <CreditCardIcon className="size-3.5" /> Disbursed Checks
@@ -257,8 +257,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             onClick={() => setActiveTab("guidelines")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               activeTab === "guidelines"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/60"
-                : "text-slate-400 hover:text-white"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <BookOpenIcon className="size-3.5" /> Agency Guidelines
@@ -269,64 +269,64 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
       {/* Top Metric Cards */}
       {metrics && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+          <div className="rounded-xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
               <ClockIcon className="size-3" /> Total Pending
             </span>
-            <p className="text-lg font-black font-mono text-amber-300">
+            <p className="text-lg font-black font-mono text-amber-800 dark:text-amber-300">
               {formatCurrency(metrics.grandTotalPending)}
             </p>
-            <span className="text-[10px] text-slate-400">{metrics.pendingCount} unpaid items</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">{metrics.pendingCount} unpaid items</span>
           </div>
 
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+          <div className="rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
               <CheckCircle2Icon className="size-3" /> Total Remitted
             </span>
-            <p className="text-lg font-black font-mono text-emerald-300">
+            <p className="text-lg font-black font-mono text-emerald-800 dark:text-emerald-300">
               {formatCurrency(metrics.grandTotalPaid)}
             </p>
-            <span className="text-[10px] text-slate-400">{metrics.paidCount} remitted items</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">{metrics.paidCount} remitted items</span>
           </div>
 
-          <div className="rounded-xl border border-blue-500/30 bg-blue-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">
+          <div className="rounded-xl border border-blue-300 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
               SSS Pending
             </span>
-            <p className="text-lg font-black font-mono text-blue-300">
+            <p className="text-lg font-black font-mono text-blue-800 dark:text-blue-300">
               {formatCurrency(metrics.sssPending)}
             </p>
-            <span className="text-[10px] text-slate-400">Due: {formatCurrency(metrics.sssDue)}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">Due: {formatCurrency(metrics.sssDue)}</span>
           </div>
 
-          <div className="rounded-xl border border-teal-500/30 bg-teal-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">
+          <div className="rounded-xl border border-teal-300 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
               PhilHealth Pending
             </span>
-            <p className="text-lg font-black font-mono text-teal-300">
+            <p className="text-lg font-black font-mono text-teal-800 dark:text-teal-300">
               {formatCurrency(metrics.philhealthPending)}
             </p>
-            <span className="text-[10px] text-slate-400">Due: {formatCurrency(metrics.philhealthDue)}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">Due: {formatCurrency(metrics.philhealthDue)}</span>
           </div>
 
-          <div className="rounded-xl border border-yellow-500/30 bg-yellow-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-yellow-400">
+          <div className="rounded-xl border border-amber-300 dark:border-yellow-500/30 bg-amber-50/80 dark:bg-yellow-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-yellow-400">
               Pag-IBIG Pending
             </span>
-            <p className="text-lg font-black font-mono text-yellow-300">
+            <p className="text-lg font-black font-mono text-amber-800 dark:text-yellow-300">
               {formatCurrency(metrics.pagibigPending)}
             </p>
-            <span className="text-[10px] text-slate-400">Due: {formatCurrency(metrics.pagibigDue)}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">Due: {formatCurrency(metrics.pagibigDue)}</span>
           </div>
 
-          <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">
+          <div className="rounded-xl border border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/20 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
               BIR 1601-C Pending
             </span>
-            <p className="text-lg font-black font-mono text-rose-300">
+            <p className="text-lg font-black font-mono text-rose-800 dark:text-rose-300">
               {formatCurrency(metrics.birPending)}
             </p>
-            <span className="text-[10px] text-slate-400">Due: {formatCurrency(metrics.birDue)}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">Due: {formatCurrency(metrics.birDue)}</span>
           </div>
         </div>
       )}
@@ -335,16 +335,16 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
       {activeTab === "payables" && (
         <div className="space-y-4">
           {/* Controls & Filters Bar */}
-          <Card className="border-slate-800 bg-slate-900/80 shadow-md">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-xs">
             <CardContent className="p-4 space-y-3.5">
               {/* Row 1: Company & Search */}
               <div className="flex flex-col md:flex-row items-center gap-3">
                 <div className="w-full md:w-64 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Target Company</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Target Company</span>
                   <select
                     value={selectedCompanyId}
                     onChange={(e) => setSelectedCompanyId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-100 focus:outline-hidden focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-500"
                   >
                     <option value="ALL">All Companies (Consolidated)</option>
                     {companies.map((c) => (
@@ -356,11 +356,11 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                 </div>
 
                 <div className="w-full md:w-36 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Year</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Year</span>
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-100 focus:outline-hidden focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-500"
                   >
                     {[2024, 2025, 2026, 2027].map((y) => (
                       <option key={y} value={y}>
@@ -371,11 +371,11 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                 </div>
 
                 <div className="w-full md:w-36 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Month</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Month</span>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-100 focus:outline-hidden focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs h-9 px-2.5 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-500"
                   >
                     <option value="ALL">All Months</option>
                     {[
@@ -390,14 +390,14 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                 </div>
 
                 <div className="w-full flex-1 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Search Line Items</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Search Line Items</span>
                   <div className="relative">
-                    <SearchIcon className="absolute left-3 top-2.5 size-4 text-slate-500" />
+                    <SearchIcon className="absolute left-3 top-2.5 size-4 text-slate-400 dark:text-slate-500" />
                     <Input
                       placeholder="Search company, employee name, loan ref, PRN, or check..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-slate-950 border-slate-800 text-xs h-9 text-slate-100"
+                      className="pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     variant="outline"
                     onClick={fetchPayables}
                     disabled={loading}
-                    className="bg-slate-950 border-slate-800 text-xs h-9 px-3 gap-1.5"
+                    className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs h-9 px-3 gap-1.5"
                   >
                     <RefreshCwIcon className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
                   </Button>
@@ -416,7 +416,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
               </div>
 
               {/* Row 2: Pills for Agency, ItemType, and Status */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200 dark:border-slate-800/80">
                 {/* Agency Pills */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Agency:</span>
@@ -426,8 +426,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       onClick={() => setSelectedAgency(ag)}
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedAgency === ag
-                          ? "bg-slate-200 text-slate-900 border-white font-bold"
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                          ? "bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900 border-transparent font-bold"
+                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
                       }`}
                     >
                       {ag}
@@ -445,7 +445,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedItemType === t
                           ? "bg-emerald-600 text-white border-emerald-500 font-bold"
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
                       }`}
                     >
                       {t === "ALL" ? "All Types" : t === "CONTRIBUTION" ? "Regular Contributions" : "Member Loans"}
@@ -463,7 +463,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedStatus === st
                           ? "bg-blue-600 text-white border-blue-500 font-bold"
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
                       }`}
                     >
                       {st === "ALL" ? "All" : st === "UNPAID" ? "Pending (Unpaid)" : "Remitted (Paid)"}
@@ -475,46 +475,46 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
           </Card>
 
           {/* Workflow Guide & Always-Visible Check Tagging Action Bar */}
-          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-4 space-y-3.5 shadow-lg">
+          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-50/80 via-white to-slate-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 p-4 space-y-3.5 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-500/20">
               <div className="flex items-center gap-2">
-                <LandmarkIcon className="size-4 text-emerald-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <LandmarkIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
                   How to Tag &amp; Disburse Remittance Checks
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-400 font-medium">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 Philippine Statutory Treasury Checklist: SSS, PhilHealth, Pag-IBIG &amp; BIR
               </span>
             </div>
 
             {/* 3 Step Quick Guide */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">1</span>
+              <div className="p-2.5 rounded-lg bg-white/90 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-mono text-[11px] font-bold">1</span>
                 <div className="space-y-0.5">
-                  <span className="font-bold text-slate-200 block">Select Obligations</span>
-                  <p className="text-[11px] text-slate-400">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Select Obligations</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Filter by company and agency (e.g. SSS). Check the boxes for the semi-monthly cutoffs or member loans you wish to pay.
                   </p>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">2</span>
+              <div className="p-2.5 rounded-lg bg-white/90 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-mono text-[11px] font-bold">2</span>
                 <div className="space-y-0.5">
-                  <span className="font-bold text-slate-200 block">Bundle into a Check</span>
-                  <p className="text-[11px] text-slate-400">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Bundle into a Check</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Click <strong>Issue Remittance Check</strong> below (or <strong>Tag Check</strong> on any row). Enter Check #, Bank Account, &amp; Agency PRN.
                   </p>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">3</span>
+              <div className="p-2.5 rounded-lg bg-white/90 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-mono text-[11px] font-bold">3</span>
                 <div className="space-y-0.5">
-                  <span className="font-bold text-slate-200 block">Print Voucher (CDV)</span>
-                  <p className="text-[11px] text-slate-400">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Print Voucher (CDV)</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     The system generates the official Check Disbursement Voucher (CDV) and marks obligations as Remitted.
                   </p>
                 </div>
@@ -522,7 +522,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             </div>
 
             {/* Main Action Bar */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 {selectedItemIds.size > 0 ? (
                   <div className="flex items-center gap-2">
@@ -530,12 +530,12 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       {selectedItemIds.size} Selected
                     </Badge>
                     <span className="text-slate-400 text-xs">•</span>
-                    <span className="font-mono font-bold text-sm text-emerald-300">
+                    <span className="font-mono font-bold text-sm text-emerald-700 dark:text-emerald-300">
                       Total: {formatCurrency(selectedTotalAmount)}
                     </span>
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-400 italic">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 italic">
                     Select 1 or more pending cutoffs/loans using the checkboxes, or click &quot;Tag Check&quot; directly on any row.
                   </span>
                 )}
@@ -547,7 +547,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     size="sm"
                     variant="outline"
                     onClick={toggleSelectAll}
-                    className="border-slate-700 text-slate-300 text-xs h-9 hover:bg-slate-800"
+                    className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs h-9 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     {selectedItemIds.size === items.length ? "Deselect All" : `Select All (${items.length})`}
                   </Button>
@@ -557,7 +557,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                   <Button
                     size="sm"
                     onClick={() => setCheckDialogOpen(true)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 shadow-md shadow-emerald-950/60 gap-1.5"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 shadow-sm gap-1.5"
                   >
                     <CreditCardIcon className="size-3.5" />
                     Issue Remittance Check ({selectedItemIds.size} items • {formatCurrency(selectedTotalAmount)}) →
@@ -566,7 +566,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                   <Button
                     size="sm"
                     disabled
-                    className="bg-slate-800/80 border border-slate-700/60 text-slate-500 text-xs h-9 px-4 gap-1.5 cursor-not-allowed"
+                    className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-slate-400 dark:text-slate-500 text-xs h-9 px-4 gap-1.5 cursor-not-allowed"
                   >
                     <CreditCardIcon className="size-3.5" />
                     Issue Remittance Check (Select items below)
@@ -578,17 +578,17 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
 
           {/* Sticky Selection Bar when scrolled */}
           {selectedItemIds.size > 0 && (
-            <div className="sticky top-18 z-40 p-3 rounded-xl border border-emerald-500/60 bg-emerald-950/95 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="sticky top-18 z-40 p-3 rounded-xl border border-emerald-500/60 bg-emerald-900/95 dark:bg-emerald-950/95 text-white backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-400 text-slate-950 font-bold text-xs">
                   {selectedItemIds.size}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-xs text-white">
                     {selectedItemIds.size} items selected
                   </span>
-                  <span className="text-slate-400 text-xs">•</span>
-                  <span className="font-mono font-bold text-xs text-emerald-300">
+                  <span className="text-emerald-200/60 text-xs">•</span>
+                  <span className="font-mono font-bold text-xs text-emerald-200">
                     Total: {formatCurrency(selectedTotalAmount)}
                   </span>
                 </div>
@@ -599,14 +599,14 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                   size="sm"
                   variant="outline"
                   onClick={handleClearSelection}
-                  className="bg-transparent border-emerald-500/40 text-emerald-200 text-xs h-8 hover:bg-emerald-900/50"
+                  className="bg-transparent border-emerald-400/40 text-emerald-100 text-xs h-8 hover:bg-emerald-800/50"
                 >
                   Clear Selection
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => setCheckDialogOpen(true)}
-                  className="bg-white text-emerald-950 hover:bg-slate-100 font-bold text-xs h-8 px-3.5 shadow-md gap-1.5"
+                  className="bg-white text-emerald-950 hover:bg-emerald-50 font-bold text-xs h-8 px-3.5 shadow-md gap-1.5"
                 >
                   <CreditCardIcon className="size-3 text-emerald-800" />
                   Issue Check ({formatCurrency(selectedTotalAmount)}) →
@@ -616,41 +616,41 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
           )}
 
           {/* Main Payables Table */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm">
             {loading ? (
-              <div className="py-20 text-center text-xs text-slate-400">
-                <RefreshCwIcon className="size-5 animate-spin mx-auto text-emerald-500 mb-2" />
+              <div className="py-20 text-center text-xs text-slate-500 dark:text-slate-400">
+                <RefreshCwIcon className="size-5 animate-spin mx-auto text-emerald-600 dark:text-emerald-500 mb-2" />
                 Aggregating statutory payables across companies...
               </div>
             ) : items.length === 0 ? (
-              <div className="py-20 text-center text-xs text-slate-400">
-                <CheckCircle2Icon className="size-8 text-emerald-500/60 mx-auto mb-2" />
-                <p className="font-semibold text-slate-300">No statutory obligations matching your filters</p>
+              <div className="py-20 text-center text-xs text-slate-500 dark:text-slate-400">
+                <CheckCircle2Icon className="size-8 text-emerald-600/60 dark:text-emerald-500/60 mx-auto mb-2" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No statutory obligations matching your filters</p>
                 <p className="text-slate-500 mt-1">Try selecting &quot;All Statuses&quot; or choosing another company.</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-900/95 border-slate-800">
-                    <TableHead className="w-14 min-w-[56px] text-center pl-2 sticky left-0 bg-slate-900 z-20 border-r border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                      <div className="flex flex-col items-center justify-center gap-1">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">SELECT</span>
+                  <TableRow className="bg-slate-50/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800">
+                    <TableHead className="w-14 min-w-[56px] text-center sticky left-0 bg-slate-50 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                      <div className="flex flex-col items-center justify-center gap-1 py-1">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">SELECT</span>
                         <Checkbox
                           checked={selectedItemIds.size === items.length && items.length > 0}
                           onCheckedChange={toggleSelectAll}
-                          className="size-4 border-slate-400 bg-slate-950 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
+                          aria-label="Select all obligations"
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 sticky left-14 bg-slate-900 z-20 border-r border-slate-800/80 w-24">
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sticky left-14 bg-slate-50 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800/80 w-24">
                       Status
                     </TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-36">Company</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-24">Agency</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">Obligation Details</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 w-28">Period / Cutoff</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right w-28">Amount (PHP)</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">Payment &amp; Check Action</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-36">Company</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-24">Agency</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 min-w-[200px]">Obligation Details</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-28">Period / Cutoff</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right w-28">Amount (PHP)</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 min-w-[200px]">Payment &amp; Check Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -667,29 +667,35 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                           if (target.closest("button") || target.closest("a") || target.closest("[role=checkbox]")) return;
                           if (!isPaid) toggleSelectItem(item.id);
                         }}
-                        className={`border-slate-800 hover:bg-slate-800/40 transition-colors ${
+                        className={`border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
                           !isPaid ? "cursor-pointer" : ""
-                        } ${isSelected ? "bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
+                        } ${isSelected ? "bg-emerald-50/70 dark:bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
                       >
-                        <TableCell className="w-14 min-w-[56px] text-center pl-2 sticky left-0 bg-slate-900 z-10 border-r border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleSelectItem(item.id)}
-                            className="size-4 border-slate-400 bg-slate-950 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
-                          />
+                        <TableCell className={`w-14 min-w-[56px] text-center sticky left-0 z-10 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)] ${
+                          isSelected ? "bg-emerald-50 dark:bg-slate-900" : "bg-white dark:bg-slate-900"
+                        }`}>
+                          <div className="flex items-center justify-center w-full">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelectItem(item.id)}
+                              aria-label={`Select obligation ${item.description}`}
+                            />
+                          </div>
                         </TableCell>
-                        <TableCell className="sticky left-14 bg-slate-900 z-10 border-r border-slate-800/80 w-24">
+                        <TableCell className={`sticky left-14 z-10 border-r border-slate-200 dark:border-slate-800/80 w-24 ${
+                          isSelected ? "bg-emerald-50 dark:bg-slate-900" : "bg-white dark:bg-slate-900"
+                        }`}>
                           {isPaid ? (
                             <Badge
                               variant="outline"
-                              className="text-[10px] font-mono bg-emerald-950/60 border-emerald-500/50 text-emerald-400 flex items-center gap-1 w-fit"
+                              className="text-[10px] font-mono bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/50 text-emerald-700 dark:text-emerald-400 flex items-center gap-1 w-fit"
                             >
                               <CheckCircle2Icon className="size-2.5" /> REMITTED
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-[10px] font-mono bg-amber-950/60 border-amber-500/50 text-amber-400 flex items-center gap-1 w-fit"
+                              className="text-[10px] font-mono bg-amber-50 dark:bg-amber-950/60 border-amber-500/50 text-amber-700 dark:text-amber-400 flex items-center gap-1 w-fit"
                             >
                               <ClockIcon className="size-2.5" /> PENDING
                             </Badge>
@@ -697,7 +703,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                         </TableCell>
                         <TableCell className="w-36">
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-xs text-slate-200 block truncate max-w-[140px]">
+                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 block truncate max-w-[140px]">
                               {item.companyName}
                             </span>
                             <span className="text-[10px] text-slate-500 font-mono block truncate max-w-[140px]">
@@ -710,12 +716,12 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             variant="outline"
                             className={`text-[10px] font-mono font-bold ${
                               item.agency === "SSS"
-                                ? "border-blue-500/40 text-blue-400 bg-blue-950/40"
+                                ? "border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40"
                                 : item.agency === "PHILHEALTH"
-                                ? "border-teal-500/40 text-teal-400 bg-teal-950/40"
+                                ? "border-teal-500/40 text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40"
                                 : item.agency === "PAGIBIG"
-                                ? "border-amber-500/40 text-amber-400 bg-amber-950/40"
-                                : "border-rose-500/40 text-rose-400 bg-rose-950/40"
+                                ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40"
+                                : "border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40"
                             }`}
                           >
                             {item.agency}
@@ -724,30 +730,30 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                         <TableCell className="whitespace-normal max-w-[260px]">
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[10px] font-mono uppercase px-1 py-0 rounded bg-slate-800 text-slate-300">
+                              <span className="text-[10px] font-mono uppercase px-1 py-0 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                 {item.itemType}
                               </span>
-                              <span className="font-semibold text-xs text-slate-200 leading-snug">
+                              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 leading-snug">
                                 {item.description}
                               </span>
                             </div>
                             {isLoan ? (
-                              <p className="text-[11px] text-slate-400 font-mono">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                                 Emp: {item.employeeName} ({item.employeeNumber}) • Ref: {item.loanReference || "—"}
                               </p>
                             ) : (
-                              <p className="text-[11px] text-slate-400 font-mono">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                                 EE: {formatCurrency(item.eeAmount || 0)} • ER: {formatCurrency(item.erAmount || 0)}
                               </p>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-slate-300 w-28">
-                          <span className="font-bold text-slate-200 block">
+                        <TableCell className="font-mono text-xs text-slate-700 dark:text-slate-300 w-28">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 block">
                             {item.periodMonth}/{item.periodYear}
                           </span>
                           {item.cutoffStart && item.cutoffEnd ? (
-                            <span className="text-[10px] text-emerald-400/90 block">
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400/90 block">
                               Cutoff: {item.cutoffStart.slice(5)} to {item.cutoffEnd.slice(5)}
                               {item.runNumber ? ` (Run #${item.runNumber})` : ""}
                             </span>
@@ -757,17 +763,17 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             </span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-xs text-emerald-400 w-28">
+                        <TableCell className="text-right font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 w-28">
                           {formatCurrency(item.totalAmount)}
                         </TableCell>
                         <TableCell className="min-w-[200px]">
                           {isPaid ? (
                             <div className="flex items-center justify-between gap-2">
                               <div className="space-y-0.5 text-[11px]">
-                                <span className="font-mono font-bold text-white block">
+                                <span className="font-mono font-bold text-slate-900 dark:text-white block">
                                   Check #{item.checkNumber || "PAID"}
                                 </span>
-                                <span className="text-slate-400 text-[10px] block">
+                                <span className="text-slate-500 dark:text-slate-400 text-[10px] block">
                                   Date: {item.checkDate || "—"} • Ref: {item.referenceNumber || "PRN"}
                                 </span>
                               </div>
@@ -782,9 +788,9 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                                     setActiveTab("checks");
                                   }
                                 }}
-                                className="h-7 text-xs text-slate-300 hover:text-white hover:bg-slate-800 shrink-0"
+                                className="h-7 text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
                               >
-                                <PrinterIcon className="size-3 mr-1 text-emerald-400" /> View CDV
+                                <PrinterIcon className="size-3 mr-1 text-emerald-600 dark:text-emerald-400" /> View CDV
                               </Button>
                             </div>
                           ) : (
@@ -795,7 +801,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                                   e.stopPropagation();
                                   handleTagSingleItem(item);
                                 }}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-7 px-3 shadow-md gap-1.5 cursor-pointer shrink-0 transition-transform active:scale-95"
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-7 px-3 shadow-sm gap-1.5 cursor-pointer shrink-0 transition-transform active:scale-95"
                               >
                                 <CreditCardIcon className="size-3" /> Tag Check
                               </Button>

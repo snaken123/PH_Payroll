@@ -180,15 +180,15 @@ export function CheckVoucherModal({ open, onOpenChange, check }: CheckVoucherMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl bg-slate-900 border-slate-800 text-slate-100 max-h-[92vh] overflow-y-auto print:bg-white print:text-black print:border-none print:shadow-none print:p-0 print:max-h-none">
+      <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-h-[92vh] overflow-y-auto print:bg-white print:text-black print:border-none print:shadow-none print:p-0 print:max-h-none">
         <DialogHeader className="print:hidden">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
             <div>
-              <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-100">
-                <LandmarkIcon className="size-4 text-emerald-400" />
+              <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                <LandmarkIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
                 Check Disbursement Voucher &amp; Transmittal Slip
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
                 Official statutory remittance voucher for check #{check.checkNumber}
               </DialogDescription>
             </div>

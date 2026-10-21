@@ -207,17 +207,17 @@ export function IssueRemittanceCheckDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl bg-slate-900 border-slate-800 text-slate-100 max-h-[92vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
               <LandmarkIcon className="size-4" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-slate-100">
+              <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Disburse Statutory Remittance Check
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
                 Bundle {selectedItems.length} selected statutory items into a single corporate disbursement check.
               </DialogDescription>
             </div>
@@ -226,11 +226,11 @@ export function IssueRemittanceCheckDialog({
 
         {/* Validation Errors & Alerts */}
         {hasMixedCompanies && (
-          <div className="rounded-xl border border-rose-500/40 bg-rose-950/40 p-3.5 flex items-start gap-2.5 text-xs text-rose-300">
-            <AlertTriangleIcon className="size-4 text-rose-400 shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/40 p-3.5 flex items-start gap-2.5 text-xs text-rose-800 dark:text-rose-300">
+            <AlertTriangleIcon className="size-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-rose-200">Multiple Companies Selected</p>
-              <p className="mt-0.5 text-rose-300/90 leading-relaxed">
+              <p className="font-bold text-rose-900 dark:text-rose-200">Multiple Companies Selected</p>
+              <p className="mt-0.5 text-rose-700 dark:text-rose-300/90 leading-relaxed">
                 A physical bank check can only be drawn against one company&apos;s corporate bank account.
                 You have selected items across {uniqueCompanyIds.length} different companies. Please filter by a single company before issuing.
               </p>
@@ -239,11 +239,11 @@ export function IssueRemittanceCheckDialog({
         )}
 
         {hasMixedAgencies && (
-          <div className="rounded-xl border border-rose-500/40 bg-rose-950/40 p-3.5 flex items-start gap-2.5 text-xs text-rose-300">
-            <AlertTriangleIcon className="size-4 text-rose-400 shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/40 p-3.5 flex items-start gap-2.5 text-xs text-rose-800 dark:text-rose-300">
+            <AlertTriangleIcon className="size-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-rose-200">Multiple Agencies Selected</p>
-              <p className="mt-0.5 text-rose-300/90 leading-relaxed">
+              <p className="font-bold text-rose-900 dark:text-rose-200">Multiple Agencies Selected</p>
+              <p className="mt-0.5 text-rose-700 dark:text-rose-300/90 leading-relaxed">
                 Checks must be made out to a single government agency (e.g. SSS or PhilHealth).
                 You have selected items for multiple agencies: {uniqueAgencies.join(", ")}. Please select items for one agency at a time.
               </p>
@@ -252,11 +252,11 @@ export function IssueRemittanceCheckDialog({
         )}
 
         {hasMixedSssTypes && !hasMixedAgencies && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-3.5 flex items-start gap-2.5 text-xs text-amber-300">
-            <AlertTriangleIcon className="size-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-3.5 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+            <AlertTriangleIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-amber-200">SSS Compliance Advisory: Contributions vs Member Loans</p>
-              <p className="mt-0.5 text-amber-300/90 leading-relaxed">
+              <p className="font-bold text-amber-900 dark:text-amber-200">SSS Compliance Advisory: Contributions vs Member Loans</p>
+              <p className="mt-0.5 text-amber-700 dark:text-amber-300/90 leading-relaxed">
                 SSS strictly segregates collections for Regular Contributions and Member Loans (Salary/Calamity) with distinct PRNs.
                 Issuing separate checks per PRN is standard banking compliance.
               </p>
@@ -267,42 +267,42 @@ export function IssueRemittanceCheckDialog({
         {/* Main Check Form */}
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           {/* Company & Agency Readonly Header */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-500 block">Drawn On Company</span>
-              <span className="font-bold text-slate-200 text-sm flex items-center gap-1.5 mt-0.5">
-                <Building2Icon className="size-3.5 text-blue-400" />
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5 mt-0.5">
+                <Building2Icon className="size-3.5 text-blue-600 dark:text-blue-400" />
                 {primaryCompany?.legalName || "—"}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+              <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
                 TIN: {primaryCompany?.tin || "—"} • Code: {primaryCompany?.companyCode}
               </span>
             </div>
 
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-500 block">Statutory Payee</span>
-              <span className="font-bold text-emerald-400 text-sm flex items-center gap-1.5 mt-0.5">
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm flex items-center gap-1.5 mt-0.5">
                 <LandmarkIcon className="size-3.5" />
                 {primaryAgency} — {defaultPayee}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+              <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
                 Official Government Entity
               </span>
             </div>
           </div>
 
           {/* Amount Callout Banner */}
-          <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
                 <CoinsIcon className="size-3.5" /> Total Check Amount
               </span>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Sum of {selectedItems.length} selected obligation line items
               </p>
             </div>
             <div className="text-right">
-              <span className="text-2xl font-black font-mono text-emerald-400">
+              <span className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-400">
                 {formatCurrency(totalAmount)}
               </span>
             </div>
@@ -312,8 +312,8 @@ export function IssueRemittanceCheckDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Check Number */}
             <div className="space-y-1.5">
-              <Label htmlFor="checkNumber" className="text-xs font-semibold text-slate-300">
-                Check Number <span className="text-rose-400">*</span>
+              <Label htmlFor="checkNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Check Number <span className="text-rose-500">*</span>
               </Label>
               <Input
                 id="checkNumber"
@@ -321,14 +321,14 @@ export function IssueRemittanceCheckDialog({
                 value={checkNumber}
                 onChange={(e) => setCheckNumber(e.target.value)}
                 required
-                className="bg-slate-950 border-slate-800 text-xs h-9 font-mono text-slate-100"
+                className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 font-mono text-slate-900 dark:text-slate-100"
               />
             </div>
 
             {/* Check Date */}
             <div className="space-y-1.5">
-              <Label htmlFor="checkDate" className="text-xs font-semibold text-slate-300">
-                Check Date <span className="text-rose-400">*</span>
+              <Label htmlFor="checkDate" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Check Date <span className="text-rose-500">*</span>
               </Label>
               <Input
                 id="checkDate"
@@ -336,14 +336,14 @@ export function IssueRemittanceCheckDialog({
                 value={checkDate}
                 onChange={(e) => setCheckDate(e.target.value)}
                 required
-                className="bg-slate-950 border-slate-800 text-xs h-9 text-slate-100"
+                className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 text-slate-900 dark:text-slate-100"
               />
             </div>
 
             {/* Reference Number / PRN / SPA / PIS */}
             <div className="space-y-1.5">
-              <Label htmlFor="referenceNumber" className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>Agency Reference No. / PRN / SPA / PIS <span className="text-rose-400">*</span></span>
+              <Label htmlFor="referenceNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Agency Reference No. / PRN / SPA / PIS <span className="text-rose-500">*</span></span>
               </Label>
               <Input
                 id="referenceNumber"
@@ -351,7 +351,7 @@ export function IssueRemittanceCheckDialog({
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
                 required
-                className="bg-slate-950 border-slate-800 text-xs h-9 font-mono text-emerald-400"
+                className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 font-mono text-emerald-700 dark:text-emerald-400"
               />
               <p className="text-[10px] text-slate-500">
                 Payment Reference Number generated from agency online portal.
@@ -360,14 +360,14 @@ export function IssueRemittanceCheckDialog({
 
             {/* Bank Account Selection */}
             <div className="space-y-1.5">
-              <Label htmlFor="bankAccount" className="text-xs font-semibold text-slate-300">
+              <Label htmlFor="bankAccount" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Disbursement Bank Account
               </Label>
               <select
                 id="bankAccount"
                 value={selectedBankAccountId}
                 onChange={handleBankSelect}
-                className="w-full bg-slate-950 border border-slate-800 text-xs h-9 px-2.5 rounded-md text-slate-100 focus:outline-hidden focus:border-blue-500"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs h-9 px-2.5 rounded-md text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-500"
               >
                 <option value="">— Select Company Bank Account —</option>
                 {availableBankAccounts.map((b) => (
@@ -382,14 +382,14 @@ export function IssueRemittanceCheckDialog({
                   placeholder="Enter Bank Name (e.g. BDO, BPI, Metrobank)"
                   value={customBankName}
                   onChange={(e) => setCustomBankName(e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-slate-100"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 mt-1 text-slate-900 dark:text-slate-100"
                 />
               )}
             </div>
 
             {/* Custom Payee Override (Optional) */}
             <div className="space-y-1.5">
-              <Label htmlFor="customPayee" className="text-xs font-semibold text-slate-300">
+              <Label htmlFor="customPayee" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Payee on Check (Defaults to Official Agency)
               </Label>
               <Input
@@ -397,13 +397,13 @@ export function IssueRemittanceCheckDialog({
                 placeholder={defaultPayee}
                 value={customPayee}
                 onChange={(e) => setCustomPayee(e.target.value)}
-                className="bg-slate-950 border-slate-800 text-xs h-9 text-slate-100 font-mono"
+                className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 text-slate-900 dark:text-slate-100 font-mono"
               />
             </div>
 
             {/* Transmittal Notes */}
             <div className="space-y-1.5">
-              <Label htmlFor="notes" className="text-xs font-semibold text-slate-300">
+              <Label htmlFor="notes" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Transmittal Notes / Memo
               </Label>
               <Input
@@ -411,32 +411,32 @@ export function IssueRemittanceCheckDialog({
                 placeholder="e.g. October 2026 Remittance for Head Office"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="bg-slate-950 border-slate-800 text-xs h-9 text-slate-100"
+                className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs h-9 text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>
 
           {/* Covered Items Breakdown Preview */}
           <div className="space-y-1.5 pt-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
               Bundled Line Items ({selectedItems.length})
             </span>
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 divide-y divide-slate-800/80 text-[11px]">
+            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 divide-y divide-slate-200 dark:divide-slate-800/80 text-[11px]">
               {selectedItems.map((item, idx) => (
-                <div key={item.id || idx} className="p-2.5 flex items-center justify-between hover:bg-slate-900/50">
+                <div key={item.id || idx} className="p-2.5 flex items-center justify-between hover:bg-slate-100/60 dark:hover:bg-slate-900/50">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-700">
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-300 dark:border-slate-700">
                         {item.itemType}
                       </Badge>
-                      <span className="font-semibold text-slate-200">{item.description}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{item.description}</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-500 font-mono">
                       {item.companyName} • Period: {item.periodMonth}/{item.periodYear}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="font-mono font-bold text-slate-200">
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-200">
                       {formatCurrency(item.totalAmount)}
                     </span>
                   </div>
@@ -445,19 +445,19 @@ export function IssueRemittanceCheckDialog({
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-slate-800">
+          <DialogFooter className="pt-3 border-t border-slate-200 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-slate-900 border-slate-800 text-slate-300 text-xs h-9 hover:bg-slate-800"
+              className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs h-9 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={submitting || hasMixedCompanies || hasMixedAgencies || selectedItems.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 shadow-md shadow-emerald-950/50"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 shadow-sm"
             >
               {submitting ? "Issuing Check..." : `Confirm & Issue Check (${formatCurrency(totalAmount)})`}
             </Button>
