@@ -426,8 +426,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       onClick={() => setSelectedAgency(ag)}
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedAgency === ag
-                          ? "bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900 border-transparent font-bold"
-                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
+                          ? "bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                     >
                       {ag}
@@ -444,8 +444,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       onClick={() => setSelectedItemType(t)}
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedItemType === t
-                          ? "bg-emerald-600 text-white border-emerald-500 font-bold"
-                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
+                          ? "bg-emerald-600 text-white border-emerald-500 font-bold shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                     >
                       {t === "ALL" ? "All Types" : t === "CONTRIBUTION" ? "Regular Contributions" : "Member Loans"}
@@ -462,8 +462,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                       onClick={() => setSelectedStatus(st as any)}
                       className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors ${
                         selectedStatus === st
-                          ? "bg-blue-600 text-white border-blue-500 font-bold"
-                          : "bg-slate-100 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
+                          ? "bg-blue-600 text-white border-blue-500 font-bold shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                     >
                       {st === "ALL" ? "All" : st === "UNPAID" ? "Pending (Unpaid)" : "Remitted (Paid)"}
@@ -547,7 +547,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     size="sm"
                     variant="outline"
                     onClick={toggleSelectAll}
-                    className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs h-9 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="bg-white hover:bg-slate-50 border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs h-9 shadow-xs"
                   >
                     {selectedItemIds.size === items.length ? "Deselect All" : `Select All (${items.length})`}
                   </Button>
@@ -606,9 +606,9 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                 <Button
                   size="sm"
                   onClick={() => setCheckDialogOpen(true)}
-                  className="bg-white text-emerald-950 hover:bg-emerald-50 font-bold text-xs h-8 px-3.5 shadow-md gap-1.5"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs h-8 px-3.5 shadow-md gap-1.5"
                 >
-                  <CreditCardIcon className="size-3 text-emerald-800" />
+                  <CreditCardIcon className="size-3 text-emerald-950" />
                   Issue Check ({formatCurrency(selectedTotalAmount)}) →
                 </Button>
               </div>
@@ -631,8 +631,8 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800">
-                    <TableHead className="w-14 min-w-[56px] text-center sticky left-0 bg-slate-50 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                  <TableRow className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                    <TableHead className="w-14 min-w-[56px] text-center sticky left-0 bg-slate-100 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
                       <div className="flex flex-col items-center justify-center gap-1 py-1">
                         <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">SELECT</span>
                         <Checkbox
@@ -642,15 +642,15 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sticky left-14 bg-slate-50 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800/80 w-24">
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 sticky left-14 bg-slate-100 dark:bg-slate-900 z-20 border-r border-slate-200 dark:border-slate-800/80 w-24">
                       Status
                     </TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-36">Company</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-24">Agency</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 min-w-[200px]">Obligation Details</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-28">Period / Cutoff</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right w-28">Amount (PHP)</TableHead>
-                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 min-w-[200px]">Payment &amp; Check Action</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 w-36">Company</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 w-24">Agency</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 min-w-[200px]">Obligation Details</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 w-28">Period / Cutoff</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-right w-28">Amount (PHP)</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 min-w-[200px]">Payment &amp; Check Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -672,9 +672,9 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                         } ${isSelected ? "bg-emerald-50/70 dark:bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
                       >
                         <TableCell className={`w-14 min-w-[56px] text-center sticky left-0 z-10 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)] ${
-                          isSelected ? "bg-emerald-50 dark:bg-slate-900" : "bg-white dark:bg-slate-900"
+                          isSelected ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-white dark:bg-slate-900"
                         }`}>
-                          <div className="flex items-center justify-center w-full">
+                          <div className="flex items-center justify-center size-full min-h-[28px]">
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => toggleSelectItem(item.id)}
@@ -683,7 +683,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                           </div>
                         </TableCell>
                         <TableCell className={`sticky left-14 z-10 border-r border-slate-200 dark:border-slate-800/80 w-24 ${
-                          isSelected ? "bg-emerald-50 dark:bg-slate-900" : "bg-white dark:bg-slate-900"
+                          isSelected ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-white dark:bg-slate-900"
                         }`}>
                           {isPaid ? (
                             <Badge

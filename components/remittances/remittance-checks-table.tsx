@@ -113,16 +113,16 @@ export function RemittanceChecksTable({
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check #</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Company</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Payee / Agency</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Bank &amp; Ref #</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Bundled Items</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Amount</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center">Status</TableHead>
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Actions</TableHead>
+                <TableRow className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Check #</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Date</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Company</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Payee / Agency</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Bank &amp; Ref #</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Bundled Items</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-right">Amount</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-center">Status</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
