@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const platformRoleValues = ["STANDARD", "SUPER_ADMIN"] as const;
+export const platformRoleValues = ["STANDARD", "SUPER_ADMIN", "REMITTANCE_OFFICER"] as const;
 export const companyRoleValues = [
   "COMPANY_OWNER",
   "PAYROLL_ADMIN",

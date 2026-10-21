@@ -185,6 +185,20 @@ export function CheckRegisterClient({ initialBankAccounts, canManage }: CheckReg
         </div>
       );
     }
+    if (c.sourceType === "STATUTORY_REMITTANCE") {
+      const batchItems = (c as any).remittanceBatchItems || [];
+      const agency = batchItems[0]?.agency || c.payee || "Statutory Agency";
+      return (
+        <div className="text-xs">
+          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+            {agency} Remittance
+          </span>
+          <span className="text-slate-500 block text-[11px]">
+            {batchItems.length > 0 ? `${batchItems.length} items bundled` : c.notes || "Statutory Payment"}
+          </span>
+        </div>
+      );
+    }
     if (c.payrollRun) {
       return (
         <div className="text-xs">

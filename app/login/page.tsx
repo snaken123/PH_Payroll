@@ -26,6 +26,7 @@ import {
   EyeOffIcon,
   ShieldCheckIcon,
   KeyRoundIcon,
+  LandmarkIcon,
 } from "lucide-react";
 
 function LoginForm() {
@@ -83,7 +84,25 @@ function LoginForm() {
         : "";
 
     if (!targetUrl || targetUrl === "/") {
-      targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
+      try {
+        const sessRes = await fetch("/api/auth/session");
+        if (sessRes.ok) {
+          const sessData = await sessRes.json();
+          if (sessData?.user?.platformRole === "REMITTANCE_OFFICER") {
+            targetUrl = "/remittances";
+          } else if (sessData?.user?.platformRole === "SUPER_ADMIN") {
+            targetUrl = "/admin";
+          } else {
+            targetUrl = "/dashboard";
+          }
+        }
+      } catch {
+        targetUrl = values.email.toLowerCase().includes("admin") ? "/admin" : "/dashboard";
+      }
+    }
+
+    if (!targetUrl) {
+      targetUrl = "/dashboard";
     }
 
     // Force full window replacement to target route
@@ -314,6 +333,39 @@ export default function LoginPage() {
         <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading sign in form...</div>}>
           <LoginForm />
         </Suspense>
+
+        {/* External Statutory Contributions & Remittance Module Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 to-slate-900/90 p-4 shadow-xl backdrop-blur-xl">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40">
+              <LandmarkIcon className="size-5" />
+            </div>
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  Statutory Contributions Portal
+                </h2>
+                <span className="text-[10px] font-semibold text-emerald-400/90 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  External Remittance Module
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-snug">
+                Authorized Liaison &amp; Remittance Officers: Consolidate cross-company SSS, PhilHealth, Pag-IBIG &amp; BIR payables, batch employee loans, and issue payment checks.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3.5 pt-3 border-t border-emerald-500/20 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-medium">
+              Credentials configured by Super Admin
+            </span>
+            <a
+              href="/login?callbackUrl=/remittances"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg shadow-md shadow-emerald-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Access Remittance Portal →
+            </a>
+          </div>
+        </div>
 
         {/* Footer Security Badge */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">

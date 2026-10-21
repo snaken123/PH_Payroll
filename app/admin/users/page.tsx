@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
 import { DeleteUserDialog } from "@/components/admin/users/delete-user-dialog";
-import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, LockIcon } from "lucide-react";
+import { UsersIcon, ShieldAlertIcon, UserCheckIcon, Building2Icon, LockIcon, LandmarkIcon } from "lucide-react";
 
 export default async function AdminUsersPage() {
   const [users, companies] = await Promise.all([
@@ -37,6 +37,7 @@ export default async function AdminUsersPage() {
   ]);
 
   const superAdminCount = users.filter((u) => u.platformRole === "SUPER_ADMIN").length;
+  const remittanceCount = users.filter((u) => u.platformRole === "REMITTANCE_OFFICER").length;
   const standardCount = users.filter((u) => u.platformRole === "STANDARD").length;
 
   const formattedUsers = users.map((u) => ({
@@ -64,7 +65,7 @@ export default async function AdminUsersPage() {
       />
 
       {/* Metric Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Total User Accounts"
           value={users.length}
@@ -76,6 +77,12 @@ export default async function AdminUsersPage() {
           value={superAdminCount}
           subtitle="Unrestricted access to all companies & settings"
           icon={ShieldAlertIcon}
+        />
+        <MetricCard
+          title="Remittance Officers"
+          value={remittanceCount}
+          subtitle="Consolidated statutory payables & checks"
+          icon={LandmarkIcon}
         />
         <MetricCard
           title="Standard Users"
@@ -118,6 +125,10 @@ export default async function AdminUsersPage() {
                         <Badge variant="outline" className="text-[10px] font-mono uppercase bg-amber-950/60 border-amber-500/50 text-amber-400">
                           SUPER_ADMIN
                         </Badge>
+                      ) : user.platformRole === "REMITTANCE_OFFICER" ? (
+                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
+                          REMITTANCE_OFFICER
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="text-[10px] font-mono uppercase bg-blue-950/60 border-blue-500/50 text-blue-400">
                           STANDARD
@@ -129,6 +140,11 @@ export default async function AdminUsersPage() {
                         <span className="inline-flex items-center gap-1 text-xs text-amber-400/90 font-medium">
                           <LockIcon className="size-3 text-amber-400" />
                           Unrestricted (All Companies &amp; Modules)
+                        </span>
+                      ) : user.platformRole === "REMITTANCE_OFFICER" ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                          <LandmarkIcon className="size-3.5 text-emerald-400" />
+                          Statutory Remittance Portal (All Companies)
                         </span>
                       ) : user.memberships.length === 0 ? (
                         <span className="text-xs text-slate-500 italic">No companies assigned</span>

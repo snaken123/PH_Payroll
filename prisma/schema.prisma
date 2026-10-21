@@ -16,6 +16,7 @@ datasource db {
 enum PlatformRole {
   STANDARD
   SUPER_ADMIN
+  REMITTANCE_OFFICER
 }
 
 enum CompanyRole {
@@ -157,6 +158,7 @@ model Company {
   documents              EmployeeDocument[]
   payrollPaymentChecks   PayrollPaymentCheck[]
   statutoryPaymentRecords StatutoryPaymentRecord[]
+  remittanceBatchItems   RemittanceCheckBatchItem[]
   specialDaySchedules    SpecialDaySchedule[]
 
   @@index([status])
@@ -963,6 +965,13 @@ model LoanDeduction {
   balanceAfter   Decimal  @db.Decimal(14, 2)
   createdAt      DateTime @default(now())
 
+  // Remittance tracking to SSS / Pag-IBIG
+  remittanceStatus      StatutoryPaymentStatus     @default(UNPAID)
+  remittanceDate        DateTime?
+  remittanceCheckNumber String?
+  remittanceReference   String?
+  remittanceBatchItems  RemittanceCheckBatchItem[]
+
   loan        Loan         @relation(fields: [loanId], references: [id], onDelete: Cascade)
   payrollRun  PayrollRun?  @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
   finalPayRun FinalPayRun? @relation(fields: [finalPayRunId], references: [id], onDelete: Cascade)
@@ -970,6 +979,7 @@ model LoanDeduction {
   @@index([loanId])
   @@index([payrollRunId])
   @@index([finalPayRunId])
+  @@index([remittanceStatus])
 }
 
 // ==================== Leave ====================
@@ -1279,6 +1289,7 @@ model PayrollPaymentCheck {
   finalPayRun               FinalPayRun?             @relation(fields: [finalPayRunId], references: [id], onDelete: Cascade)
   statutoryPaymentRecord    StatutoryPaymentRecord?  @relation(fields: [statutoryPaymentRecordId], references: [id], onDelete: SetNull)
   bankAccount               CompanyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  remittanceBatchItems      RemittanceCheckBatchItem[]
 
   @@index([companyId])
   @@index([payrollRunId])
@@ -1343,9 +1354,36 @@ model StatutoryPaymentRecord {
   payrollRun          PayrollRun?              @relation(fields: [payrollRunId], references: [id], onDelete: SetNull)
   bankAccount         CompanyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   checks              PayrollPaymentCheck[]
+  remittanceBatchItems RemittanceCheckBatchItem[]
 
   @@unique([companyId, agency, periodYear, periodMonth, payrollRunId])
   @@index([companyId, agency])
   @@index([companyId, periodYear, periodMonth])
+}
+
+// ==================== Remittance Check Batches ====================
+
+model RemittanceCheckBatchItem {
+  id                        String                   @id @default(cuid())
+  checkId                   String
+  companyId                 String
+  agency                    StatutoryAgency
+  itemType                  String                   // "CONTRIBUTION" or "LOAN"
+  statutoryPaymentRecordId  String?
+  loanDeductionId           String?
+  amount                    Decimal                  @db.Decimal(14, 2)
+  description               String?
+  createdAt                 DateTime                 @default(now())
+
+  check                     PayrollPaymentCheck      @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  company                   Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  statutoryPaymentRecord    StatutoryPaymentRecord?  @relation(fields: [statutoryPaymentRecordId], references: [id], onDelete: SetNull)
+  loanDeduction             LoanDeduction?           @relation(fields: [loanDeductionId], references: [id], onDelete: SetNull)
+
+  @@index([checkId])
+  @@index([companyId])
+  @@index([agency])
+  @@index([statutoryPaymentRecordId])
+  @@index([loanDeductionId])
 }
 

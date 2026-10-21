@@ -20,6 +20,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const isSuperAdmin = token.platformRole === "SUPER_ADMIN";
+  const isRemittanceOfficer = token.platformRole === "REMITTANCE_OFFICER";
 
   // Platform admin routes (statutory rate config, tenant onboarding).
   if (pathname.startsWith("/admin") && !isSuperAdmin) {
@@ -28,6 +29,9 @@ export async function proxy(req: NextRequest) {
 
   // Company dashboard requires either an active company membership or platform super-admin access.
   if (pathname.startsWith("/dashboard") && !token.companyId && !isSuperAdmin) {
+    if (isRemittanceOfficer) {
+      return NextResponse.redirect(new URL("/remittances", req.url));
+    }
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 
@@ -35,5 +39,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/onboarding/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/onboarding/:path*", "/remittances/:path*"],
 };

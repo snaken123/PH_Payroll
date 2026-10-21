@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { KeyRoundIcon, Edit3Icon } from "lucide-react";
-import { AccessTree, type CompanyOption, type AccessTreeMembership } from "./access-tree";
+import { AccessTree, type CompanyOption, type AccessTreeMembership, type PlatformRoleOption } from "./access-tree";
 
 interface UserProfile {
   id: string;
@@ -49,14 +49,14 @@ export function EditUserDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const initialPlatformRole = (user.platformRole as "STANDARD" | "SUPER_ADMIN") || "STANDARD";
+  const initialPlatformRole = (user.platformRole as PlatformRoleOption) || "STANDARD";
   const initialMemberships: AccessTreeMembership[] = (user.memberships ?? []).map((m) => ({
     companyId: m.companyId,
     role: (m.role as any) || "HR_STAFF",
     permissions: Array.isArray(m.permissions) ? m.permissions : [],
   }));
 
-  const [platformRole, setPlatformRole] = useState<"STANDARD" | "SUPER_ADMIN">(initialPlatformRole);
+  const [platformRole, setPlatformRole] = useState<PlatformRoleOption>(initialPlatformRole);
   const [memberships, setMemberships] = useState<AccessTreeMembership[]>(initialMemberships);
 
   const isDirty = open && (platformRole !== initialPlatformRole || JSON.stringify(memberships) !== JSON.stringify(initialMemberships));
@@ -117,7 +117,7 @@ export function EditUserDialog({
     },
   });
 
-  const handlePlatformRoleChange = (role: "STANDARD" | "SUPER_ADMIN") => {
+  const handlePlatformRoleChange = (role: PlatformRoleOption) => {
     setPlatformRole(role);
     setValue("platformRole", role);
   };

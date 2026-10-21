@@ -23,14 +23,14 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { UserPlusIcon, KeyIcon } from "lucide-react";
-import { AccessTree, type CompanyOption, type AccessTreeMembership } from "./access-tree";
+import { AccessTree, type CompanyOption, type AccessTreeMembership, type PlatformRoleOption } from "./access-tree";
 
 export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [platformRole, setPlatformRole] = useState<"STANDARD" | "SUPER_ADMIN">("STANDARD");
+  const [platformRole, setPlatformRole] = useState<PlatformRoleOption>("STANDARD");
   const [memberships, setMemberships] = useState<AccessTreeMembership[]>([]);
 
   const {
@@ -49,7 +49,7 @@ export function CreateUserDialog({ companies = [] }: { companies?: CompanyOption
     },
   });
 
-  const handlePlatformRoleChange = (role: "STANDARD" | "SUPER_ADMIN") => {
+  const handlePlatformRoleChange = (role: PlatformRoleOption) => {
     setPlatformRole(role);
     setValue("platformRole", role);
   };

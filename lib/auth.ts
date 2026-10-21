@@ -138,6 +138,10 @@ export const authOptions: NextAuthOptions = {
             token.companyId = requestedCompanyId ?? dbUser.memberships[0]?.companyId ?? null;
             token.companyRole = activeMembership?.role ?? null;
             token.permissions = ALL_PERMISSIONS;
+          } else if (dbUser.platformRole === PlatformRole.REMITTANCE_OFFICER) {
+            token.companyId = requestedCompanyId ?? dbUser.memberships[0]?.companyId ?? null;
+            token.companyRole = activeMembership?.role ?? null;
+            token.permissions = ["remittances:read", "remittances:write", "checks:read", "checks:write"];
           } else if (activeMembership) {
             token.companyId = activeMembership.companyId;
             token.companyRole = activeMembership.role;
@@ -150,7 +154,11 @@ export const authOptions: NextAuthOptions = {
 
           // 1-hour inactivity timeout check for standard users
           const nowInSeconds = Math.floor(Date.now() / 1000);
-          if (dbUser.platformRole !== PlatformRole.SUPER_ADMIN && token.lastActive) {
+          if (
+            dbUser.platformRole !== PlatformRole.SUPER_ADMIN &&
+            dbUser.platformRole !== PlatformRole.REMITTANCE_OFFICER &&
+            token.lastActive
+          ) {
             const idleTime = nowInSeconds - (token.lastActive as number);
             if (idleTime > 3600) {
               return {};
@@ -197,4 +205,22 @@ export async function requireSuperAdmin() {
     throw new Error("Forbidden");
   }
   return session;
+}
+
+export async function requireRemittanceAccess() {
+  const session = await getAuthSession();
+  if (!session) throw new Error("Unauthorized");
+  if (
+    session.user.platformRole === PlatformRole.SUPER_ADMIN ||
+    session.user.platformRole === PlatformRole.REMITTANCE_OFFICER
+  ) {
+    return session;
+  }
+  if (
+    session.user.companyRole &&
+    ["COMPANY_OWNER", "PAYROLL_ADMIN"].includes(session.user.companyRole)
+  ) {
+    return session;
+  }
+  throw new Error("Forbidden");
 }

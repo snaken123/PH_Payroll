@@ -61,6 +61,20 @@ export async function getPayrollRunChecks(companyId: string, payrollRunId: strin
         },
       },
       statutoryPaymentRecord: true,
+      remittanceBatchItems: {
+        include: {
+          statutoryPaymentRecord: true,
+          loanDeduction: {
+            include: {
+              loan: {
+                include: {
+                  employee: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -147,6 +161,20 @@ export async function createPayrollCheck(params: CreateCheckParams) {
         },
       },
       statutoryPaymentRecord: true,
+      remittanceBatchItems: {
+        include: {
+          statutoryPaymentRecord: true,
+          loanDeduction: {
+            include: {
+              loan: {
+                include: {
+                  employee: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 }
@@ -195,6 +223,20 @@ export async function updatePayrollCheck(params: UpdateCheckParams) {
         },
       },
       statutoryPaymentRecord: true,
+      remittanceBatchItems: {
+        include: {
+          statutoryPaymentRecord: true,
+          loanDeduction: {
+            include: {
+              loan: {
+                include: {
+                  employee: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 }
@@ -264,6 +306,20 @@ export async function listCompanyChecks(companyId: string, options: ListCompanyC
           },
         },
         statutoryPaymentRecord: true,
+        remittanceBatchItems: {
+          include: {
+            statutoryPaymentRecord: true,
+            loanDeduction: {
+              include: {
+                loan: {
+                  include: {
+                    employee: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { checkDate: "desc" },
       take,
