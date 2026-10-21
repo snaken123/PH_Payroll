@@ -637,7 +637,13 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                         <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">SELECT</span>
                         <Checkbox
                           checked={selectedItemIds.size === items.length && items.length > 0}
-                          onCheckedChange={toggleSelectAll}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedItemIds(new Set(items.map((i) => i.id)));
+                            } else {
+                              setSelectedItemIds(new Set());
+                            }
+                          }}
                           aria-label="Select all obligations"
                         />
                       </div>
@@ -662,14 +668,9 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     return (
                       <TableRow
                         key={item.id}
-                        onClick={(e) => {
-                          const target = e.target as HTMLElement;
-                          if (target.closest("button") || target.closest("a") || target.closest("[role=checkbox]")) return;
-                          if (!isPaid) toggleSelectItem(item.id);
-                        }}
                         className={`border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
-                          !isPaid ? "cursor-pointer" : ""
-                        } ${isSelected ? "bg-emerald-50/70 dark:bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
+                          isSelected ? "bg-emerald-50/70 dark:bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""
+                        }`}
                       >
                         <TableCell className={`w-14 min-w-[56px] text-center sticky left-0 z-10 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_5px_rgba(0,0,0,0.5)] ${
                           isSelected ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-white dark:bg-slate-900"
@@ -677,7 +678,17 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                           <div className="flex items-center justify-center size-full min-h-[28px]">
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => toggleSelectItem(item.id)}
+                              disabled={isPaid}
+                              onCheckedChange={(checked) => {
+                                if (!isPaid) {
+                                  setSelectedItemIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (checked) next.add(item.id);
+                                    else next.delete(item.id);
+                                    return next;
+                                  });
+                                }
+                              }}
                               aria-label={`Select obligation ${item.description}`}
                             />
                           </div>

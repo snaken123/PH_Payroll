@@ -5,12 +5,12 @@ import { CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface CheckboxProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
 
-export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
+export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   (
     {
       checked = false,
@@ -24,44 +24,51 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
     ref
   ) => {
     return (
-      <button
-        ref={ref}
-        type="button"
-        role="checkbox"
-        id={id}
-        aria-checked={checked}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        data-state={checked ? "checked" : "unchecked"}
-        data-checked={checked ? "" : undefined}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!disabled && onCheckedChange) {
-            onCheckedChange(!checked);
-          }
-        }}
-        style={{
-          width: "20px",
-          height: "20px",
-          minWidth: "20px",
-          minHeight: "20px",
-          maxWidth: "20px",
-          maxHeight: "20px",
-          boxSizing: "border-box",
-        }}
+      <label
         className={cn(
-          "inline-flex size-5 min-w-[20px] min-h-[20px] max-w-[20px] max-h-[20px] shrink-0 aspect-square items-center justify-center rounded-md border-2 transition-all cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50",
-          checked
-            ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
-            : "border-slate-400 bg-white hover:border-emerald-600 dark:border-slate-500 dark:bg-slate-900 dark:hover:border-slate-300",
-          className
+          "inline-flex items-center justify-center size-5 min-w-[20px] min-h-[20px] max-w-[20px] max-h-[20px] shrink-0 aspect-square select-none cursor-pointer",
+          disabled && "cursor-not-allowed opacity-50"
         )}
-        {...props}
       >
-        {checked ? (
-          <CheckIcon className="size-3.5 stroke-[3] text-white pointer-events-none" />
-        ) : null}
-      </button>
+        <input
+          ref={ref}
+          type="checkbox"
+          id={id}
+          checked={checked}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          onChange={(e) => {
+            if (!disabled && onCheckedChange) {
+              onCheckedChange(e.target.checked);
+            }
+          }}
+          className="peer sr-only"
+          {...props}
+        />
+        <div
+          data-state={checked ? "checked" : "unchecked"}
+          style={{
+            width: "20px",
+            height: "20px",
+            minWidth: "20px",
+            minHeight: "20px",
+            maxWidth: "20px",
+            maxHeight: "20px",
+            boxSizing: "border-box",
+          }}
+          className={cn(
+            "flex size-5 min-w-[20px] min-h-[20px] max-w-[20px] max-h-[20px] shrink-0 aspect-square items-center justify-center rounded-md border-2 transition-all",
+            checked
+              ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
+              : "border-slate-400 bg-white hover:border-emerald-600 dark:border-slate-500 dark:bg-slate-900 dark:hover:border-slate-300",
+            className
+          )}
+        >
+          {checked ? (
+            <CheckIcon className="size-3.5 stroke-[3] text-white pointer-events-none" />
+          ) : null}
+        </div>
+      </label>
     );
   }
 );
