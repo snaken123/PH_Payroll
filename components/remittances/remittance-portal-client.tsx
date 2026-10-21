@@ -178,6 +178,29 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
     setSelectedItemIds(new Set());
   };
 
+  const handleTagSingleItem = (item: ConsolidatedPayableItem) => {
+    setSelectedItemIds(new Set([item.id]));
+    setCheckDialogOpen(true);
+  };
+
+  const handleViewVoucherForCheck = async (checkId: string) => {
+    try {
+      const res = await fetch(`/api/remittances/checks?id=${checkId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const chk = data.checks?.find((c: any) => c.id === checkId) || (data.check ? data.check : null);
+        if (chk) {
+          setSelectedCheckForVoucher(chk);
+          setVoucherModalOpen(true);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setActiveTab("checks");
+  };
+
   const handleCheckIssued = (createdCheck: any) => {
     setSelectedItemIds(new Set());
     fetchPayables();
@@ -451,26 +474,123 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
             </CardContent>
           </Card>
 
-          {/* Sticky Selection Action Bar */}
-          {selectedItemIds.size > 0 && (
-            <div className="sticky top-18 z-40 p-3.5 rounded-xl border border-emerald-500/60 bg-emerald-950/90 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500 text-slate-950 font-bold">
-                  {selectedItemIds.size}
+          {/* Workflow Guide & Always-Visible Check Tagging Action Bar */}
+          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-4 space-y-3.5 shadow-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-500/20">
+              <div className="flex items-center gap-2">
+                <LandmarkIcon className="size-4 text-emerald-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                  How to Tag &amp; Disburse Remittance Checks
+                </h3>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Philippine Statutory Treasury Checklist: SSS, PhilHealth, Pag-IBIG &amp; BIR
+              </span>
+            </div>
+
+            {/* 3 Step Quick Guide */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">1</span>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-slate-200 block">Select Obligations</span>
+                  <p className="text-[11px] text-slate-400">
+                    Filter by company and agency (e.g. SSS). Check the boxes for the semi-monthly cutoffs or member loans you wish to pay.
+                  </p>
                 </div>
-                <div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">2</span>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-slate-200 block">Bundle into a Check</span>
+                  <p className="text-[11px] text-slate-400">
+                    Click <strong>Issue Remittance Check</strong> below (or <strong>Tag Check</strong> on any row). Enter Check #, Bank Account, &amp; Agency PRN.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">3</span>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-slate-200 block">Print Voucher (CDV)</span>
+                  <p className="text-[11px] text-slate-400">
+                    The system generates the official Check Disbursement Voucher (CDV) and marks obligations as Remitted.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Action Bar */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800">
+              <div className="flex items-center gap-3">
+                {selectedItemIds.size > 0 ? (
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-white">
-                      {selectedItemIds.size} items selected
-                    </span>
+                    <Badge className="bg-emerald-600 text-white font-bold px-2.5 py-0.5 text-xs">
+                      {selectedItemIds.size} Selected
+                    </Badge>
                     <span className="text-slate-400 text-xs">•</span>
                     <span className="font-mono font-bold text-sm text-emerald-300">
                       Total: {formatCurrency(selectedTotalAmount)}
                     </span>
                   </div>
-                  <p className="text-[11px] text-emerald-200/80">
-                    Ready to bundle into an official Philippine statutory disbursement check.
-                  </p>
+                ) : (
+                  <span className="text-xs text-slate-400 italic">
+                    Select 1 or more pending cutoffs/loans using the checkboxes, or click &quot;Tag Check&quot; directly on any row.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                {items.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={toggleSelectAll}
+                    className="border-slate-700 text-slate-300 text-xs h-9 hover:bg-slate-800"
+                  >
+                    {selectedItemIds.size === items.length ? "Deselect All" : `Select All (${items.length})`}
+                  </Button>
+                )}
+
+                {selectedItemIds.size > 0 ? (
+                  <Button
+                    size="sm"
+                    onClick={() => setCheckDialogOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 shadow-md shadow-emerald-950/60 gap-1.5"
+                  >
+                    <CreditCardIcon className="size-3.5" />
+                    Issue Remittance Check ({selectedItemIds.size} items • {formatCurrency(selectedTotalAmount)}) →
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled
+                    className="bg-slate-800/80 border border-slate-700/60 text-slate-500 text-xs h-9 px-4 gap-1.5 cursor-not-allowed"
+                  >
+                    <CreditCardIcon className="size-3.5" />
+                    Issue Remittance Check (Select items below)
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Selection Bar when scrolled */}
+          {selectedItemIds.size > 0 && (
+            <div className="sticky top-18 z-40 p-3 rounded-xl border border-emerald-500/60 bg-emerald-950/95 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs">
+                  {selectedItemIds.size}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-white">
+                    {selectedItemIds.size} items selected
+                  </span>
+                  <span className="text-slate-400 text-xs">•</span>
+                  <span className="font-mono font-bold text-xs text-emerald-300">
+                    Total: {formatCurrency(selectedTotalAmount)}
+                  </span>
                 </div>
               </div>
 
@@ -479,17 +599,17 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                   size="sm"
                   variant="outline"
                   onClick={handleClearSelection}
-                  className="bg-transparent border-emerald-500/40 text-emerald-200 text-xs h-9 hover:bg-emerald-900/50"
+                  className="bg-transparent border-emerald-500/40 text-emerald-200 text-xs h-8 hover:bg-emerald-900/50"
                 >
                   Clear Selection
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => setCheckDialogOpen(true)}
-                  className="bg-white text-emerald-950 hover:bg-slate-100 font-bold text-xs h-9 px-4 shadow-lg shadow-black/40 gap-1.5"
+                  className="bg-white text-emerald-950 hover:bg-slate-100 font-bold text-xs h-8 px-3.5 shadow-md gap-1.5"
                 >
-                  <CreditCardIcon className="size-3.5 text-emerald-800" />
-                  Issue Remittance Check ({formatCurrency(selectedTotalAmount)}) →
+                  <CreditCardIcon className="size-3 text-emerald-800" />
+                  Issue Check ({formatCurrency(selectedTotalAmount)}) →
                 </Button>
               </div>
             </div>
@@ -512,12 +632,15 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-900/90 border-slate-800">
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={selectedItemIds.size === items.length && items.length > 0}
-                        onCheckedChange={toggleSelectAll}
-                        className="border-slate-600 data-[state=checked]:bg-emerald-600"
-                      />
+                    <TableHead className="w-16 min-w-[64px] text-center pl-3">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">SELECT</span>
+                        <Checkbox
+                          checked={selectedItemIds.size === items.length && items.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                          className="size-4 border-slate-500 bg-slate-950/80 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
+                        />
+                      </div>
                     </TableHead>
                     <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Status</TableHead>
                     <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Company</TableHead>
@@ -526,6 +649,7 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Period / Cutoff</TableHead>
                     <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Amount (PHP)</TableHead>
                     <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Payment &amp; Check Details</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400 text-right pr-4">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -537,15 +661,20 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                     return (
                       <TableRow
                         key={item.id}
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.closest("button") || target.closest("a") || target.closest("[role=checkbox]")) return;
+                          if (!isPaid) toggleSelectItem(item.id);
+                        }}
                         className={`border-slate-800 hover:bg-slate-800/40 transition-colors ${
-                          isSelected ? "bg-emerald-950/20" : ""
-                        }`}
+                          !isPaid ? "cursor-pointer" : ""
+                        } ${isSelected ? "bg-emerald-950/25 ring-1 ring-emerald-500/30" : ""}`}
                       >
-                        <TableCell>
+                        <TableCell className="w-16 min-w-[64px] text-center pl-3">
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleSelectItem(item.id)}
-                            className="border-slate-600 data-[state=checked]:bg-emerald-600"
+                            className="size-4 border-slate-500 bg-slate-950/80 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 cursor-pointer"
                           />
                         </TableCell>
                         <TableCell>
@@ -642,6 +771,37 @@ export function RemittancePortalClient({ initialData }: RemittancePortalClientPr
                             </div>
                           ) : (
                             <span className="text-xs text-slate-500 italic">Not yet disbursed</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right pr-4">
+                          {isPaid ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (item.checkId) {
+                                  handleViewVoucherForCheck(item.checkId);
+                                } else {
+                                  setActiveTab("checks");
+                                }
+                              }}
+                              className="h-7 text-xs text-slate-300 hover:text-white hover:bg-slate-800"
+                            >
+                              <PrinterIcon className="size-3 mr-1 text-emerald-400" /> View CDV
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTagSingleItem(item);
+                              }}
+                              className="h-7 text-xs border-emerald-500/60 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-600 hover:text-white font-semibold transition-colors"
+                            >
+                              <CreditCardIcon className="size-3 mr-1 text-emerald-400" /> Tag Check
+                            </Button>
                           )}
                         </TableCell>
                       </TableRow>
