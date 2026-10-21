@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "@/components/admin/users/create-user-dialog";
 import { EditUserDialog } from "@/components/admin/users/edit-user-dialog";
 import { DeleteUserDialog } from "@/components/admin/users/delete-user-dialog";
-import { RemittanceOfficerToggle } from "@/components/admin/users/remittance-officer-toggle";
 import {
   UsersIcon,
   ShieldAlertIcon,
@@ -133,7 +132,7 @@ export default async function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-900/90 border-slate-800">
-                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">User Name &amp; Role</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">User Name</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Email / Username</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Platform Role</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-400">Access Tree &amp; Companies</TableHead>
@@ -144,32 +143,29 @@ export default async function AdminUsersPage() {
               <TableBody>
                 {formattedUsers.map((user) => (
                   <TableRow key={user.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="align-top py-3">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="font-bold text-xs text-slate-100">{user.name || "—"}</span>
-                        <RemittanceOfficerToggle
-                          userId={user.id}
-                          userName={user.name || user.email}
-                          initialChecked={Boolean(user.isRemittanceOfficer || user.platformRole === "REMITTANCE_OFFICER")}
-                          isSuperAdmin={user.platformRole === "SUPER_ADMIN"}
-                        />
+                    <TableCell className="font-bold text-xs text-slate-100 py-3">{user.name || "—"}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-300 py-3">{user.email}</TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-1 items-start">
+                        {user.platformRole === "SUPER_ADMIN" ? (
+                          <Badge variant="outline" className="text-[10px] font-mono uppercase bg-amber-950/60 border-amber-500/50 text-amber-400">
+                            SUPER_ADMIN
+                          </Badge>
+                        ) : user.platformRole === "REMITTANCE_OFFICER" ? (
+                          <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
+                            REMITTANCE_OFFICER
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] font-mono uppercase bg-blue-950/60 border-blue-500/50 text-blue-400">
+                            STANDARD
+                          </Badge>
+                        )}
+                        {user.isRemittanceOfficer && user.platformRole === "STANDARD" && (
+                          <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400 flex items-center gap-1">
+                            <LandmarkIcon className="size-2.5 text-emerald-400" /> Remittance Officer
+                          </Badge>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-slate-300 align-top py-3">{user.email}</TableCell>
-                    <TableCell className="align-top py-3">
-                      {user.platformRole === "SUPER_ADMIN" ? (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-amber-950/60 border-amber-500/50 text-amber-400">
-                          SUPER_ADMIN
-                        </Badge>
-                      ) : user.platformRole === "REMITTANCE_OFFICER" ? (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-emerald-950/60 border-emerald-500/50 text-emerald-400">
-                          REMITTANCE_OFFICER
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-blue-950/60 border-blue-500/50 text-blue-400">
-                          STANDARD
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell className="align-top py-3">
                       {user.platformRole === "SUPER_ADMIN" ? (
