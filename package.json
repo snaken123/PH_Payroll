@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo-company.ts",
     "build:migrate": "prisma generate && prisma migrate deploy && next build",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:baseline": "prisma migrate resolve --applied 20260730021526_init && prisma migrate resolve --applied 20260730032240_add_loan_approval_and_frequency && prisma migrate resolve --applied 20260924000000_sync_schema_since_db_push",
