@@ -275,8 +275,19 @@ export default async function EmployeesPage({
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2.5">
-                            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200/90 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 select-none">
-                              {e.firstName?.[0] ?? ""}{e.lastName?.[0] ?? ""}
+                            <div className="relative size-7 shrink-0 rounded-full overflow-hidden border border-slate-200/90 bg-slate-100 dark:bg-slate-800 dark:border-slate-700 flex items-center justify-center select-none">
+                              {e.photoUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={e.photoUrl}
+                                  alt={`${e.firstName} ${e.lastName}`}
+                                  className="size-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                                  {e.firstName?.[0] ?? ""}{e.lastName?.[0] ?? ""}
+                                </span>
+                              )}
                             </div>
                             <div className="min-w-0">
                               <Link
